@@ -12,8 +12,8 @@ COPY prisma ./prisma/
 WORKDIR /app/backend
 RUN npm install
 
-# Генерируем клиент Prisma
-RUN npx prisma generate --schema=../prisma/schema.prisma
+# ИСПРАВЛЕНО: Принудительно устанавливаем клиент Prisma локально перед генерацией
+RUN npm install @prisma/client && npx prisma generate --schema=../prisma/schema.prisma
 
 # Копируем весь остальной исходный код бэкенда
 COPY backend/ ./
