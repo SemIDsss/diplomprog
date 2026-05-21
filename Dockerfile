@@ -3,24 +3,25 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# 1. Копируем файлы конфигурации бэкенда и глобальную схему
-COPY backend/package*.json ./backend/
+# 1. Копируем ТОЛЬКО package.json бэкенда и схему (без lock-файлов, чтобы избежать workspaces)
+COPY backend/package.json ./backend/
 COPY prisma ./prisma/
 
-# 2. Устанавливаем ВСЕ пакеты бэкенда (включая зависимости из package.json)
+# 2. Переходим в папку бэкенда и ставим чистые базовые зависимости
 WORKDIR /app/backend
-RUN npm install
+RUN npm install --no-workspaces
 
-# 3. ИСПРАВЛЕНО: Принудительно устанавливаем @prisma/client и запускаем генерацию 
-# строго внутри текущей рабочей директории бэкенда, чтобы пути не терялись
-RUN npm install @prisma/client prisma && npx prisma generate --schema=../prisma/schema.prisma
+# 3. ИСПРАВЛЕНО И ИЗОЛИРОВАНО: Принудительная установка без учета монорепозитория
+RUN npm install @prisma/client prisma --no-workspaces && npx prisma generate --schema=../prisma/schema.prisma
 
-# 4. Копируем весь исходный код бэкенда в контейнер
+# 4. Копируем все остальные файлы проекта
 COPY backend/ ./
+COPY prisma ../prisma/
 
-# 5. Компилируем TypeScript в JavaScript
+# 5. Компилируем TypeScript
 RUN npx tsc
 
 EXPOSE 4000
 
 CMD ["node", "dist/server.js"]
+
