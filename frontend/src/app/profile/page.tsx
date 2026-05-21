@@ -8,6 +8,9 @@ import Script from 'next/script'; // Импортируем безопасный
 // Замените на ваш реальный ID счетчика Яндекс.Метрики
 const YM_COUNTER_ID = 12345678; 
 
+// Базовый URL бэкенда (динамический: Vercel использует переменную, иначе localhost)
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [isSellerMode, setIsSellerMode] = useState(false);
@@ -73,14 +76,46 @@ export default function ProfilePage() {
     }
   };
 
+  // Вспомогательная функция для расчета стоимости корзины
+  const calculateTotal = () => {
+    return cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+  };
+
+  // Получение истории заказов
+  const fetchOrdersHistory = async (userId: number) => {
+    setLoadingOrders(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/orders?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data);
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки истории заказов:', err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  // Загрузка каталога товаров (для режима продавца)
+  const fetchAllProducts = async (userId: number) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/products?sellerId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAllProducts(data);
+      }
+    } catch (err) {
+      console.error('Ошибка при загрузке каталога товаров:', err);
+    }
+  };
+
   // Функция запроса к бэкенду для расчета доставки
   const calculateShipping = async () => {
-    if (!city.trim()) return;
+    if (!city.trim() || cart.length === 0) return;
     setLoadingDelivery(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
-const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
+      const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ city, provider: deliveryProvider, items: cart }),
@@ -107,6 +142,84 @@ const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
     }
   }, [city, deliveryProvider, cart]);
 
+  // Обработчик переключения режимов Продавец/Покупатель
+  const handleModeToggle = (checked: boolean) => {
+    setIsSellerMode(checked);
+    if (user?.id) {
+      localStorage.setItem(`seller_mode_user_${user.id}`, String(checked));
+      trackEvent('mode_switched', { mode: checked ? 'seller' : 'buyer' });
+    }
+  };
+
+  // Создание или обновление товара в панели продавца
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prodName || !prodPrice) return alert('Заполните обязательные поля');
+
+    const productData = {
+      name: prodName,
+      description: prodDesc,
+      price: parseFloat(prodPrice),
+      stock: parseInt(prodStock) || 0,
+      category: prodCategory,
+      image: prodImage,
+      sellerId: user.id
+    };
+
+    try {
+      const url = editingProductId 
+        ? `${API_BASE}/api/products/${editingProductId}`
+        : `${API_BASE}/api/products`;
+      
+      const response = await fetch(url, {
+        method: editingProductId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData),
+      });
+
+      if (response.ok) {
+        trackEvent(editingProductId ? 'product_updated' : 'product_created', { name: prodName });
+        // Сбрасываем форму и обновляем список
+        setEditingProductId(null);
+        setProdName('');
+        setProdDesc('');
+        setProdPrice('');
+        setProdStock('');
+        setProdImage('');
+        fetchAllProducts(user.id);
+      }
+    } catch (err) {
+      console.error('Ошибка сохранения товара:', err);
+    }
+  };
+
+  // Удаление товара продавцом
+  const handleDeleteProduct = async (productId: number) => {
+    if (!confirm('Вы уверены, что хотите удалить этот товар?')) return;
+    try {
+      const response = await fetch(`${API_BASE}/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        trackEvent('product_deleted', { productId });
+        fetchAllProducts(user.id);
+      }
+    } catch (err) {
+      console.error('Ошибка удаления товара:', err);
+    }
+  };
+
+  // Перевод формы в режим редактирования существующего товара
+  const handleEditClick = (product: any) => {
+    setEditingProductId(product.id);
+    setProdName(product.name);
+    setProdDesc(product.description || '');
+    setProdPrice(String(product.price));
+    setProdStock(String(product.stock));
+    setProdCategory(product.category || 'Смартфоны');
+    setProdImage(product.image || '');
+  };
+
   // Обработчик единой кнопки оплаты ЮKassa / СБП
   const handlePayment = async () => {
     setIsPaying(true);
@@ -114,9 +227,8 @@ const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
     trackEvent('payment_initiated', { method: paymentMethod, total_sum: finalAmount });
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
-const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
+      // ИСПРАВЛЕННЫЙ ЭНДПОИНТ: Изменен с /shipping/calculate на /payment/create для совершения платежей
+      const response = await fetch(`${API_BASE}/api/payment/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,7 +246,7 @@ const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
         trackEvent('payment_redirect_success', { method: paymentMethod });
         window.location.href = data.confirmationUrl; // Переход на платежную страницу шлюза
       } else {
-        alert('Не удалось создать платежную сессию на сервере');
+        alert(data.message || 'Не удалось создать платежную сессию на сервере');
       }
     } catch (err) {
       console.error('Ошибка оплаты:', err);
@@ -144,305 +256,16 @@ const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
     }
   };
 
-  // ШАГ 1: Измененная функция загрузки товаров — принимает sellerId и запрашивает только товары текущего аккаунта
-  const fetchAllProducts = async (userId: number) => {
-    try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
-const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: `query($sellerId: Int!) { 
-            searchProducts(query: "", sellerId: $sellerId) { 
-              id name price stock category description image 
-            } 
-          }`,
-          variables: { sellerId: userId }
-        })
-      });
-      const result = await response.json();
-      setAllProducts(result.data?.searchProducts || []);
-    } catch (err) {
-      console.error('Ошибка загрузки каталога продавца:', err);
-    }
-  };
-
-  const fetchOrdersHistory = async (userId: number) => {
-    try {
-      const res = await fetch(`http://localhost:4000/api/orders/history/${userId}`);
-      if (res.ok) setOrders(await res.json());
-    } catch (err) { console.error(err); }
-    finally { setLoadingOrders(false); }
-  };
-
-  // Создание или обновление товара
-  const handleSaveProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const isEditing = editingProductId !== null;
-    const url = isEditing 
-      ? `http://localhost:4000/api/products/${editingProductId}` 
-      : 'http://localhost:4000/api/products/create';
-    const method = isEditing ? 'PUT' : 'POST';
-
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: prodName,
-          description: prodDesc,
-          price: Number(prodPrice),
-          stock: Number(prodStock),
-          category: prodCategory,
-          image: prodImage || 'https://unsplash.com',
-          sellerId: user.id // Передаем sellerId, чтобы товар привязался к текущему пользователю в БД
-        })
-      });
-
-      if (res.ok) {
-        alert(isEditing ? 'Товар успешно обновлен!' : 'Товар успешно добавлен!');
-        setEditingProductId(null);
-        setProdName(''); setProdDesc(''); setProdPrice(''); setProdStock(''); setProdImage('');
-        fetchAllProducts(user.id); // Обновляем личный каталог продавца после сохранения
-      }
-    } catch (err) { alert('Ошибка сохранения'); }
-  };
-
-  // Удаление товара
-  const handleDeleteProduct = async (id: number) => {
-    if (!confirm('Вы уверены, что хотите удалить этот товар?')) return;
-    try {
-      const res = await fetch(`http://localhost:4000/api/products/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        alert('Товар удален');
-        fetchAllProducts(user.id); // Обновляем личный каталог продавца после удаления
-      }
-    } catch (err) { alert('Ошибка при удалении'); }
-  };
-
-  // Подготовка формы к редактированию
-  const startEdit = (product: any) => {
-    setEditingProductId(product.id);
-    setProdName(product.name);
-    setProdDesc(product.description || '');
-    setProdPrice(product.price.toString());
-    setProdStock(product.stock.toString());
-    setProdCategory(product.category);
-    setProdImage(product.image || '');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const calculateTotal = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-  if (!user) return <p style={{ padding: '40px', textAlign: 'center' }}>Проверка...</p>;
-
   return (
-    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px', display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', fontFamily: 'sans-serif' }}>
-      
-      {/* ЛЕВАЯ КОЛОНКА */}
-      <div>
-        {/* Профиль */}
-        <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', marginBottom: '25px', border: '1px solid #e1e1e1' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ margin: 0 }}>Личный кабинет ({isSellerMode ? 'Продавец' : 'Покупатель'})</h2>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                onClick={() => { 
-                  const nextMode = !isSellerMode;
-                  setIsSellerMode(nextMode); 
-                  
-                  if (user?.id) {
-                    localStorage.setItem(`seller_mode_user_${user.id}`, String(nextMode));
-                  }
-                  
-                  trackEvent('toggle_user_mode', { is_seller: nextMode }); 
-                }} 
-                style={{ padding: '8px 16px', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                {isSellerMode ? '🛒 Режим покупателя' : '💼 Режим продавца'}
-              </button>
-              <button onClick={() => { Cookies.remove('token'); localStorage.removeItem('user'); router.push('/auth'); }} style={{ padding: '8px 16px', backgroundColor: '#ff4d4f', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Выйти</button>
-            </div>
-          </div>
-        </div>
-
-        {!isSellerMode ? (
-          <>
-            {/* ИНТЕРФЕЙС ПОКУПАТЕЛЯ */}
-            <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', marginBottom: '25px', border: '1px solid #e1e1e1' }}>
-              <h3>Ваша корзина</h3>
-              {cart.length === 0 ? <p>Корзина пуста.</p> : cart.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' }}>
-                  <div>{item.name} ({item.quantity} шт.)</div>
-                  <strong>{(item.price * item.quantity).toLocaleString()} ₽</strong>
-                </div>
-              ))}
-            </div>
-            <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', border: '1px solid #e1e1e1' }}>
-              <h3>История заказов</h3>
-              {orders.map(o => (
-                <div key={o.id} style={{ padding: '10px 0', borderBottom: '1px solid #eee' }}>Заказ #{o.id} — {o.totalPrice} ₽ ({o.status === 'paid' ? 'Оплачен' : 'Ожидает'})</div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            {/* 💼 ИНТЕРФЕЙС ПРОДАВЦА */}
-            <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', marginBottom: '25px', border: '1px solid #e1e1e1' }}>
-              <h3 style={{ margin: '0 0 20px 0', color: '#0070f3' }}>
-                {editingProductId ? '✏️ Редактирование товара' : '➕ Добавление нового предмета в каталог'}
-              </h3>
-              
-              <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <input type="text" value={prodName} onChange={(e) => setProdName(e.target.value)} required placeholder="Название товара" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
-                <select value={prodCategory} onChange={(e) => setProdCategory(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}>
-                  <option value="Смартфоны">Смартфоны</option>
-                  <option value="Ноутбуки">Ноутбуки</option>
-                  <option value="Аксессуары">Аксессуары</option>
-                </select>
-                <textarea value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} placeholder="Описание" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', minHeight: '80px' }} />
-                <input type="number" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} required placeholder="Цена" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
-                <input type="number" value={prodStock} onChange={(e) => setProdStock(e.target.value)} required placeholder="Количество на складе" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
-                <input type="text" value={prodImage} onChange={(e) => setProdImage(e.target.value)} placeholder="URL изображения" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
-                <button type="submit" style={{ padding: '12px', backgroundColor: '#2ec4b6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-                  {editingProductId ? 'Сохранить изменения' : 'Создать товар'}
-                </button>
-                {editingProductId && (
-                  <button type="button" onClick={() => { setEditingProductId(null); setProdName(''); setProdDesc(''); setProdPrice(''); setProdStock(''); setProdImage(''); }} style={{ padding: '8px', backgroundColor: '#aaa', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Отмена</button>
-                )}
-              </form>
-            </div>
-
-            <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', border: '1px solid #e1e1e1' }}>
-              <h3>Ваш каталог товаров ({allProducts.length})</h3>
-              {allProducts.map(p => (
-                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #eee' }}>
-                  <div><strong>{p.name}</strong> — {p.price} ₽ (Склад: {p.stock} шт)</div>
-                  <div style={{ display: 'flex', gap: '5px' }}>
-                    <button onClick={() => startEdit(p)} style={{ padding: '4px 8px', backgroundColor: '#f0ad4e', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Редактировать</button>
-                    <button onClick={() => handleDeleteProduct(p.id)} style={{ padding: '4px 8px', backgroundColor: '#d9534f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Удалить</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* ПРАВАЯ КОЛОНКА (ОФОРМЛЕНИЕ ЗАКАЗА) */}
-      <div>
-        <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', border: '1px solid #e1e1e1', position: 'sticky', top: '40px' }}>
-          <h3 style={{ marginTop: 0 }}>Оформление заказа</h3>
-          
-          {/* Расчет служб доставки */}
-          <div style={{ marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>Город доставки:</label>
-            <input 
-              type="text" 
-              value={city} 
-              onChange={(e) => setCity(e.target.value)} 
-              placeholder="Например, Самара"
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '6px', border: '1px solid #ccc', marginBottom: '12px' }} 
-            />
-
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>Служба доставки:</label>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-              <button 
-                type="button"
-                onClick={() => setDeliveryProvider('cdek')} 
-                style={{ flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', backgroundColor: deliveryProvider === 'cdek' ? '#e6f7ff' : 'white', borderColor: deliveryProvider === 'cdek' ? '#1890ff' : '#ccc', fontWeight: deliveryProvider === 'cdek' ? 'bold' : 'normal' }}
-              >
-                📦 СДЭК
-              </button>
-              <button 
-                type="button"
-                onClick={() => setDeliveryProvider('boxberry')} 
-                style={{ flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', backgroundColor: deliveryProvider === 'boxberry' ? '#f6ffed' : 'white', borderColor: deliveryProvider === 'boxberry' ? '#52c41a' : '#ccc', fontWeight: deliveryProvider === 'boxberry' ? 'bold' : 'normal' }}
-              >
-                📦 Boxberry
-              </button>
-            </div>
-
-            <div style={{ fontSize: '14px', color: '#555', backgroundColor: '#f9f9f9', padding: '8px', borderRadius: '6px' }}>
-              Стоимость доставки: <strong>{loadingDelivery ? 'считаем...' : shippingPrice !== null ? `${shippingPrice} ₽` : 'укажите город'}</strong>
-            </div>
-          </div>
-
-          {/* Выбор метода оплаты */}
-          <div style={{ marginBottom: '25px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>Способ оплаты:</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px', border: '1px solid #eee', borderRadius: '6px', backgroundColor: paymentMethod === 'yookassa' ? '#f0f7ff' : 'transparent', borderColor: paymentMethod === 'yookassa' ? '#0070f3' : '#eee' }}>
-                <input type="radio" name="paymentMethod" value="yookassa" checked={paymentMethod === 'yookassa'} onChange={() => setPaymentMethod('yookassa')} style={{ cursor: 'pointer' }} />
-                <div>
-                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>ЮKassa</div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Банковские карты, Мир Pay, электронные деньги</div>
-                </div>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px', border: '1px solid #eee', borderRadius: '6px', backgroundColor: paymentMethod === 'sbp' ? '#f6ffed' : 'transparent', borderColor: paymentMethod === 'sbp' ? '#52c41a' : '#eee' }}>
-                <input type="radio" name="paymentMethod" value="sbp" checked={paymentMethod === 'sbp'} onChange={() => setPaymentMethod('sbp')} style={{ cursor: 'pointer' }} />
-                <div>
-                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>СБП (Система быстрых платежей)</div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Мгновенная оплата по QR-коду или в приложении банка</div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Итоги */}
-          <div style={{ marginBottom: '20px', fontSize: '15px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <span>Товары:</span>
-              <span>{calculateTotal().toLocaleString()} ₽</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span>Доставка ({deliveryProvider.toUpperCase()}):</span>
-              <span>{shippingPrice !== null ? `${shippingPrice} ₽` : '0 ₽'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', paddingTop: '12px', borderTop: '2px solid #eee' }}>
-              <span>Итого к оплате:</span>
-              <span>{(calculateTotal() + (shippingPrice || 0)).toLocaleString()} ₽</span>
-            </div>
-          </div>
-
-          {/* Единая кнопка оплаты */}
-          <button 
-            type="button"
-            onClick={handlePayment}
-            disabled={cart.length === 0 || isPaying || loadingDelivery}
-            style={{ 
-              width: '100%', 
-              padding: '14px', 
-              backgroundColor: paymentMethod === 'sbp' ? '#52c41a' : '#0070f3', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '8px', 
-              cursor: 'pointer', 
-              fontWeight: 'bold', 
-              fontSize: '16px', 
-              transition: 'background-color 0.2s',
-              opacity: (cart.length === 0 || isPaying || loadingDelivery) ? 0.5 : 1 
-            }}
-          >
-            {isPaying ? 'Формирование заказа...' : `Оплатить через ${paymentMethod === 'yookassa' ? 'ЮKassa' : 'СБП'}`}
-          </button>
-        </div>
-      </div>
-
-      {/* 1. Загружаем официальный скрипт Метрики как внешний ресурс */}
-      <Script 
-        src="https://yandex.ru" 
-        strategy="afterInteractive" 
-      />
-
-      {/* 2. Инициализируем счетчик только после готовности глобальной переменной */}
-      <Script id="yandex-metrika-init" strategy="afterInteractive">
+    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+      {/* Подключение Яндекс.Метрики */}
+      <Script id="yandex-metrika" strategy="afterInteractive">
         {`
-          window.ym = window.ym || function() {
-            (window.ym.a = window.ym.a || []).push(arguments)
-          };
-          window.ym.l = 1 * new Date();
+          (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+          m[i].l=1*new Date();
+          for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+          k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+          window, document, "script", "https://yandex.ru", "ym");
 
           ym(${YM_COUNTER_ID}, "init", {
                clickmap:true,
@@ -453,7 +276,138 @@ const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
         `}
       </Script>
 
+      <h2>Личный кабинет {user ? `— ${user.name || user.email}` : ''}</h2>
+      
+      {/* Переключатель режима */}
+      <div style={{ margin: '20px 0', background: '#f0f0f0', padding: '10px', borderRadius: '5px' }}>
+        <label style={{ fontWeight: 'bold', cursor: 'pointer' }}>
+          <input 
+            type="checkbox" 
+            checked={isSellerMode} 
+            onChange={(e) => handleModeToggle(e.target.checked)} 
+            style={{ marginRight: '10px' }}
+          />
+          Режим продавца (Управление каталогом)
+        </label>
+      </div>
+
+      {!isSellerMode ? (
+        /* ================= РЕЖИМ ПОКУПАТЕЛЯ ================= */
+        <div>
+          <h3>Оформление заказа и доставка</h3>
+          <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+            <input 
+              type="text" 
+              placeholder="Город доставки" 
+              value={city} 
+              onChange={(e) => setCity(e.target.value)} 
+            />
+            <select value={deliveryProvider} onChange={(e) => setDeliveryProvider(e.target.value as any)}>
+              <option value="cdek">СДЭК</option>
+              <option value="boxberry">Boxberry</option>
+            </select>
+            <button onClick={calculateShipping} disabled={loadingDelivery}>
+              {loadingDelivery ? 'Считаем...' : 'Рассчитать доставку'}
+            </button>
+          </div>
+
+          {shippingPrice !== null && (
+            <p>Стоимость доставки: <strong>{shippingPrice} ₽</strong></p>
+          )}
+
+          <div style={{ margin: '20px 0', borderTop: '1px solid #ccc', paddingTop: '15px' }}>
+            <h3>Оплата заказа</h3>
+            <p>Сумма товаров: {calculateTotal()} ₽</p>
+            <p>Итого к оплате: {calculateTotal() + (shippingPrice || 0)} ₽</p>
+            
+            <div style={{ margin: '10px 0' }}>
+              <label style={{ marginRight: '15px' }}>
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  value="yookassa" 
+                  checked={paymentMethod === 'yookassa'} 
+                  onChange={() => setPaymentMethod('yookassa')}
+                /> ЮKassa (Карты, кошельки)
+              </label>
+              <label>
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  value="sbp" 
+                  checked={paymentMethod === 'sbp'} 
+                  onChange={() => setPaymentMethod('sbp')}
+                /> СБП (Оплата в один клик)
+              </label>
+            </div>
+
+            <button 
+              onClick={handlePayment} 
+              disabled={isPaying || cart.length === 0} 
+              style={{ padding: '10px 20px', background: '#0070f3', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+            >
+              {isPaying ? 'Перенаправление...' : 'Оплатить заказ'}
+            </button>
+          </div>
+
+          <div style={{ marginTop: '30px' }}>
+            <h3>История заказов</h3>
+            {loadingOrders ? <p>Загрузка истории...</p> : orders.length === 0 ? <p>У вас еще нет заказов.</p> : (
+              <ul>
+                {orders.map((o: any) => (
+                  <li key={o.id}>Заказ #{o.id} — {o.amount} ₽ ({o.status})</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* ================= РЕЖИМ ПРОДАВЦА ================= */
+        <div>
+          <h3>Панель управления товарами</h3>
+          <form onSubmit={handleSaveProduct} style={{ background: '#fafafa', padding: '15px', borderRadius: '5px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
+            <h4>{editingProductId ? 'Редактировать товар' : 'Добавить новый товар'}</h4>
+            <input type="text" placeholder="Название товара *" value={prodName} onChange={e => setProdName(e.target.value)} required />
+            <textarea placeholder="Описание товара" value={prodDesc} onChange={e => setProdDesc(e.target.value)} />
+            <input type="number" placeholder="Цена (₽) *" value={prodPrice} onChange={e => setProdPrice(e.target.value)} required />
+            <input type="number" placeholder="Количество на складе" value={prodStock} onChange={e => setProdStock(e.target.value)} />
+            <select value={prodCategory} onChange={e => setProdCategory(e.target.value)}>
+              <option value="Смартфоны">Смартфоны</option>
+              <option value="Ноутбуки">Ноутбуки</option>
+              <option value="Аксессуары">Аксессуары</option>
+            </select>
+            <input type="text" placeholder="Ссылка на URL картинки" value={prodImage} onChange={e => setProdImage(e.target.value)} />
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="submit" style={{ background: '#00cc66', color: '#white', padding: '7px 15px', border: 'none', cursor: 'pointer' }}>
+                {editingProductId ? 'Сохранить изменения' : 'Создать товар'}
+              </button>
+              {editingProductId && (
+                <button type="button" onClick={() => { setEditingProductId(null); setProdName(''); setProdDesc(''); setProdPrice(''); setProdStock(''); setProdImage(''); }} style={{ background: '#aaa', color: '#fff', padding: '7px 15px', border: 'none', cursor: 'pointer' }}>
+                  Отмена
+                </button>
+              )}
+            </div>
+          </form>
+
+          <h4>Ваш каталог товаров:</h4>
+          {allProducts.length === 0 ? <p>Вы еще не добавили ни одного товара.</p> : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+              {allProducts.map((p: any) => (
+                <div key={p.id} style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '5px', background: '#fff' }}>
+                  {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: '120px', objectFit: 'cover', marginBottom: '5px' }} />}
+                  <h5>{p.name}</h5>
+                  <p>{p.price} ₽ (В наличии: {p.stock})</p>
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <button onClick={() => handleEditClick(p)} style={{ fontSize: '12px', background: '#ffcc00', border: 'none', padding: '3px 8px', cursor: 'pointer' }}>Редактировать</button>
+                    <button onClick={() => handleDeleteProduct(p.id)} style={{ fontSize: '12px', background: '#ff3333', color: '#fff', border: 'none', padding: '3px 8px', cursor: 'pointer' }}>Удалить</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
-
