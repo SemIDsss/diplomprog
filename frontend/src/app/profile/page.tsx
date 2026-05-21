@@ -78,7 +78,9 @@ export default function ProfilePage() {
     if (!city.trim()) return;
     setLoadingDelivery(true);
     try {
-      const response = await fetch('http://localhost:4000/api/shipping/calculate', {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ city, provider: deliveryProvider, items: cart }),
@@ -112,7 +114,9 @@ export default function ProfilePage() {
     trackEvent('payment_initiated', { method: paymentMethod, total_sum: finalAmount });
 
     try {
-      const response = await fetch('http://localhost:4000/api/payments/create', {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -143,7 +147,9 @@ export default function ProfilePage() {
   // ШАГ 1: Измененная функция загрузки товаров — принимает sellerId и запрашивает только товары текущего аккаунта
   const fetchAllProducts = async (userId: number) => {
     try {
-      const response = await fetch('http://localhost:4000/graphql', {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+const response = await fetch(`${API_BASE}/api/shipping/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
