@@ -1,7 +1,7 @@
 import 'dotenv/config'; // Обязательно загружаем переменные из .env
 import express from 'express';
 import { ApolloServer, gql } from 'apollo-server-express';
-import { PrismaClient } from './generated/client'; // <-- Локальный импорт
+import { PrismaClient } from '@prisma/client'; // <-- Вернули стандартный импорт
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import cors from 'cors';

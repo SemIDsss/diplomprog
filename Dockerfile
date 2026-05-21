@@ -1,22 +1,21 @@
 # /Dockerfile (в корне проекта)
-# ИСПРАВЛЕНО: Переходим на Node.js 22, который официально требует Prisma 7
 FROM node:22-alpine
 
 WORKDIR /app
 
-# 1. Копируем конфигурации бэкенда и глобальную схему Prisma
+# 1. Копируем конфигурации и схему
 COPY backend/package*.json ./backend/
 COPY prisma ./prisma/
 
-# 2. Устанавливаем все зависимости бэкенда
+# 2. Устанавливаем базовые пакеты бэкенда
 WORKDIR /app/backend
 RUN npm install
 
-# 3. Копируем весь исходный код бэкенда в контейнер
+# 3. Копируем исходный код бэкенда
 COPY backend/ ./
 
-# 4. ИСПРАВЛЕНО: Жестко ставим клиент и запускаем генерацию в одном слое
-RUN npm install @prisma/client prisma && npx prisma generate --schema=../prisma/schema.prisma
+# 4. Генерируем типы Prisma в стандартную системную директорию node_modules
+RUN npx prisma generate --schema=../prisma/schema.prisma
 
 # 5. Компилируем TypeScript в JavaScript
 RUN npx tsc
