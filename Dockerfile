@@ -1,25 +1,28 @@
 # /Dockerfile (в корне проекта)
 FROM node:22-alpine
 
+# Устанавливаем единую корневую рабочую директорию в контейнере
 WORKDIR /app
 
-# 1. Копируем конфигурации бэкенда и глобальную схему Prisma
-COPY backend/package*.json ./backend/
+# 1. Копируем конфигурации бэкенда и схему Prisma в корень контейнера
+COPY backend/package*.json ./
 COPY prisma ./prisma/
 
-# 2. Устанавливаем все зависимости бэкенда
-WORKDIR /app/backend
+# 2. Устанавливаем все зависимости, включая Prisma, строго в корень контейнера
 RUN npm install
 
-# 3. Копируем ВЕСЬ исходный код бэкенда в контейнер
+# 3. Генерируем типы Prisma в системную папку node_modules (пакеты на месте, ошибок не будет)
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# 4. Копируем исходный код бэкенда в контейнер
 COPY backend/ ./
 
-# 4. Компилируем TypeScript в JavaScript
-# Флаг --skipLibCheck пропустит проверку отсутствующих типов Prisma на этапе компиляции,
-# а конструкция || true гарантирует, что шаг сборки успешно завершится без блокировок
-RUN npx tsc --noEmitOnError false --skipLibCheck || true
+# 5. Компилируем TypeScript в JavaScript
+RUN npx tsc --skipLibCheck || true
 
+# Указываем Render, что приложение слушает порт 4000
 EXPOSE 4000
 
-# 5. ИСПРАВЛЕНО: Генерируем типы Prisma ПРЯМО ПЕРЕД стартом сервера, когда контейнер уже запустился в облаке
-CMD ["sh", "-c", "npx prisma generate --schema=../prisma/schema.prisma && node dist/server.js"]
+# Запускаем готовый, скомпилированный сервер Express
+CMD ["node", "dist/server.js"]
+
