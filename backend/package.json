@@ -22,9 +22,10 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "build": "prisma generate && tsc",
+    "build": "npx prisma generate && npx tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch server.ts"
   }
+
 }
 
