@@ -1,0 +1,52 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("customer")
+  orders    Order[]
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  oneCId      String?  @unique // Связь с 1С (ИД номенклатуры)
+  name        String
+  description String?
+  price       Float
+  stock       Int      @default(0)
+  image       String?
+  category    String
+   reviews     Review[] //  СВЯЗЬ: У одного товара может быть много отзывов
+}
+
+model Order {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+  status         String   @default("pending") // pending, paid, shipping, done
+  totalPrice     Float
+  cdekTariffId   Int?     // ID тарифа СДЭК
+  cdekDispatchId String?  // ID накладной СДЭК
+  yandexInvoiceId String? // ID счета Яндекс.Кассы (ЮKassa)
+  createdAt      DateTime @default(now())
+}
+
+// МОДУЛЬ ОТЗЫВОВ
+model Review {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userName  String   // Имя автора отзыва
+  rating    Int      // Оценка от 1 до 5
+  comment   String   // Текст отзыва
+  createdAt DateTime @default(now())
+}
