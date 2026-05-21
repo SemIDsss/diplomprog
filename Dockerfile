@@ -7,19 +7,20 @@ WORKDIR /app
 COPY backend/package*.json ./backend/
 COPY prisma ./prisma/
 
-# 2. Устанавливаем все зависимости бэкенда
+# 2. Устанавливаем базовые зависимости бэкенда
 WORKDIR /app/backend
 RUN npm install
 
-# 3. Копируем исходный код бэкенда
+# 3. Копируем ВЕСЬ исходный код бэкенда в контейнер
 COPY backend/ ./
 
-# 4. Компилируем TypeScript в JavaScript
-# Флаг --skipLibCheck игнорирует проверку типов Prisma на этапе компиляции, предотвращая сбои сборки
-RUN npx tsc --skipLibCheck
+# 4. ИСПРАВЛЕНО: Генерируем типы Prisma внутри рабочей директории бэкенда, где есть локальный @prisma/client
+RUN npx prisma generate --schema=../prisma/schema.prisma
+
+# 5. Компилируем TypeScript в JavaScript
+RUN npx tsc
 
 EXPOSE 4000
 
-# 5. ИСПРАВЛЕНО: Генерируем типы Prisma ПРЯМО В МОМЕНТ СТАРТА контейнера в облаке, а затем запускаем сервер
-CMD ["sh", "-c", "npx prisma generate --schema=../prisma/schema.prisma && node dist/server.js"]
-
+# Запускаем готовый скомпилированный сервер
+CMD ["node", "dist/server.js"]

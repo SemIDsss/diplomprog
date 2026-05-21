@@ -186,54 +186,7 @@ app.get('/api/orders/history/:userId', async (req, res) => {
 });
 
 
-// ЮKASSA: Создание платежа для заказа
-app.post('/api/payment/create', async (req, res) => {
-  try {
-    const { userId, totalPrice } = req.body;
 
-    // Создаем запись заказа в нашей базе данных Docker PostgreSQL
-    const order = await prisma.order.create({
-      data: {
-        userId: parseInt(userId),
-        totalPrice: parseFloat(totalPrice),
-        status: 'pending'
-      }
-    });
-
-    // Формируем уникальный ключ идемпотентности для предотвращения дублей платежей
-    const idempotenceKey = uuidv4();
-
-    // Запрос к API ЮKassa на генерацию платежной сессии
-    const payment = await checkout.createPayment({
-      amount: {
-        value: totalPrice.toFixed(2),
-        currency: 'RUB'
-      },
-      payment_method_data: {
-        type: 'bank_card'
-      },
-      confirmation: {
-        type: 'redirect',
-        return_url: 'http://localhost:3000/profile'
-      },
-      description: `Оплата заказа №${order.id} в TechStore`,
-      metadata: {
-        order_id: order.id.toString()
-      },
-      capture: true
-    }, idempotenceKey);
-
-    // Возвращаем фронтенду ссылку на оплату
-    res.json({
-      paymentUrl: payment.confirmation.confirmation_url,
-      orderId: order.id
-    });
-
-  } catch (error: any) {
-    console.error('Ошибка создания платежа в ЮKassa:', error);
-    res.status(500).json({ message: 'Не удалось сформировать счет на оплату' });
-  }
-});
 
 // ЮKASSA: Вебхук об успешной оплате (Вызывается сервером ЮKassa)
 app.post('/api/webhooks/yandex-kassa', async (req, res) => {
