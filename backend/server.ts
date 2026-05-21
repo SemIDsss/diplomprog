@@ -30,6 +30,14 @@ app.use(express.json()); // 2. Читаем JSON-тело запросов
 app.use(shippingRouter); // 3. Модуль расчета СДЭК / Boxberry
 app.use(paymentRouter);  // 4. Модуль оплаты ЮKassa / СБП одной кнопкой
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Бэкенд диплома успешно работает! 🚀",
+    database: "Prisma + PostgreSQL подключены",
+    timestamp: new Date()
+  });
+});
 // ==========================================
 // 1. REST API: Интеграции, Заказы и Оплата
 // ==========================================
