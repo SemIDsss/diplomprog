@@ -21,11 +21,12 @@
     "@types/uuid": "^10.0.0",
     "typescript": "^5.0.0"
   },
-   "scripts": {
-    "build": "npm install @prisma/client prisma && npx prisma generate --schema=../prisma/schema.prisma && npx tsc",
+  "scripts": {
+    "build": "npx prisma generate --schema=../prisma/schema.prisma && npx tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch server.ts"
   }
+
 
 
 
