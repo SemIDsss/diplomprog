@@ -1,28 +1,26 @@
 # /Dockerfile (в корне проекта)
 FROM node:20-alpine
 
-# Устанавливаем рабочую директорию внутри контейнера
 WORKDIR /app
 
-# Копируем конфигурационные файлы бэкенда и глобальную схему
+# 1. Копируем конфигурации бэкенда и глобальную схему Prisma
 COPY backend/package*.json ./backend/
 COPY prisma ./prisma/
 
-# Переходим в директорию бэкенда и устанавливаем зависимости
+# 2. Устанавливаем все базовые зависимости бэкенда
 WORKDIR /app/backend
 RUN npm install
 
-# ИСПРАВЛЕНО: Принудительно устанавливаем клиент Prisma локально перед генерацией
-RUN npm install @prisma/client && npx prisma generate --schema=../prisma/schema.prisma
-
-# Копируем весь остальной исходный код бэкенда
+# 3. Копируем ВЕСЬ остальной исходный код бэкенда в контейнер
+# Теперь Prisma гарантированно увидит всё файловое окружение
 COPY backend/ ./
 
-# Компилируем TypeScript в JavaScript
+# 4. Генерируем типы Prisma, принудительно указав кастомную папку вывода
+RUN npx prisma generate --schema=../prisma/schema.prisma
+
+# 5. Компилируем TypeScript в JavaScript
 RUN npx tsc
 
-# Открываем порт Express сервера
 EXPOSE 4000
 
-# Команда для запуска бэкенда
 CMD ["node", "dist/server.js"]
