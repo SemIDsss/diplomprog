@@ -1,13 +1,17 @@
-import 'dotenv/config'; // Загружает данные из .env файла
-import { defineConfig } from '@prisma/config'; // Обратите внимание на @
+import { defineConfig } from '@prisma/config';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({
+  path: path.resolve(process.cwd(), '.env')
+});
+
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL отсутствует в .env');
+}
 
 export default defineConfig({
-  schema: 'prisma/schema.prisma',
-  migrations: {
-    path: 'prisma/migrations',
-  },
   datasource: {
-    // Используем стандартный Node.js метод для чтения переменной
-    url: process.env.DATABASE_URL, 
-  },
+    url: process.env.DATABASE_URL
+  }
 });

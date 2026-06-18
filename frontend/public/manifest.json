@@ -1,0 +1,41 @@
+{
+  "name": "TechMarket Маркетплейс цифровой техники",
+  "short_name": "TechMarket",
+  "description": "Покупка и продажа гаджетов с автоматическим расчетом логистики СДЭК и Boxberry",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-pc.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Спецификация каталога на ПК"
+    },
+    {
+      "src": "/screenshot-mobile.jpg",
+      "sizes": "720x1280",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Мобильная витрина маркетплейса"
+    }
+  ]
+}

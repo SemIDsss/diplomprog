@@ -1,60 +1,82 @@
+import './globals.css';
 import Link from 'next/link';
-import { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'TechStore - Магазин электроники',
-  description: 'Интеграция с 1С, СДЭК и ЮKassa',
+  title: 'Маркетплейс TECHMARKET',
+  description: 'Покупка и продажа гаджетов с расчетом логистики',
+  appleWebApp: {
+    capable: true,
+    title: 'TechMarket',
+    statusBarStyle: 'default',
+  },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+interface RootLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ru">
-      <body style={{ margin: 0, padding: 0, fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <head>
+        <link 
+          rel="manifest" 
+          href="/manifest.json" 
+          crossOrigin="use-credentials" 
+        />
+        <meta name="theme-color" content="#2563eb" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
+      <body className="bg-slate-50 min-h-screen antialiased text-slate-900 flex flex-col w-full font-sans pb-16 md:pb-0 m-0 p-0">
         
-        {/* 🔹 ШАПКА САЙТА (HEADER) */}
-        <header style={{ backgroundColor: '#1a1a1a', color: 'white', padding: '15px 20px', position: 'sticky', top: 0, zIndex: 1000 }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Link href="/" style={{ color: 'white', textDecoration: 'none', fontSize: '22px', fontWeight: 'bold', letterSpacing: '1px' }}>
-              ⚡ TechStore
+        {/* ВЕРХНИЙ ХЕДЕР: Навигация для десктопов (md:) по Главе 1.4.3 */}
+        <header className="hidden md:block w-full bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <Link 
+              href="/" 
+              className="text-xl font-black text-blue-600 tracking-tight"
+            >
+              ⚡ TECH<span className="text-slate-800">MARKET</span>
             </Link>
-            <nav style={{ display: 'flex', gap: '25px' }}>
-              <Link href="/" style={{ color: '#ccc', textDecoration: 'none', fontWeight: '500' }}>Главная</Link>
-              <Link href="/catalog" style={{ color: '#ccc', textDecoration: 'none', fontWeight: '500' }}>Каталог</Link>
-              <Link href="/profile" style={{ color: '#ccc', textDecoration: 'none', fontWeight: '500' }}>Личный кабинет</Link>
+            <nav className="flex items-center gap-6 text-sm font-bold text-slate-600">
+              <Link href="/" className="hover:text-blue-600 transition-colors">Главная</Link>
+              <Link href="/catalog" className="hover:text-blue-600 transition-colors">Каталог</Link>
+              <Link href="/profile" className="text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 hover:bg-blue-100 transition-all">
+                Личный кабинет
+              </Link>
             </nav>
           </div>
         </header>
 
-        {/* 🔹 ОСНОВНОЙ КОНТЕНТ СТРАНИЦЫ */}
-        <main style={{ flex: 1, backgroundColor: '#f5f5f7' }}>
+        {/* ОСНОВНОЙ КОНТЕНТ СТРАНИЦЫ */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-4 flex flex-col items-center">
           {children}
         </main>
 
-        {/* 🔹 ПОДВАЛ САЙТА (FOOTER) */}
-        <footer style={{ backgroundColor: '#1a1a1a', color: '#888', padding: '40px 20px', borderTop: '1px solid #333', fontSize: '14px' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '30px' }}>
-            <div>
-              <h4 style={{ color: 'white', marginBottom: '15px' }}>О магазине</h4>
-              <p style={{ lineHeight: '1.6' }}>Современный e-commerce сервис с полной автоматизацией склада через 1С, быстрой доставкой СДЭК и защищенными платежами ЮKassa.</p>
-            </div>
-            <div>
-              <h4 style={{ color: 'white', marginBottom: '15px' }}>Контакты связи</h4>
-              <p>📞 Тел: <a href="tel:+78005553535" style={{ color: '#0070f3', textDecoration: 'none' }}>+7 (###) #########</a></p>
-              <p>✉️ Email: <a href="mailto:support@techstore.ru" style={{ color: '#0070f3', textDecoration: 'none' }}>###@.ru</a></p>
-              <p>📍 Адрес: г. Нижний новгород</p>
-            </div>
-            <div>
-              <h4 style={{ color: 'white', marginBottom: '15px' }}>Режим работы</h4>
-              <p>Прием заказов: Круглосуточно 24/7</p>
-              <p>Техническая поддержка: С 09:00 до 21:00 (МСК)</p>
-            </div>
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #333', color: '#555' }}>
-            © {new Date().getFullYear()} TechStore. Все права защищены. Развернуто в Docker.
-          </div>
-        </footer>
+        {/* НИЖНИЙ ТАББАР (Bottom Navigation): Глава 1.4.3 диплома */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 shadow-lg flex items-center justify-around z-50 px-2">
+          <Link 
+            href="/" 
+            className="flex flex-col items-center justify-center text-slate-600 min-w-[44px] min-h-[44px] hover:text-blue-600 transition-colors"
+          >
+            <span className="text-xs font-bold mt-1">Главная</span>
+          </Link>
+          <Link 
+            href="/catalog" 
+            className="flex flex-col items-center justify-center text-slate-600 min-w-[44px] min-h-[44px] hover:text-blue-600 transition-colors"
+          >
+            <span className="text-xs font-bold mt-1">Каталог</span>
+          </Link>
+          <Link 
+            href="/profile" 
+            className="flex flex-col items-center justify-center text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 min-w-[44px] min-h-[44px] hover:bg-blue-100 transition-all"
+          >
+            <span className="text-xs font-black">Профиль</span>
+          </Link>
+        </nav>
 
       </body>
     </html>
   );
 }
+

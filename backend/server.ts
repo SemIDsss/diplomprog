@@ -1,100 +1,274 @@
-import 'dotenv/config'; // Обязательно загружаем переменные из .env
-import express from 'express';
-import { ApolloServer, gql } from 'apollo-server-express';
-import { PrismaClient } from '@prisma/client'; // <-- Вернули стандартный импорт
+import 'dotenv/config';
+import express, {
+  Request,
+  Response,
+  NextFunction
+} from 'express';
+import {
+  ApolloServer,
+  gql
+} from 'apollo-server-express';
+import { PrismaClient } from './src/generated/prisma';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import jwtStandard from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
+import cluster from 'cluster';
+import os from 'os';
+import {
+  shippingRouter,
+  calculateShippingInternal
+} from './shipping';
+import { paymentRouter } from './payment';
 
-// Импортируем модули доставки и оплаты
-import { shippingRouter } from './shipping';
-import { paymentRouter } from './payment'; // <-- Добавлен импорт роутера оплаты из payment.ts
-
-// Инициализируем пул pg и адаптер Prisma 7 для бэкенда
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
 const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+export const prisma = new PrismaClient({ adapter });
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'secure_key_fallback';
 
 const app = express();
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
+app.use(express.json());
 
-// Конфигурация мидлварей в строгом порядке
-app.use(cors()); // 1. Обязательно активируем CORS первым делом!
-app.use(express.json()); // 2. Читаем JSON-тело запросов
+interface AuthRequest extends Request {
+  user?: {
+    userId: number;
+    email: string;
+    role: string;
+    name: string;
+  };
+}
 
-// Подключаем наши обработчики к серверу Express
-app.use(shippingRouter); // 3. Модуль расчета СДЭК / Boxberry
-app.use(paymentRouter);  // 4. Модуль оплаты ЮKassa / СБП одной кнопкой
+export const checkAuth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({
+        message: 'Токен отсутствует'
+      });
+    }
+    const tokenParts = authHeader.split(' ');
+    const tokenStr = tokenParts[1]; 
+    const decoded = jwtStandard.verify(
+      tokenStr,
+      JWT_SECRET
+    ) as any;
 
-app.get('/', (req, res) => {
-  res.status(200).json({
-    status: "success",
-    message: "Бэкенд диплома успешно работает! 🚀",
-    database: "Prisma + PostgreSQL подключены",
-    timestamp: new Date()
+    const dbUser = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
+    if (!dbUser) {
+      return res.status(401).json({
+        message: 'Аккаунт удален'
+      });
+    }
+
+    req.user = {
+      userId: dbUser.id,
+      email: dbUser.email,
+      role: dbUser.role,
+      name: dbUser.name || 'User'
+    };
+    next();
+  } catch {
+    return res.status(401).json({
+      message: 'Токен невалиден'
+    });
+  }
+};
+
+app.use((
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.error('❌ [Error]:', err);
+  res.status(500).json({
+    success: false,
+    message: err.message || 'Сбой СУБД'
   });
 });
-// ==========================================
-// 1. REST API: Интеграции, Заказы и Оплата
-// ==========================================
 
-// АВТОРИЗАЦИЯ: Регистрация нового пользователя
+app.use('/api/shipping', shippingRouter);
+app.use('/api/payment', paymentRouter);
+
+// 1. ПУБЛИЧНЫЙ РОУТ ДЛЯ ПОКУПАТЕЛЕЙ (Оживляет каталог на фронтенде)
+app.get('/api/products', async (req: Request, res: Response) => {
+  try {
+    // Получаем ВСЕ товары из базы данных (без фильтрации по отсутствующему полю status)
+    const products = await prisma.product.findMany({
+      orderBy: { id: 'desc' }
+    });
+    
+    // Возвращаем структуру в точности так, как ожидает ваш фронтенд
+    return res.json({ products });
+  } catch (error: any) {
+    console.error('❌ Ошибка чтения каталога:', error);
+    return res.status(500).json({ message: 'Ошибка сервера при загрузке каталога' });
+  }
+});
+
+// 2. ЗАЩИЩЕННЫЙ РОУТ ДЛЯ АДМИН-ПАНЕЛИ (Остается для менеджмента)
+app.get(
+  '/api/admin/products',
+  checkAuth as any,
+  async (req: AuthRequest, res) => {
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Отказ: Доступно только администратору' });
+    }
+
+    let searchStatus = undefined;
+    if (req.query.status) {
+      searchStatus = String(req.query.status)
+        .trim()
+        .replace(/['"]+/g, '');
+    }
+
+    // Если поле status есть в вашей schema.prisma, этот роут отработает в админке
+    const products = await prisma.product.findMany({
+      where: searchStatus
+        ? { status: searchStatus }
+        : undefined,
+      orderBy: { id: 'desc' }
+    });
+    return res.json({ products });
+  }
+);
+
+
+app.post(
+  '/api/orders/create',
+  checkAuth as any,
+  async (req: AuthRequest, res) => {
+    try {
+      const {
+        deliveryProvider,
+        deliveryCity,
+        items
+      } = req.body;
+      const uId = req.user!.userId;
+
+      const dbProducts = await prisma.product.findMany({
+        where: {
+          id: {
+            in: items.map((i: any) =>
+              parseInt(i.id, 10)
+            )
+          }
+        }
+      });
+
+      let itemsPriceSum = 0;
+      const snapshotItems = items.map((clientItem: any) => {
+        const target = dbProducts.find(
+          p => p.id === parseInt(clientItem.id, 10)
+        );
+        if (!target) {
+          throw new Error('Товар не найден');
+        }
+        itemsPriceSum +=
+          target.price * parseInt(clientItem.quantity, 10);
+        return {
+          id: target.id,
+          name: target.name,
+          price: target.price,
+          quantity: parseInt(clientItem.quantity, 10)
+        };
+      });
+
+      const shippingPrice =
+        await calculateShippingInternal(
+          deliveryCity,
+          deliveryProvider,
+          items
+        );
+      const finalPrice = itemsPriceSum + shippingPrice;
+
+      const newOrder = await prisma.order.create({
+        data: {
+          userId: uId,
+          amount: finalPrice,
+          status: 'pending',
+          delivery: {
+            provider: deliveryProvider,
+            city: deliveryCity,
+            price: shippingPrice
+          },
+          items: snapshotItems
+        }
+      });
+      return res.status(201).json({
+        success: true,
+        orderId: newOrder.id
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        message: err.message || 'Ошибка ордера'
+      });
+    }
+  }
+);
+
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
-
-    const candidate = await prisma.user.findUnique({ where: { email } });
+    const candidate = await prisma.user.findUnique({
+      where: { email }
+    });
     if (candidate) {
-      return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
+      return res.status(400).json({
+        message: 'Существует'
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const isFirst = (await prisma.user.count()) === 0;
 
     await prisma.user.create({
-      data: { email, password: hashedPassword, name }
-    });
-
-    res.status(201).json({ message: 'Пользователь успешно зарегистрирован' });
-  } catch (error) {
-    res.status(500).json({ message: 'Ошибка при регистрации' });
-  }
-});
-app.post('/api/products/review', async (req, res) => {
-  try {
-    const { productId, userName, rating, comment } = req.body;
-    
-    const review = await prisma.review.create({
       data: {
-        productId: parseInt(productId),
-        userName,
-        rating: parseInt(rating),
-        comment
+        email,
+        password: hashedPassword,
+        name,
+        role: isFirst ? 'admin' : 'buyer'
       }
     });
-    res.status(201).json(review);
-  } catch (error) {
-    res.status(500).json({ message: 'Не удалось оставить отзыв' });
+    res.status(201).json({ message: 'Зарегистрирован' });
+  } catch {
+    res.status(500).json({ message: 'Ошибка СУБД' });
   }
 });
 
-
-// АВТОРИЗАЦИЯ: Вход (Логин)
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
     if (!user) {
-      return res.status(404).json({ message: 'Пользователь не найден' });
+      return res.status(404).json({
+        message: 'Не найден'
+      });
     }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: 'Неверный пароль' });
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
+    if (!isMatch) {
+      return res.status(400).json({
+        message: 'Неверный пароль'
+      });
     }
 
     const token = jwtStandard.sign(
@@ -102,151 +276,117 @@ app.post('/api/auth/login', async (req, res) => {
       JWT_SECRET,
       { expiresIn: '24h' }
     );
-
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
-  } catch (error) {
-    res.status(500).json({ message: 'Ошибка сервера при авторизации' });
-  }
-});
-// REST API: Добавление нового товара продавцом
-app.post('/api/products/create', async (req, res) => {
-  try {
-    const { name, description, price, stock, category } = req.body;
-
-    // Генерируем фейковый 1С ID для товаров, созданных вручную на сайте
-    const { v4: uuidv4 } = require('uuid');
-    const oneCId = `WEB-${uuidv4().substring(0, 8).toUpperCase()}`;
-
-    const newProduct = await prisma.product.create({
-      data: {
-        oneCId,
-        name,
-        description,
-        price: parseFloat(price),
-        stock: parseInt(stock),
-        category
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
       }
     });
-
-    res.status(201).json({ success: true, product: newProduct });
-  } catch (error) {
-    console.error('Ошибка создания товара:', error);
-    res.status(500).json({ message: 'Не удалось добавить товар в каталог' });
-  }
-});
-// REST API: Удаление товара
-app.delete('/api/products/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    await prisma.product.delete({ where: { id } });
-    res.json({ success: true, message: 'Товар успешно удален' });
-  } catch (error) {
-    console.error('Ошибка удаления товара:', error);
-    res.status(500).json({ message: 'Не удалось удалить товар' });
+  } catch {
+    res.status(500).json({ message: 'Ошибка сервера' });
   }
 });
 
-// REST API: Редактирование товара
-app.put('/api/products/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { name, description, price, stock, category, image } = req.body;
-
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: {
-        name,
-        description,
-        price: parseFloat(price),
-        stock: parseInt(stock),
-        category,
-        image // сохраняем URL картинки
-      }
-    });
-
-    res.json({ success: true, product: updatedProduct });
-  } catch (error) {
-    console.error('Ошибка обновления товара:', error);
-    res.status(500).json({ message: 'Не удалось обновить товар' });
-  }
-});
-
-// REST API: Получение истории заказов конкретного пользователя
-app.get('/api/orders/history/:userId', async (req, res) => {
-  try {
-    const userId = parseInt(req.params.userId);
-
-    if (isNaN(userId)) {
-      return res.status(400).json({ message: 'Некорректный ID пользователя' });
+app.put(
+  '/api/products/:id',
+  checkAuth as any,
+  async (req: AuthRequest, res) => {
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Отказ'
+      });
     }
-
-    // Ищем все заказы пользователя, сортируя от новых к старым
-    const orders = await prisma.order.findMany({
-      where: { userId: userId },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    res.json(orders);
-  } catch (error) {
-    console.error('Ошибка получения истории заказов:', error);
-    res.status(500).json({ message: 'Не удалось загрузить историю заказов' });
+    try {
+      const product = await prisma.product.update({
+        where: { id: parseInt(req.params.id, 10) },
+        data: { status: String(req.body.status) }
+      });
+      return res.json({ success: true, product });
+    } catch {
+      return res.status(500).json({
+        message: 'Ошибка модерации'
+      });
+    }
   }
-});
+);
 
+app.post(
+  '/api/products/create',
+  checkAuth as any,
+  async (req: AuthRequest, res) => {
+    try {
+      const {
+        name,
+        description,
+        price,
+        stock,
+        category,
+        sku,
+        barcode,
+        brand,
+        weightGrams,
+        widthMm,
+        heightMm,
+        lengthMm,
+        image,
+        model,
+        color,
+        material,
+        warrantyMonths
+      } = req.body;
 
+      // ИСПРАВЛЕНО: Уникальный криптостойкий генератор SKU
+      const timestamp = Date.now();
+      const finalSku =
+        sku && sku.trim() !== ''
+          ? String(sku).trim()
+          : `SKU-${timestamp}-${Math.floor(
+              Math.random() * 1000
+            )}`;
 
+      const extensions = {
+        model: model || 'N/A',
+        color: color || 'N/A',
+        material: material || 'N/A',
+        warrantyMonths:
+          parseInt(warrantyMonths, 10) || 12
+      };
 
-// ЮKASSA: Вебхук об успешной оплате (Вызывается сервером ЮKassa)
-app.post('/api/webhooks/yandex-kassa', async (req, res) => {
-  try {
-    const { event, object } = req.body;
-
-    if (event === 'payment.succeeded') {
-      const orderId = parseInt(object.metadata.order_id);
-      const yandexInvoiceId = object.id;
-
-      // Обновляем статус заказа в PostgreSQL через Призму
-      await prisma.order.update({
-        where: { id: orderId },
+      const product = await prisma.product.create({
         data: {
-          status: 'paid',
-          yandexInvoiceId: yandexInvoiceId
+          oneCId: `WEB-${timestamp}`,
+          name,
+          description: description || '',
+          price: parseFloat(price),
+          stock: parseInt(stock, 10) || 1,
+          category,
+          image: image || null,
+          status: 'PENDING_MODERATION',
+          sku: finalSku,
+          barcode: barcode || null,
+          brand: brand || null,
+          weightGrams: parseInt(weightGrams, 10) || 0,
+          widthMm: parseInt(widthMm, 10) || 0,
+          heightMm: parseInt(heightMm, 10) || 0,
+          lengthMm: parseInt(lengthMm, 10) || 0,
+          metadata: extensions,
+          seller: {
+            connect: { id: req.user!.userId }
+          }
         }
       });
-
-      console.log(`[ЮKassa] Заказ ${orderId} успешно оплачен. Транзакция: ${yandexInvoiceId}`);
+      res.status(201).json({ success: true, product });
+    } catch (err: any) {
+      res.status(500).json({
+        message: 'Ошибка лота: ' + err.message
+      });
     }
-
-    res.status(200).send('OK');
-  } catch (error) {
-    console.error('Ошибка обработки вебхука ЮKassa:', error);
-    res.status(500).send('Internal Server Error');
   }
-});
+);
 
-// 1С: Синхронизация остатков из 1С:Управление торговлей
-app.post('/api/1c/sync-stock', async (req, res) => {
-  const { oneCId, price, stock, name, category } = req.body;
-  
-  await prisma.product.upsert({
-    where: { oneCId },
-    update: { price, stock, name },
-    create: { oneCId, name, price, stock, category }
-  });
-
-  res.json({ success: true, message: "Данные из 1С синхронизированы" });
-});
-
-// СДЭК: Расчет доставки (Упрощенный mock-пример вызова API СДЭК)
-app.post('/api/shipping/cdek-calculate', async (req, res) => {
-  const { cityTo, weight } = req.body;
-  const mockPrice = weight * 150 + 300; 
-  res.json({ price: mockPrice, deliveryDays: '2-4' });
-});
-
-// ==========================================
-// 2. GRAPHQL API: Управляемый поиск по каталогу
-// ==========================================
 const typeDefs = gql`
   type Review {
     id: ID!
@@ -254,6 +394,7 @@ const typeDefs = gql`
     rating: Int!
     comment: String!
     createdAt: String!
+    metadata: String
   }
   type Product {
     id: ID!
@@ -262,65 +403,143 @@ const typeDefs = gql`
     stock: Int!
     category: String!
     description: String
-    reviews: [Review]
+    image: String
     ratingAvg: Float
-     image: String
+    reviews: [Review]
+    sku: String
+    brand: String
+    weightGrams: Int
+    widthMm: Int
+    heightMm: Int
+    lengthMm: Int
   }
- type Query {
-  searchProducts(query: String, sellerId: Int!): [Product]
-}
-
+  type Query {
+    searchProducts(
+      query: String
+      category: String
+    ): [Product]
+  }
+  type Mutation {
+    createReview(
+      productId: ID!
+      comment: String!
+      rating: Int!
+      isAnonymous: Boolean!
+      userAgent: String
+    ): Review
+  }
 `;
-
 
 const resolvers = {
   Query: {
-    searchProducts: async (_: any, { query, category, sellerId }: { query: string, category?: string, sellerId?: number }) => {
-      // 1. Получаем продукты вместе с отзывами и фильтруем по продавцу, если он передан
+    searchProducts: async (
+      _: any,
+      { query, category }: any
+    ) => {
       const products = await prisma.product.findMany({
         where: {
-          name: { contains: query, mode: 'insensitive' },
-          category: category ? category : undefined,
-          // Если sellerId передан (из профиля продавца) — фильтруем по нему,
-          // если не передан (для витрины покупателя) — выводим все товары
-          sellerId: sellerId ? sellerId : undefined
+          name: query
+            ? { contains: query, mode: 'insensitive' }
+            : undefined,
+          category: category || undefined,
+          status: 'APPROVED'
         },
-        include: { reviews: true },
-        orderBy: { id: 'desc' } // Свежие товары будут отображаться выше
+        include: { reviews: true }
       });
-
-      // 2. Считаем средний рейтинг для каждого товара "на лету"
-      return products.map(product => {
-        const reviewsCount = product.reviews.length;
-        
-        // Если отзывов нет, ставим рейтинг 0, иначе считаем среднее
-        const avg = reviewsCount > 0 
-          ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount 
-          : 0;
-
+      return products.map(p => {
+        const count = p.reviews.length;
+        const avg =
+          count > 0
+            ? p.reviews.reduce(
+                (sum, r) => sum + r.rating,
+                0
+              ) / count
+            : 0;
         return {
-          ...product,
-          ratingAvg: parseFloat(avg.toFixed(1)) // Округляем до 1 знака после запятой (например, 4.7)
+          ...p,
+          ratingAvg: parseFloat(avg.toFixed(1))
         };
+      });
+    }
+  },
+  Mutation: {
+    createReview: async (
+      _: any,
+      {
+        productId,
+        comment,
+        rating,
+        isAnonymous,
+        userAgent
+      }: any,
+      ctx: any
+    ) => {
+      if (!ctx.user) {
+        throw new Error('Отказ в авторизации');
+      }
+      const pId = parseInt(productId, 10);
+      const uId = ctx.user.userId;
+
+      const orders = await prisma.order.findMany({
+        where: { userId: uId, status: 'paid' }
+      });
+      const hasPurchased = orders.some((o: any) => {
+        const itemsList = o.items as any[];
+        return itemsList.some(
+          (item: any) => item.id === pId
+        );
+      });
+      if (!hasPurchased) {
+        throw new Error('Товар не оплачен');
+      }
+
+      return await prisma.review.create({
+        data: {
+          productId: pId,
+          userName: isAnonymous
+            ? 'Аноним'
+            : ctx.user.email,
+          rating,
+          comment: comment.trim(),
+          metadata: { userAgent }
+        }
       });
     }
   }
 };
 
-
-
-
-// Запуск совмещенного сервера
 async function startServer() {
-  const apolloServer = new ApolloServer({ typeDefs, resolvers });
-  await apolloServer.start();
-  apolloServer.applyMiddleware({ app: app as any, path: '/graphql' });
-
-  app.listen(4000, () => {
-    console.log('🚀 Бэкенд запущен:');
-    console.log('👉 REST API & Webhooks: http://localhost:4000/api');
-    console.log('👉 GraphQL Поиск: http://localhost:4000/graphql');
-  });
+  if (cluster.isPrimary) {
+    const numCPUs = os.cpus().length;
+    for (let i = 0; i < numCPUs; i++) cluster.fork();
+    cluster.on('exit', () => cluster.fork());
+  } else {
+    const apolloServer = new ApolloServer({
+      typeDefs,
+      resolvers,
+      context: ({ req }) => {
+        try {
+          const authHeader = req.headers.authorization;
+          if (authHeader?.startsWith('Bearer ')) {
+            const tokenParts = authHeader.split(' ');
+            const tokenStr = tokenParts[1]; 
+            return {
+              user: jwtStandard.verify(
+                tokenStr,
+                JWT_SECRET
+              )
+            };
+          }
+        } catch {}
+        return {};
+      }
+    });
+    await apolloServer.start();
+    apolloServer.applyMiddleware({
+      app: app as any,
+      path: '/graphql'
+    });
+    app.listen(4000);
+  }
 }
-
 startServer();
