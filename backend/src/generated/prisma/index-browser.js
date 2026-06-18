@@ -125,43 +125,51 @@ exports.Prisma.UserScalarFieldEnum = {
   email: 'email',
   password: 'password',
   yandexId: 'yandexId',
-  firstName: 'firstName',
-  lastName: 'lastName',
-  phone: 'phone',
-  isVerified: 'isVerified',
-  createdAt: 'createdAt'
+  role: 'role',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
+};
+
+exports.Prisma.SubcategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  categoryId: 'categoryId'
 };
 
 exports.Prisma.ProductScalarFieldEnum = {
   id: 'id',
-  oneCId: 'oneCId',
-  name: 'name',
+  title: 'title',
   description: 'description',
   price: 'price',
+  imageUrl: 'imageUrl',
   stock: 'stock',
-  image: 'image',
-  category: 'category',
   status: 'status',
   sellerId: 'sellerId',
-  sku: 'sku',
-  barcode: 'barcode',
-  brand: 'brand',
-  weightGrams: 'weightGrams',
-  widthMm: 'widthMm',
-  heightMm: 'heightMm',
-  lengthMm: 'lengthMm',
-  metadata: 'metadata'
+  subcategoryId: 'subcategoryId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CartItemScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  productId: 'productId',
+  quantity: 'quantity'
 };
 
 exports.Prisma.OrderScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  deliveryMethod: 'deliveryMethod',
   status: 'status',
   totalPrice: 'totalPrice',
-  cdekTariffId: 'cdekTariffId',
-  cdekDispatchId: 'cdekDispatchId',
-  yandexInvoiceId: 'yandexInvoiceId',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.OrderItemScalarFieldEnum = {
@@ -169,29 +177,18 @@ exports.Prisma.OrderItemScalarFieldEnum = {
   orderId: 'orderId',
   productId: 'productId',
   quantity: 'quantity',
-  priceAtPurchase: 'priceAtPurchase'
+  price: 'price'
 };
 
-exports.Prisma.ReviewScalarFieldEnum = {
+exports.Prisma.ExtremistBookScalarFieldEnum = {
   id: 'id',
-  productId: 'productId',
-  userId: 'userId',
-  userName: 'userName',
-  rating: 'rating',
-  comment: 'comment',
-  metadata: 'metadata',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  title: 'title',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
-};
-
-exports.Prisma.NullableJsonNullValueInput = {
-  DbNull: Prisma.DbNull,
-  JsonNull: Prisma.JsonNull
 };
 
 exports.Prisma.QueryMode = {
@@ -203,20 +200,41 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
-
-exports.Prisma.JsonNullValueFilter = {
-  DbNull: Prisma.DbNull,
-  JsonNull: Prisma.JsonNull,
-  AnyNull: Prisma.AnyNull
+exports.Role = exports.$Enums.Role = {
+  USER: 'USER',
+  SELLER: 'SELLER',
+  ADMIN: 'ADMIN'
 };
 
+exports.ModerationStatus = exports.$Enums.ModerationStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+exports.DeliveryMethod = exports.$Enums.DeliveryMethod = {
+  PICKUP: 'PICKUP',
+  CDEK: 'CDEK',
+  BOXBERRY: 'BOXBERRY'
+};
+
+exports.OrderStatus = exports.$Enums.OrderStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SHIPPED: 'SHIPPED',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED'
+};
 
 exports.Prisma.ModelName = {
   User: 'User',
+  Category: 'Category',
+  Subcategory: 'Subcategory',
   Product: 'Product',
+  CartItem: 'CartItem',
   Order: 'Order',
   OrderItem: 'OrderItem',
-  Review: 'Review'
+  ExtremistBook: 'ExtremistBook'
 };
 
 /**

@@ -1,83 +1,119 @@
 'use client';
+import React, { useState } from 'react';
 
-import Link from 'next/link';
+export default function PersonalProfile() {
+  const [deliveryMethod, setDeliveryMethod] = useState<'PICKUP' | 'CDEK' | 'BOXBERRY'>('PICKUP');
+  
+  // Тестовые данные корзины
+  const [cartItems, setCartItems] = useState([
+    { id: 'p1', title: 'Манга "Атака Титанов" Том 1', price: 750, quantity: 2 },
+    { id: 'p2', title: 'Мягкая игрушка Гусь-Обнимусь', price: 1200, quantity: 1 }
+  ]);
 
-// Обратите внимание на ОБЯЗАТЕЛЬНЫЙ "export default" и заглавную букву в имени функции Components
-export default function HomePage() {
+  // Тестовая история покупок со статусами из БД
+  const purchaseHistory = [
+    { id: 'o-101', date: '2026-06-15', total: 3400, method: 'CDEK', status: 'Доставлен' },
+    { id: 'o-102', date: '2026-06-18', total: 1500, method: 'Самовывоз', status: 'Ожидает подтверждения' }
+  ];
+
+  const financialTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
   return (
-    <div className="w-full min-h-[calc(100vh-70px)] bg-slate-50 flex flex-col items-center justify-center font-sans px-4 py-12">
-      
-      {/* ГЛАВНЫЙ БЛОК: ПРИВЕТСТВИЕ И СТАТИСТИКА */}
-      <div className="w-full max-w-4xl bg-white rounded-3xl border border-slate-100 p-8 sm:p-12 shadow-xl shadow-slate-100/50 text-center space-y-8 transition-all hover:shadow-2xl">
-        
-        <div className="space-y-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 text-3xl mb-2 shadow-inner animate-bounce">
-            👋
+    <div className="p-8 max-w-5xl mx-auto space-y-8 bg-gray-50 min-h-screen text-gray-800">
+      <h1 className="text-3xl font-bold border-b pb-4">Личный кабинет покупателя</h1>
+
+      {/* Блок 1: Корзина товаров */}
+      <section className="bg-white p-6 rounded-lg shadow-sm border">
+        <h2 className="text-2xl font-semibold mb-4 text-blue-600">🛒 Ваша корзина</h2>
+        {cartItems.length === 0 ? (
+          <p className="text-gray-500">Корзина пуста</p>
+        ) : (
+          <div className="divide-y">
+            {cartItems.map(item => (
+              <div key={item.id} className="py-3 flex justify-between items-center">
+                <div>
+                  <p className="font-medium text-lg">{item.title}</p>
+                  <p className="text-sm text-gray-500">{item.price} ₽ × {item.quantity}</p>
+                </div>
+                <p className="font-semibold">{item.price * item.quantity} ₽</p>
+              </div>
+            ))}
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-800">
-            Добро пожаловать в <span className="text-blue-600">TechMarket</span>
-          </h1>
-          <p className="text-sm sm:text-base font-semibold text-slate-400 max-w-xl mx-auto">
-            Современный маркетплейс электроники и гаджетов. Покупайте проверенную технику или зарабатывайте на продаже своих лотов.
-          </p>
+        )}
+      </section>
+
+      {/* Блок 2: Выбор доставки */}
+      <section className="bg-white p-6 rounded-lg shadow-sm border">
+        <h2 className="text-2xl font-semibold mb-4 text-blue-600">🚚 Способ доставки</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { id: 'PICKUP', label: '🚶 Самовывоз' },
+            { id: 'CDEK', label: '📦 СДЭК (CDEK)' },
+            { id: 'BOXBERRY', label: '📦 Boxberry' }
+          ].map((method) => (
+            <label
+              key={method.id}
+              className={`p-4 border rounded-xl cursor-pointer text-center font-medium block transition ${
+                deliveryMethod === method.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'hover:bg-gray-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="delivery"
+                value={method.id}
+                checked={deliveryMethod === method.id}
+                onChange={() => setDeliveryMethod(method.id as any)}
+                className="sr-only"
+              />
+              {method.label}
+            </label>
+          ))}
         </div>
+      </section>
 
-        {/* БЛОК КНОПОК ДЕЙСТВИЯ (ИНТЕРФЕЙС УПРАВЛЕНИЯ) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto pt-4">
-          
-          {/* Кнопка 1: Перейти в магазин */}
-          <Link 
-            href="/catalog" 
-            className="flex flex-col items-center justify-center p-6 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] group"
-          >
-            <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🛍️</span>
-            <span className="font-extrabold text-sm uppercase tracking-wider">Открыть каталог</span>
-            <span className="text-[11px] opacity-70 font-medium mt-1">Искать гаджеты</span>
-          </Link>
-
-          {/* Кнопка 2: Личный кабинет */}
-          <Link 
-            href="/profile" 
-            className="flex flex-col items-center justify-center p-6 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl shadow-lg shadow-slate-900/20 transition-all active:scale-[0.98] group"
-          >
-            <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">👤</span>
-            <span className="font-extrabold text-sm uppercase tracking-wider">Личный кабинет</span>
-            <span className="text-[11px] opacity-70 font-medium mt-1">Кабинет селлера и админа</span>
-          </Link>
-
+      {/* Блок 3: Финансовый итог */}
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-lg shadow-md text-white flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-medium opacity-90">Финансовый итог к оплате</h2>
+          <p className="text-sm opacity-75">Выбранный метод: {deliveryMethod}</p>
         </div>
+        <p className="text-3xl font-black">{financialTotal} ₽</p>
+      </section>
 
-        {/* БЛОК ПРЕИМУЩЕСТВ ПЛАТФОРМЫ */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-slate-100 text-left">
-          
-          <div className="flex items-start gap-3">
-            <span className="text-xl bg-slate-50 p-2 rounded-xl border border-slate-100">🛡️</span>
-            <div>
-              <h4 className="font-bold text-slate-800 text-sm">Модерация лотов</h4>
-              <p className="text-xs text-slate-400 mt-0.5">Администрация строго проверяет все товары перед публикацией.</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <span className="text-xl bg-slate-50 p-2 rounded-xl border border-slate-100">🛒</span>
-            <div>
-              <h4 className="font-bold text-slate-800 text-sm">Удобная корзина</h4>
-              <p className="text-xs text-slate-400 mt-0.5">Добавляйте товары в один клик и настраивайте службы доставки.</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <span className="text-xl bg-slate-50 p-2 rounded-xl border border-slate-100">💼</span>
-            <div>
-              <h4 className="font-bold text-slate-800 text-sm">Личный кабинет</h4>
-              <p className="text-xs text-slate-400 mt-0.5">Быстро переключайтесь между ролями покупателя, продавца и админа.</p>
-            </div>
-          </div>
-
+      {/* Блок 4: История покупок */}
+      <section className="bg-white p-6 rounded-lg shadow-sm border">
+        <h2 className="text-2xl font-semibold mb-4 text-blue-600">📋 История покупок и статусы</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
+                <th className="p-3 border-b">ID Заказа</th>
+                <th className="p-3 border-b">Дата</th>
+                <th className="p-3 border-b">Сумма</th>
+                <th className="p-3 border-b">Доставка</th>
+                <th className="p-3 border-b">Статус подтверждения</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y text-sm">
+              {purchaseHistory.map((order) => (
+                <tr key={order.id} className="hover:bg-gray-50">
+                  <td className="p-3 font-mono font-bold text-gray-700">{order.id}</td>
+                  <td className="p-3 text-gray-500">{order.date}</td>
+                  <td className="p-3 font-semibold">{order.total} ₽</td>
+                  <td className="p-3"><span className="bg-gray-200 px-2 py-1 rounded text-xs">{order.method}</span></td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      order.status === 'Доставлен' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-      </div>
-
+      </section>
     </div>
   );
 }

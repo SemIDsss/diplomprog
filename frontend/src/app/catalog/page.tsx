@@ -1,373 +1,188 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Cookies from 'js-cookie';
+import React, { useState, useEffect } from 'react';
 
-const API_GRAPHQL = 'http://localhost:4000/graphql';
-
-interface Review {
+// Описываем типы данных, пришедшие из Prisma через API
+interface Subcategory {
   id: string;
-  userName: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
+  name: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  subcategories: Subcategory[];
 }
 
 interface Product {
   id: string;
-  name: string;
+  title: string;
+  description: string;
   price: number;
+  imageUrl: string;
   stock: number;
-  category: string;
-  description?: string;
-  image?: string;
-  ratingAvg?: number;
-  sku?: string;
-  brand?: string;
-  weightGrams?: number;
-  widthMm?: number;
-  heightMm?: number;
-  lengthMm?: number;
-  reviews?: Review[];
-}
-
-function CatalogContent() {
-  const searchParams = useSearchParams();
-  const initialCategory = searchParams.get('category') || '';
-
-  // Исправлено: Флаг предотвращения багов гидратации
-  const [isMounted, setIsMounted] = useState(false);
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(
-    initialCategory
-  );
-  const [selectedProduct, setSelectedProduct] = useState<
-    Product | null
-  >(null);
-
-  const [reviewComment, setReviewComment] = useState('');
-  const [reviewRating, setReviewRating] = useState(5);
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [reviewError, setReviewError] = useState('');
-  const [reviewSuccess, setReviewSuccess] = useState(false);
-
-  const loadCatalog = async (queryStr = '', catStr = '') => {
-    setLoading(true);
-    try {
-      const graphqlQuery = {
-        query: `
-          query GetProducts($q: String, $c: String) {
-            searchProducts(query: $q, category: $c) {
-              id name price stock category description image ratingAvg
-              sku brand weightGrams widthMm heightMm lengthMm
-              reviews { id userName rating comment createdAt }
-            }
-          }
-        `,
-        variables: { q: queryStr || null, c: catStr || null }
-      };
-
-      const res = await fetch(API_GRAPHQL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(graphqlQuery)
-      });
-      const json = await res.json();
-      if (json.data?.searchProducts) {
-        setProducts(json.data.searchProducts);
-      }
-    } catch (err) {
-      console.error('❌ [GraphQL Catalog Error]:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    setIsMounted(true); // Страница успешно монтирована на клиенте
-    loadCatalog(searchQuery, selectedCategory);
-  }, [selectedCategory]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    loadCatalog(searchQuery, selectedCategory);
-  };
-  const handleAddToCart = (product: Product) => {
-    try {
-      const existingCart = localStorage.getItem('cart');
-      const cartItems = existingCart ? JSON.parse(existingCart) : [];
-      
-      const targetIndex = cartItems.findIndex(
-        (i: any) => i.id === product.id
-      );
-      // Безопасное клонирование через Object.assign вместо util._extend
-      if (targetIndex > -1) {
-        cartItems[targetIndex].quantity += 1;
-      } else {
-        const newItem = Object.assign({}, product, { quantity: 1 });
-        cartItems.push(newItem);
-      }
-      
-      localStorage.setItem('cart', JSON.stringify(cartItems));
-      alert(`🛒 ${product.name} успешно добавлен в корзину!`);
-    } catch {
-      alert('Ошибка при сохранении в корзину');
-    }
-  };
-
-  const handleReviewSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setReviewError('');
-    setReviewSuccess(false);
-
-    if (!reviewComment.trim()) {
-      setReviewError('Комментарий пуст');
-      return;
-    }
-
-    const token =
-      Cookies.get('token') || localStorage.getItem('token');
-    if (!token) {
-      setReviewError('Ошибка: Авторизуйтесь для публикации отзыва.');
-      return;
-    }
-
-    try {
-      const graphqlMutation = {
-        query: `
-          mutation AddReview($pId: ID!, $cmt: String!, $rt: Int!, $anon: Boolean!, $ua: String) {
-            createReview(productId: $pId, comment: $cmt, rating: $rt, isAnonymous: $anon, userAgent: $ua) {
-              id userName rating comment createdAt
-            }
-          }
-        `,
-        variables: {
-          pId: selectedProduct?.id,
-          cmt: reviewComment.trim(),
-          rt: reviewRating,
-          anon: isAnonymous,
-          ua: typeof navigator !== 'undefined' ? navigator.userAgent : 'Web'
-        }
-      };
-
-      const res = await fetch(API_GRAPHQL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(graphqlMutation)
-      });
-
-      const json = await res.json();
-      if (json.errors && json.errors.length > 0) {
-        throw new Error(json.errors.message);
-      }
-
-      setReviewSuccess(true);
-      setReviewComment('');
-      loadCatalog(searchQuery, selectedCategory);
-      setSelectedProduct(null);
-    } catch (err: any) {
-      setReviewError(err.message || 'Ошибка отправки отзыва');
-    }
-  };
-
-  // Защита: Если Next.js рендерит серверную разметку, ждем монтирования
-  if (!isMounted) {
-    return <div className="text-center py-12 font-bold text-slate-500">Загрузка витрины маркетплейса...</div>;
-  }
-
-  return (
-    <div className="w-full px-4 py-4 max-w-7xl mx-auto font-sans pb-24 md:pb-6">
-      <div className="w-full bg-white border border-slate-200 p-4 rounded-2xl mb-6">
-        <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
-          <input 
-            type="text"
-            placeholder="Поиск гаджетов..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 px-4 py-2 border rounded-xl text-sm min-h-[44px]"
-          />
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border rounded-xl text-sm bg-white min-h-[44px]"
-          >
-            <option value="">Все категории</option>
-            <option value="Электроника">Электроника</option>
-            <option value="Гаджеты">Гаджеты</option>
-            <option value="Аудио">Аудио</option>
-            <option value="Компьютеры">Компьютеры</option>
-          </select>
-          <button type="submit" className="bg-blue-600 text-white font-bold px-6 rounded-xl text-sm min-h-[44px]">
-            Искать
-          </button>
-        </form>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-12 text-slate-500 font-bold text-sm">
-          Считывание GraphQL спецификаций...
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-          {products.map((product) => (
-            <article 
-              key={product.id}
-              className="bg-white border border-slate-200 rounded-2xl p-3 flex flex-col justify-between hover:shadow-md transition-all"
-            >
-              <div onClick={() => setSelectedProduct(product)} className="cursor-pointer">
-                <div className="w-full aspect-square bg-slate-100 rounded-xl mb-3 flex items-center justify-center text-slate-400 text-xs font-bold" />
-                <span className="text-[10px] uppercase tracking-wider font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                  {product.category}
-                </span>
-                <h3 className="font-bold text-slate-900 text-sm md:text-base mt-1.5 line-clamp-2">
-                  {product.name}
-                </h3>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-amber-500 text-xs">⭐</span>
-                  <span className="text-xs font-bold text-slate-600">{product.ratingAvg || '0'}</span>
-                </div>
-              </div>
-              <div className="mt-4 pt-2 border-t flex items-center justify-between">
-                <span className="font-black text-slate-950 text-sm md:text-base">
-                  {product.price.toLocaleString('ru-RU')} ₽
-                </span>
-                <button 
-                  onClick={() => setSelectedProduct(product)}
-                  className="text-blue-600 text-xs font-black min-h-[44px] flex items-center"
-                >
-                  Подробнее
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-      {/* КОРРЕКТНОЕ ОТОБРАЖЕНИЕ КАРТОЧКИ: Проверка наличия объекта selectedProduct */}
-      {selectedProduct && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl relative space-y-4">
-            
-            <button 
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 bg-slate-100 text-slate-700 rounded-full font-black text-sm flex items-center justify-center min-w-[44px] min-h-[44px]"
-            >
-              ✕
-            </button>
-
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
-                {selectedProduct.category}
-              </span>
-              <h2 className="text-xl md:text-2xl font-black text-slate-900 mt-2">
-                {selectedProduct.name}
-              </h2>
-              {selectedProduct.brand && (
-                <p className="text-xs font-bold text-slate-400 mt-1">
-                  Бренд: {selectedProduct.brand} • Артикул: {selectedProduct.sku}
-                </p>
-              )}
-            </div>
-            
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <h4 className="text-xs font-black text-slate-800 uppercase mb-2">Описание гаджета</h4>
-              <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-                {selectedProduct.description || 'Технические характеристики заполняются продавцом.'}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 bg-blue-50/40 p-3 rounded-xl border border-blue-50 text-xs">
-              <div>📦 <span className="font-bold text-slate-600">Вес брутто:</span> {selectedProduct.weightGrams || 0} г</div>
-              <div>📐 <span className="font-bold text-slate-600">Габариты:</span> {selectedProduct.lengthMm || 0}х{selectedProduct.widthMm || 0}х{selectedProduct.heightMm || 0} мм</div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-slate-900 text-white rounded-2xl">
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Финальная стоимость:</span>
-                <span className="text-lg font-black text-blue-400">{selectedProduct.price.toLocaleString('ru-RU')} ₽</span>
-              </div>
-              <button 
-                onClick={() => {
-                  handleAddToCart(selectedProduct);
-                  setSelectedProduct(null);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-6 rounded-xl min-h-[44px] transition-transform active:scale-95"
-              >
-                🛒 Добавить в корзину
-              </button>
-            </div>
-
-            <div className="border-t border-slate-200 pt-4 space-y-3">
-              <h4 className="font-black text-slate-900 text-sm">
-                Отзывы реальных покупателей ({selectedProduct.reviews?.length || 0})
-              </h4>
-
-              <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2">
-                {selectedProduct.reviews && selectedProduct.reviews.length > 0 ? (
-                  selectedProduct.reviews.map((rev) => (
-                    <div key={rev.id} className="bg-slate-50/60 p-3 rounded-xl border">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs font-black text-slate-800">{rev.userName}</span>
-                        <span className="text-xs font-bold text-amber-500">⭐ {rev.rating}</span>
-                      </div>
-                      <p className="text-xs text-slate-600">{rev.comment}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-slate-400 italic">Отзывов пока нет.</p>
-                )}
-              </div>
-
-              <form onSubmit={handleReviewSubmit} className="bg-slate-50 p-4 rounded-2xl space-y-3 border">
-                <div className="flex items-center gap-3">
-                  <select 
-                    value={reviewRating}
-                    onChange={(e) => setReviewRating(parseInt(e.target.value, 10))}
-                    className="bg-white border rounded-lg text-xs font-bold p-1 min-h-[44px]"
-                  >
-                    <option value="5">5 ⭐</option>
-                    <option value="4">4 ⭐</option>
-                    <option value="3">3 ⭐</option>
-                    <option value="2">2 ⭐</option>
-                    <option value="1">1 ⭐</option>
-                  </select>
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer min-h-[44px]">
-                    <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} className="rounded text-blue-600" />
-                    <span>Анонимно</span>
-                  </label>
-                </div>
-                {reviewError && <div className="text-xs font-bold text-red-600">⚠ {reviewError}</div>}
-                {reviewSuccess && <div className="text-xs font-bold text-green- green-600">✔ Опубликован!</div>}
-                <textarea
-                  placeholder="Напишите честный отзыв..."
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  className="w-full p-3 border rounded-xl text-xs bg-white min-h-[60px]"
-                />
-                <button type="submit" className="w-full bg-slate-900 text-white font-bold text-xs py-2 rounded-xl min-h-[44px]">
-                  Опубликовать отзыв
-                </button>
-              </form>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
 }
 
 export default function CatalogPage() {
+  // --- СОСТОЯНИЕ Приложения ---
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // --- ШАГ 1: Загрузка живого дерева категорий (Книги, Мебель, Игрушки) ---
+  useEffect(() => {
+    fetch('http://localhost:5000/api/categories')
+      .then((res) => {
+        if (!res.ok) throw new Error('Ошибка сети');
+        return res.json();
+      })
+      .then((data) => setCategories(data))
+      .catch((err) => console.error('Не удалось загрузить категории бэкенда:', err));
+  }, []);
+
+  // --- ШАГ 2: Загрузка товаров по выбранному уровню (subcategoryId) ---
+  useEffect(() => {
+    if (!selectedSubcategory) return;
+
+    setLoading(true);
+    fetch(`http://localhost:5000/api/products?subcategoryId=${selectedSubcategory}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setProducts(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Ошибка загрузки товаров:', err);
+        setLoading(false);
+      });
+  }, [selectedSubcategory]);
+
   return (
-    <Suspense fallback={<div className="text-center py-12 font-bold text-sm">Инициализация...</div>}>
-      <CatalogContent />
-    </Suspense>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* 
+        ЗДЕСЬ НАХОДИТСЯ ВАШ ОРИГИНАЛЬНЫЙ HEADER / ШАПКА САЙТА. 
+        Она сохраняет свои стили.
+      */}
+      <header className="bg-white border-b p-4 shadow-sm">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <span className="text-2xl font-black text-blue-600 tracking-wider uppercase">Diplom Market</span>
+          <div className="space-x-4 text-sm font-medium text-gray-600">
+            <a href="/catalog" className="text-blue-600 underline">Каталог</a>
+            <a href="/profile" className="hover:text-gray-900">Личный кабинет</a>
+          </div>
+        </div>
+      </header>
+
+      {/* Основной контейнер каталога */}
+      <div className="flex-1 max-w-7xl w-full mx-auto flex flex-col md:flex-row gap-6 p-4 md:p-8">
+        
+        {/* --- ДИНАМИЧЕСКИЙ САЙДБАР (Вместо старой Электроники) --- */}
+        <aside className="w-full md:w-64 bg-white border rounded-xl p-4 shadow-sm shrink-0 self-start">
+          <h2 className="text-lg font-bold border-b pb-3 mb-4 text-gray-800">Категории товаров</h2>
+          <ul className="space-y-2">
+            {categories.map((cat) => (
+              <li key={cat.id} className="block">
+                <button
+                  onClick={() => setOpenCategory(openCategory === cat.id ? null : cat.id)}
+                  className="w-full text-left font-semibold p-2 hover:bg-gray-50 rounded-lg transition flex justify-between items-center text-gray-700"
+                >
+                  <span>{cat.name}</span>
+                  <span className="text-xs text-gray-400">
+                    {openCategory === cat.id ? '▼' : '►'}
+                  </span>
+                </button>
+
+                {/* Вложенные уровни (Манга, Раритет, Кухня, Для собак...) */}
+                {openCategory === cat.id && (
+                  <ul className="pl-4 mt-1 space-y-1 bg-gray-50/50 rounded-lg p-1">
+                    {cat.subcategories.map((sub) => (
+                      <li key={sub.id}>
+                        <button
+                          onClick={() => setSelectedSubcategory(sub.id)}
+                          className={`w-full text-left text-sm p-2 rounded-md transition ${
+                            selectedSubcategory === sub.id
+                              ? 'bg-blue-50 text-blue-600 font-bold'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                          }`}
+                        >
+                          • {sub.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        {/* --- СЕТКА ТОВАРОВ И ВАШИ ОРИГИНАЛЬНЫЕ КАРТОЧКИ --- */}
+        <main className="flex-1">
+          <div className="flex justify-between items-center mb-6 border-b pb-4">
+            <h1 className="text-2xl font-black text-gray-900">Результаты поиска</h1>
+            <span className="text-sm text-gray-500 font-medium">Найдено товаров: {products.length}</span>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+              <p className="text-gray-500 mt-2 font-medium">Загрузка товаров из БД...</p>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="bg-white border rounded-xl p-12 text-center text-gray-500 shadow-sm">
+              <p className="text-lg font-medium">Товары не найдены</p>
+              <p className="text-sm text-gray-400 mt-1">Выберите подкатегорию в левом меню сайдбара или добавьте тестовые позиции через кабинет продавца.</p>
+            </div>
+          ) : (
+            /* Ваша оригинальная адаптивная сетка карточек */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((product) => (
+                <div 
+                  key={product.id} 
+                  className="bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col"
+                >
+                  {/* Картинка товара */}
+                  <div className="h-48 w-full bg-gray-100 relative">
+                    <img 
+                      src={product.imageUrl || "https://unsplash.com"} 
+                      alt={product.title} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Тело карточки и контент */}
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{product.title}</h3>
+                      <p className="text-gray-500 text-xs mt-1 font-medium">На складе: {product.stock} шт.</p>
+                      <p className="text-gray-600 text-sm mt-2 line-clamp-2 leading-relaxed">{product.description}</p>
+                    </div>
+
+                    {/* Финансовый блок карточки и кнопка добавления в корзину */}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-xl font-black text-blue-600">{product.price} ₽</span>
+                      <button 
+                        onClick={() => alert(`Товар "${product.title}" добавлен в корзину!`)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition"
+                      >
+                        В корзину
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </main>
+
+      </div>
+
+      {/* ФУТЕР САЙТА */}
+      <footer className="bg-white border-t p-4 mt-auto text-center text-xs text-gray-400 font-medium shadow-inner">
+        &copy; 2026 Diplom Market. Все права защищены. Дипломный проект СУБД Prisma 7 & Next.js.
+      </footer>
+    </div>
   );
 }

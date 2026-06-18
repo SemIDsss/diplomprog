@@ -1,245 +1,120 @@
 'use client';
+import React, { useState } from 'react';
 
-import { useState } from 'react';
-import Cookies from 'js-cookie';
-
-export function SellerWorkspace({ user }: { user: any }) {
-  // Основные параметры карточки
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+export default function SellerDashboard() {
+  const [isYandexAuth, setIsYandexAuth] = useState(false);
+  
+  // Локальное состояние для добавления новой карточки
+  const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
-  const [stock, setStock] = useState('1');
-  const [category, setCategory] = useState('Электроника');
-  const [brand, setBrand] = useState('');
+  const [stock, setStock] = useState('');
   const [image, setImage] = useState('');
 
-  // Логистические параметры упаковки
-  const [weightGrams, setWeightGrams] = useState('');
-  const [widthMm, setWidthMm] = useState('');
-  const [heightMm, setHeightMm] = useState('');
-  const [lengthMm, setLengthMm] = useState('');
+  // Список уже добавленных товаров продавца
+  const [myProducts, setMyProducts] = useState([
+    { id: '1', title: 'Раритетное издание "Преступление и Наказание" 1902г', price: 25000, stock: 1, status: 'APPROVED' },
+    { id: '2', title: 'Детская кухня из дерева "Уют"', price: 8900, stock: 5, status: 'PENDING' },
+    { id: '3', title: 'Экстремальное пособие анархии (тест)', price: 400, stock: 10, status: 'REJECTED' }
+  ]);
 
-  // Идентификаторы и складские атрибуты
-  const [sku, setSku] = useState('');
-  const [barcode, setBarcode] = useState('');
-
-  // Расширенные коммерческие характеристики
-  const [model, setModel] = useState('');
-  const [color, setColor] = useState('');
-  const [material, setMaterial] = useState('');
-  const [warrantyMonths, setWarrantyMonths] = useState('');
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  // Атомарный обработчик отправки расширенной карточки
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess(false);
-
-    // Гарантированное извлечение токена из всех хранилищ
-    const token =
-      Cookies.get('token') || localStorage.getItem('token');
-    if (!token) {
-      setError('Токен сессии не найден. Перезайдите на /auth');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        'http://localhost:4000/api/products/create',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            name,
-            description,
-            price: parseFloat(price) || 0,
-            stock: parseInt(stock, 10) || 1,
-            category,
-            image: image.trim() || null,
-            sku: sku.trim() || null,
-            barcode: barcode.trim() || null,
-            brand: brand.trim() || null,
-            weightGrams: parseInt(weightGrams, 10) || 100,
-            widthMm: parseInt(widthMm, 10) || 100,
-            heightMm: parseInt(heightMm, 10) || 100,
-            lengthMm: parseInt(lengthMm, 10) || 100,
-            // Передача расширенных атрибутов в JSONB-контур СУБД
-            model: model.trim() || null,
-            color: color.trim() || null,
-            material: material.trim() || null,
-            warrantyMonths: parseInt(warrantyMonths, 10) || 12
-          })
-        }
-      );
-
-      const contentType = response.headers.get('content-type');
-      if (
-        !contentType ||
-        !contentType.includes('application/json')
-      ) {
-        throw new Error('Сессия невалидна. Перезайдите в аккаунт.');
-      }
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Ошибка авторизации');
-      }
-
-      setSuccess(true);
-      setName('');
-      setDescription('');
-      setPrice('');
-      setImage('');
-      setSku('');
-      setBarcode('');
-      setBrand('');
-      setModel('');
-      setColor('');
-      setMaterial('');
-      setWarrantyMonths('');
-      setWeightGrams('');
-      setLengthMm('');
-      setWidthMm('');
-      setHeightMm('');
-      window.dispatchEvent(new Event('storage_update'));
-    } catch (err: any) {
-      setError(err.message || 'Сбой верификации токена');
-    } finally {
-      setLoading(false);
-    }
+  const handleYandexLogin = () => {
+    // Симуляция OAuth Яндекс-ID. 
+    setIsYandexAuth(true);
   };
+
+  const handleCreateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !price || !stock) return;
+
+    const newProd = {
+      id: String(Date.now()),
+      title,
+      price: Number(price),
+      stock: Number(stock),
+      status: 'PENDING' // Все новые карточки отправляются на модерацию администрации
+    };
+
+    setMyProducts([newProd, ...myProducts]);
+    setTitle(''); setPrice(''); setStock(''); setImage('');
+    alert('Товар отправлен на модерацию администрации!');
+  };
+
   return (
-    <div className="w-full max-w-xl space-y-4 pb-20">
-      
-      {/* Спецификация Главе 2 ВКР */}
-      <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl text-xs text-blue-800 space-y-1.5 leading-relaxed">
-        <h4 className="font-black uppercase tracking-wider">
-          Контур расширенных характеристик карточки:
-        </h4>
-        <p>
-          • <span className="font-bold">Медиа-сервер:</span> Поле ссылки на изображение инжектирует URL в CDN-хранилище маркетплейса.
-        </p>
-        <p>
-          • <span className="font-bold">Коммерческие атрибуты:</span> Поля цвета, модели и гарантии сопоставляются с фильтрами поискового GraphQL-ядра каталога.
-        </p>
-      </div>
+    <div className="p-8 max-w-4xl mx-auto space-y-8 text-gray-800 min-h-screen">
+      <h1 className="text-3xl font-bold border-b pb-4">Кабинет продавца</h1>
 
-      <form
-        onSubmit={handleCreate}
-        className="w-full bg-white p-5 rounded-2xl border border-slate-200 space-y-4 shadow-sm"
-      >
-        <div className="flex justify-between items-center border-b pb-2">
-          <h3 className="font-black text-slate-900 text-base">
-            Новая карточка товара
-          </h3>
-          <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase">
-            Конструктор контента
-          </span>
+      {/* Блок 1: Авторизация Яндекс-ID */}
+      {!isYandexAuth ? (
+        <div className="bg-white border rounded-xl p-8 text-center shadow-sm space-y-4">
+          <p className="text-lg text-gray-600">Для управления продажами и добавления карточек товаров необходимо войти через единую систему:</p>
+          <button
+            onClick={handleYandexLogin}
+            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-md"
+          >
+            <span className="bg-white text-red-600 font-black px-1.5 py-0.5 rounded text-sm">Я</span>
+            Войти с Яндекс ID (Тест)
+          </button>
         </div>
-
-        {error && (
-          <div className="text-xs font-bold text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-100">
-            ⚠ {error}
-          </div>
-        )}
-        {success && (
-          <div className="text-xs font-bold text-green-600 bg-green-50 p-2.5 rounded-xl border border-green-100">
-            ✔ Карточка создана и успешно отправлена в очередь модерации!
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-4">
-          
-          {/* СЕКЦИЯ 1: Базовая информация */}
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-500 uppercase block">1. Основные параметры</label>
-            <input type="text" placeholder="Название товара (например, Смартфон Phone 15 Pro)" value={name} onChange={e => setName(e.target.value)} required className="w-full p-2.5 border rounded-xl text-sm min-h-[44px]" />
-            <textarea placeholder="Аннотация и подробное описание преимуществ гаджета" value={description} onChange={e => setDescription(e.target.value)} className="w-full p-2.5 border rounded-xl text-sm min-h-[60px]" />
+      ) : (
+        <>
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex justify-between items-center">
+            <span>✓ Вы успешно авторизованы через <strong>Yandex-ID Passport</strong></span>
+            <button onClick={() => setIsYandexAuth(false)} className="text-sm underline text-green-700">Выйти</button>
           </div>
 
-          {/* СЕКЦИЯ 2: Медиа и изображения */}
-          <div className="space-y-2 border-t pt-3">
-            <label className="text-[11px] font-black text-slate-500 uppercase block">2. Галерея и Изображения</label>
-            <input type="url" placeholder="Ссылка на главное изображение (URL из CDN/хранилища)" value={image} onChange={e => setImage(e.target.value)} className="w-full p-2.5 border rounded-xl text-sm min-h-[44px]" />
-          </div>
+          {/* Блок 2: Форма добавления товара */}
+          <section className="bg-white p-6 border rounded-xl shadow-sm">
+            <h2 className="text-xl font-bold mb-4 text-gray-700">➕ Создание новой карточки товара</h2>
+            <form onSubmit={handleCreateProduct} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Название товара / Книги</label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full border p-2 rounded" placeholder="Например: Манга Наруто Том 3" required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Цена (₽)</label>
+                  <input type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full border p-2 rounded" placeholder="1500" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Количество в наличии на складе</label>
+                  <input type="number" value={stock} onChange={e => setStock(e.target.value)} className="w-full border p-2 rounded" placeholder="12" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Ссылка на изображение</label>
+                <input type="text" value={image} onChange={e => setImage(e.target.value)} className="w-full border p-2 rounded" placeholder="https://..." />
+              </div>
+              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold hover:bg-blue-700 transition">
+                Отправить на модерацию
+              </button>
+            </form>
+          </section>
 
-          {/* СЕКЦИЯ 3: Цены и Склад */}
-          <div className="space-y-2 border-t pt-3">
-            <label className="text-[11px] font-black text-slate-500 uppercase block">3. Коммерческие условия</label>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="number" placeholder="Цена на витрине (₽)" value={price} onChange={e => setPrice(e.target.value)} required className="p-2.5 border rounded-xl text-sm min-h-[44px]" />
-              <input type="number" placeholder="Доступно на складе (шт)" value={stock} onChange={e => setStock(e.target.value)} required className="p-2.5 border rounded-xl text-sm min-h-[44px]" />
+          {/* Блок 3: Таблица наличия и статусов отправленных товаров */}
+          <section className="bg-white p-6 border rounded-xl shadow-sm">
+            <h2 className="text-xl font-bold mb-4 text-gray-700">📊 Наличие ваших товаров и статус модерации</h2>
+            <div className="divide-y">
+              {myProducts.map(prod => (
+                <div key={prod.id} className="py-4 flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold text-base">{prod.title}</h3>
+                    <p className="text-sm text-gray-500">Цена: {prod.price} ₽ | <span className="font-medium text-gray-700">Наличие на складе: {prod.stock} шт.</span></p>
+                  </div>
+                  <div>
+                    <span className={`px-3 py-1 rounded text-xs font-bold ${
+                      prod.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                      prod.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {prod.status === 'APPROVED' ? 'Одобрено в каталоге' :
+                       prod.status === 'PENDING' ? 'На модерации администрации' : 'Отклонено (Экстремизм/Брак)'}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-
-          {/* СЕКЦИЯ 4: Расширенные товарные характеристики */}
-          <div className="space-y-2 border-t pt-3">
-            <label className="text-[11px] font-black text-slate-500 uppercase block">4. Технические характеристики товара</label>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="text" placeholder="Бренд / Производитель" value={brand} onChange={e => setBrand(e.target.value)} required className="p-2.5 border rounded-xl text-sm min-h-[44px]" />
-              <input type="text" placeholder="Заводская модель изделия" value={model} onChange={e => setModel(e.target.value)} className="p-2.5 border rounded-xl text-sm min-h-[44px]" />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="text" placeholder="Цвет корпуса / исполнения" value={color} onChange={e => setColor(e.target.value)} className="p-2.5 border rounded-xl text-sm min-h-[44px]" />
-              <input type="text" placeholder="Основной материал" value={material} onChange={e => setMaterial(e.target.value)} className="p-2.5 border rounded-xl text-sm min-h-[44px]" />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="number" placeholder="Гарантия (в месяцах)" value={warrantyMonths} onChange={e => setWarrantyMonths(e.target.value)} className="p-2.5 border rounded-xl text-sm min-h-[44px]" />
-              <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-2.5 border rounded-xl text-sm bg-white min-h-[44px]">
-                <option value="Электроника">Электроника</option>
-                <option value="Гаджеты">Гаджеты</option>
-                <option value="Аудио">Аудио</option>
-                <option value="Компьютеры">Компьютеры</option>
-              </select>
-            </div>
-          </div>
-
-          {/* СЕКЦИЯ 5: Идентификаторы */}
-          <div className="grid grid-cols-2 gap-2 border-t pt-3">
-            <div>
-              <label className="text-[11px] font-black text-slate-500 uppercase block mb-1">Артикул (SKU)</label>
-              <input type="text" placeholder="Внутренний код" value={sku} onChange={e => setSku(e.target.value)} className="w-full p-2 border rounded-xl text-xs min-h-[44px]" />
-            </div>
-            <div>
-              <label className="text-[11px] font-black text-slate-500 uppercase block mb-1">Штрихкод (EAN-13)</label>
-              <input type="text" placeholder="Код номенклатуры" value={barcode} onChange={e => setBarcode(e.target.value)} className="w-full p-2 border rounded-xl text-xs min-h-[44px]" />
-            </div>
-          </div>
-
-          {/* СЕКЦИЯ 6: Логистика */}
-          <div className="border-t pt-3 space-y-2">
-            <span className="text-[11px] font-black text-slate-500 uppercase block">
-              5. Физические параметры упаковки груза (Для СДЭК)
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="number" placeholder="Вес брутто (граммы)" value={weightGrams} onChange={e => setWeightGrams(e.target.value)} className="p-2 border rounded-xl text-xs min-h-[44px]" />
-              <input type="number" placeholder="Длина коробки (мм)" value={lengthMm} onChange={e => setLengthMm(e.target.value)} className="p-2 border rounded-xl text-xs min-h-[44px]" />
-              <input type="number" placeholder="Ширина коробки (мм)" value={widthMm} onChange={e => setWidthMm(e.target.value)} className="p-2 border rounded-xl text-xs min-h-[44px]" />
-              <input type="number" placeholder="Высота коробки (мм)" value={heightMm} onChange={e => setHeightMm(e.target.value)} className="p-2 border rounded-xl text-xs min-h-[44px]" />
-            </div>
-          </div>
-
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-xl transition-all min-h-[44px] active:scale-[0.99] shadow-md shadow-blue-100"
-        >
-          {loading ? 'Валидация токена сессии...' : '📦 Опубликовать лот и характеристики'}
-        </button>
-      </form>
+          </section>
+        </>
+      )}
     </div>
   );
 }
-
-

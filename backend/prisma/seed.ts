@@ -1,73 +1,88 @@
-// backend/prisma/seed.ts
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Принудительно вычисляем путь к файлу .env, который лежит на один уровень выше папки prisma
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
-import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../src/generated/prisma/index.js';
+import 'dotenv/config';
 
-// Извлекаем строку подключения
+// 1. Получаем строку подключения из окружения
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-  console.error('❌ Критическая ошибка: Переменная окружения DATABASE_URL не найдена в файле .env');
-  console.error('Искали по пути:', path.resolve(__dirname, '../.env'));
+  console.error('Ошибка: Переменная окружения DATABASE_URL не задана в файле .env');
   process.exit(1);
 }
 
-// Инициализируем драйвер pg.Pool и адаптер для Prisma 7
+// 2. Инициализируем стандартный пул соединений PostgreSQL
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
-// Создаем клиент с обязательным адаптером
-const seedPrisma = new PrismaClient({ adapter });
+// 3. Передаем адаптер драйвера в конструктор Prisma v7
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🔄 Очистка старых данных каталога...');
-  await seedPrisma.product.deleteMany({});
+  console.log('Очистка старых данных перед заполнением...');
+  await prisma.cartItem.deleteMany({});
+  await prisma.orderItem.deleteMany({});
+  await prisma.order.deleteMany({});
+  await prisma.product.deleteMany({});
+  await prisma.subcategory.deleteMany({});
+  await prisma.category.deleteMany({});
+  await prisma.extremistBook.deleteMany({});
 
-  console.log('📦 Наполнение базы данных тестовой номенклатурой...');
-  await seedPrisma.product.createMany({
-    data: [
-      {
-        oneCId: '1C-PROD-001',
-        name: 'Смартфон NextPhone 15 Pro',
-        description: 'Флагманский смартфон на базе Node.js',
-        price: 1500,
-        stock: 15,
-        category: 'Смартфоны'
+  // 1. Создание категорий и подкатегорий из ТЗ
+  const catalogStructure = [
+    {
+      category: 'Книги',
+      subs: ['Манга', 'Раритет', 'Классика'],
+    },
+    {
+      category: 'Мебель',
+      subs: ['Кухня', 'Гостинная', 'Дача', 'Спальня', 'Раритет', 'Детская'],
+    },
+    {
+      category: 'Игрушки',
+      subs: ['Детские', 'Мягкие', 'Для собак', 'Для кошек'],
+    },
+  ];
+
+  for (const item of catalogStructure) {
+    await prisma.category.create({
+      data: {
+        name: item.category,
+        subcategories: {
+          create: item.subs.map((sub) => ({ name: sub })),
+        },
       },
-      {
-        oneCId: '1C-PROD-002',
-        name: 'Беспроводные наушники DockerPods',
-        description: 'Наушники с идеальной изоляцией контейнеров',
-        price: 1500,
-        stock: 42,
-        category: 'Аксессуары'
-      },
-      {
-        oneCId: '1C-PROD-003',
-        name: 'Ноутбук PrismaBook Pro 16',
-        description: 'Мощный ноутбук для работы с базами данных',
-        price: 1000,
-        stock: 1, 
-        category: 'Ноутбуки'
-      }
-    ]
+    });
+  }
+
+  // 2. Наполнение базы запрещенных книг для фильтра администратора
+  const forbiddenBooks = ['Запрещенная книга 1', 'Манифест Экстремизма', 'Терроризм и хаос'];
+  for (const title of forbiddenBooks) {
+    await prisma.extremistBook.create({
+      data: { title },
+    });
+  }
+
+  // 3. Создание одного главного администратора разработчика
+  await prisma.user.upsert({
+    where: { email: 'admin@diplom.ru' },
+    update: {},
+    create: {
+      email: 'admin@diplom.ru',
+      role: 'ADMIN',
+    },
   });
 
-  console.log('🌱 База данных успешно наполнена тестовыми товарами!');
+  console.log('Данные каталога, экстремистских книг и суперадмина успешно добавлены!');
 }
 
 main()
-  .catch((e: unknown) => {
-    console.error('❌ Ошибка выполнения сида:', e);
+  .catch((e) => {
+    console.error(e);
     process.exit(1);
-  })  
+  })
   .finally(async () => {
-    await seedPrisma.$disconnect();
+    // Корректно закрываем соединения
+    await prisma.$disconnect();
     await pool.end();
   });
