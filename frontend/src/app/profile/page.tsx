@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SellerDashboard from '../seller/page';
 import AdminDashboard from '../admin/page';
 import { Product } from '../seller/page';
@@ -10,17 +10,20 @@ interface CartItem {
 }
 
 export default function ProfilePage() {
+  // Активируем роль по умолчанию
   const [role, setRole] = useState<
     'USER' | 'SELLER' | 'ADMIN'
-  >(() => {
+  >('USER');
+
+  // ИСПРАВЛЕНО: Чтение сессии строго после монтирования в DOM
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(
         'diplom_role'
       );
-      return (saved as any) || 'USER';
+      if (saved) setRole(saved as any);
     }
-    return 'USER';
-  });
+  }, []);
 
   const [delivery, setDelivery] = useState<
     'PICKUP' | 'CDEK' | 'BOXBERRY'
@@ -60,6 +63,7 @@ export default function ProfilePage() {
       qty: 1
     }
   ]);
+
 
   const changeQty = (id: string, d: number) => {
     setCart(prev => prev.map(item => {
