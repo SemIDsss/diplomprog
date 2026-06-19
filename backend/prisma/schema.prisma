@@ -1,10 +1,9 @@
-datasource db {
-  provider = "postgresql"
-}
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
 }
 
 enum Role {
@@ -49,86 +48,56 @@ model Category {
   subcategories Subcategory[]
 }
 
+
 model Subcategory {
   id         String    @id @default(uuid())
   name       String
   categoryId String
-  category   Category  @relation(
-    fields: [categoryId],
-    references: [id],
-    onDelete: Cascade
-  )
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   products   Product[]
-
-  @@unique([name, categoryId])
 }
 
 model Product {
-  id            String           @id @default(uuid())
+  id            String      @id @default(uuid())
   title         String
-  description   String
+  description   String?
   price         Float
-  imageUrl      String
-  stock         Int              @default(0)
-  status        ModerationStatus @default(PENDING)
-  rejectReason  String?
-  specs         Json             @default("{}")
+  image         String?
+  status        String      @default("PENDING")
   subcategoryId String
-  subcategory   Subcategory      @relation(
-    fields: [subcategoryId],
-    references: [id]
-  )
-  createdAt     DateTime         @default(now())
+ 
+  subcategory   Subcategory @relation(fields: [subcategoryId], references: [id])
   cartItems     CartItem[]
   orderItems    OrderItem[]
+  createdAt     DateTime    @default(now())
 }
 
 model CartItem {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   userId    String
-  user      User    @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+ 
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(
-    fields: [productId],
-    references: [id],
-    onDelete: Cascade
-  )
-  quantity  Int     @default(1)
-
-  @@unique([userId, productId])
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
 }
 
 model Order {
   id             String         @id @default(uuid())
   userId         String
-  user           User           @relation(
-    fields: [userId],
-    references: [id]
-  )
+  user           User           @relation(fields: [userId], references: [id])
   deliveryMethod DeliveryMethod @default(PICKUP)
-  status         OrderStatus    @default(PENDING)
-  totalPrice     Float
+  orderItems     OrderItem[]
   createdAt      DateTime       @default(now())
-  items          OrderItem[]
 }
 
 model OrderItem {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   orderId   String
-  order     Order   @relation(
-    fields: [orderId],
-    references: [id],
-    onDelete: Cascade
-  )
+ 
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(
-    fields: [productId],
-    references: [id]
-  )
+ 
+  product   Product  @relation(fields: [productId], references: [id])
   quantity  Int
-  price     Float
 }

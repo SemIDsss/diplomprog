@@ -48,11 +48,6 @@ export type Order = $Result.DefaultSelection<Prisma.$OrderPayload>
  * 
  */
 export type OrderItem = $Result.DefaultSelection<Prisma.$OrderItemPayload>
-/**
- * Model ExtremistBook
- * 
- */
-export type ExtremistBook = $Result.DefaultSelection<Prisma.$ExtremistBookPayload>
 
 /**
  * Enums
@@ -89,8 +84,7 @@ export const OrderStatus: {
   PENDING: 'PENDING',
   PROCESSING: 'PROCESSING',
   SHIPPED: 'SHIPPED',
-  DELIVERED: 'DELIVERED',
-  CANCELLED: 'CANCELLED'
+  DELIVERED: 'DELIVERED'
 };
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
@@ -303,16 +297,6 @@ export class PrismaClient<
     * ```
     */
   get orderItem(): Prisma.OrderItemDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.extremistBook`: Exposes CRUD operations for the **ExtremistBook** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more ExtremistBooks
-    * const extremistBooks = await prisma.extremistBook.findMany()
-    * ```
-    */
-  get extremistBook(): Prisma.ExtremistBookDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -753,8 +737,7 @@ export namespace Prisma {
     Product: 'Product',
     CartItem: 'CartItem',
     Order: 'Order',
-    OrderItem: 'OrderItem',
-    ExtremistBook: 'ExtremistBook'
+    OrderItem: 'OrderItem'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -770,7 +753,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "category" | "subcategory" | "product" | "cartItem" | "order" | "orderItem" | "extremistBook"
+      modelProps: "user" | "category" | "subcategory" | "product" | "cartItem" | "order" | "orderItem"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1292,80 +1275,6 @@ export namespace Prisma {
           }
         }
       }
-      ExtremistBook: {
-        payload: Prisma.$ExtremistBookPayload<ExtArgs>
-        fields: Prisma.ExtremistBookFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.ExtremistBookFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.ExtremistBookFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>
-          }
-          findFirst: {
-            args: Prisma.ExtremistBookFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.ExtremistBookFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>
-          }
-          findMany: {
-            args: Prisma.ExtremistBookFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>[]
-          }
-          create: {
-            args: Prisma.ExtremistBookCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>
-          }
-          createMany: {
-            args: Prisma.ExtremistBookCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.ExtremistBookCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>[]
-          }
-          delete: {
-            args: Prisma.ExtremistBookDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>
-          }
-          update: {
-            args: Prisma.ExtremistBookUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>
-          }
-          deleteMany: {
-            args: Prisma.ExtremistBookDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.ExtremistBookUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.ExtremistBookUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>[]
-          }
-          upsert: {
-            args: Prisma.ExtremistBookUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ExtremistBookPayload>
-          }
-          aggregate: {
-            args: Prisma.ExtremistBookAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateExtremistBook>
-          }
-          groupBy: {
-            args: Prisma.ExtremistBookGroupByArgs<ExtArgs>
-            result: $Utils.Optional<ExtremistBookGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.ExtremistBookCountArgs<ExtArgs>
-            result: $Utils.Optional<ExtremistBookCountAggregateOutputType> | number
-          }
-        }
-      }
     }
   } & {
     other: {
@@ -1481,7 +1390,6 @@ export namespace Prisma {
     cartItem?: CartItemOmit
     order?: OrderOmit
     orderItem?: OrderItemOmit
-    extremistBook?: ExtremistBookOmit
   }
 
   /* Types for Logging */
@@ -1562,13 +1470,11 @@ export namespace Prisma {
    */
 
   export type UserCountOutputType = {
-    products: number
     cartItems: number
     orders: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    products?: boolean | UserCountOutputTypeCountProductsArgs
     cartItems?: boolean | UserCountOutputTypeCountCartItemsArgs
     orders?: boolean | UserCountOutputTypeCountOrdersArgs
   }
@@ -1582,13 +1488,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the UserCountOutputType
      */
     select?: UserCountOutputTypeSelect<ExtArgs> | null
-  }
-
-  /**
-   * UserCountOutputType without action
-   */
-  export type UserCountOutputTypeCountProductsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ProductWhereInput
   }
 
   /**
@@ -1713,11 +1612,11 @@ export namespace Prisma {
    */
 
   export type OrderCountOutputType = {
-    items: number
+    orderItems: number
   }
 
   export type OrderCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    items?: boolean | OrderCountOutputTypeCountItemsArgs
+    orderItems?: boolean | OrderCountOutputTypeCountOrderItemsArgs
   }
 
   // Custom InputTypes
@@ -1734,7 +1633,7 @@ export namespace Prisma {
   /**
    * OrderCountOutputType without action
    */
-  export type OrderCountOutputTypeCountItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type OrderCountOutputTypeCountOrderItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: OrderItemWhereInput
   }
 
@@ -1760,7 +1659,6 @@ export namespace Prisma {
     yandexId: string | null
     role: $Enums.Role | null
     createdAt: Date | null
-    updatedAt: Date | null
   }
 
   export type UserMaxAggregateOutputType = {
@@ -1770,7 +1668,6 @@ export namespace Prisma {
     yandexId: string | null
     role: $Enums.Role | null
     createdAt: Date | null
-    updatedAt: Date | null
   }
 
   export type UserCountAggregateOutputType = {
@@ -1780,7 +1677,6 @@ export namespace Prisma {
     yandexId: number
     role: number
     createdAt: number
-    updatedAt: number
     _all: number
   }
 
@@ -1792,7 +1688,6 @@ export namespace Prisma {
     yandexId?: true
     role?: true
     createdAt?: true
-    updatedAt?: true
   }
 
   export type UserMaxAggregateInputType = {
@@ -1802,7 +1697,6 @@ export namespace Prisma {
     yandexId?: true
     role?: true
     createdAt?: true
-    updatedAt?: true
   }
 
   export type UserCountAggregateInputType = {
@@ -1812,7 +1706,6 @@ export namespace Prisma {
     yandexId?: true
     role?: true
     createdAt?: true
-    updatedAt?: true
     _all?: true
   }
 
@@ -1895,7 +1788,6 @@ export namespace Prisma {
     yandexId: string | null
     role: $Enums.Role
     createdAt: Date
-    updatedAt: Date
     _count: UserCountAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
     _max: UserMaxAggregateOutputType | null
@@ -1922,8 +1814,6 @@ export namespace Prisma {
     yandexId?: boolean
     role?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
-    products?: boolean | User$productsArgs<ExtArgs>
     cartItems?: boolean | User$cartItemsArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -1936,7 +1826,6 @@ export namespace Prisma {
     yandexId?: boolean
     role?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
 
   export type UserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -1946,7 +1835,6 @@ export namespace Prisma {
     yandexId?: boolean
     role?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
 
   export type UserSelectScalar = {
@@ -1956,12 +1844,10 @@ export namespace Prisma {
     yandexId?: boolean
     role?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "password" | "yandexId" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "password" | "yandexId" | "role" | "createdAt", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    products?: boolean | User$productsArgs<ExtArgs>
     cartItems?: boolean | User$cartItemsArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -1972,7 +1858,6 @@ export namespace Prisma {
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
     objects: {
-      products: Prisma.$ProductPayload<ExtArgs>[]
       cartItems: Prisma.$CartItemPayload<ExtArgs>[]
       orders: Prisma.$OrderPayload<ExtArgs>[]
     }
@@ -1983,7 +1868,6 @@ export namespace Prisma {
       yandexId: string | null
       role: $Enums.Role
       createdAt: Date
-      updatedAt: Date
     }, ExtArgs["result"]["user"]>
     composites: {}
   }
@@ -2378,7 +2262,6 @@ export namespace Prisma {
    */
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    products<T extends User$productsArgs<ExtArgs> = {}>(args?: Subset<T, User$productsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     cartItems<T extends User$cartItemsArgs<ExtArgs> = {}>(args?: Subset<T, User$cartItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CartItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orders<T extends User$ordersArgs<ExtArgs> = {}>(args?: Subset<T, User$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -2416,7 +2299,6 @@ export namespace Prisma {
     readonly yandexId: FieldRef<"User", 'String'>
     readonly role: FieldRef<"User", 'Role'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
-    readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
     
 
@@ -2807,30 +2689,6 @@ export namespace Prisma {
      * Limit how many Users to delete.
      */
     limit?: number
-  }
-
-  /**
-   * User.products
-   */
-  export type User$productsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Product
-     */
-    select?: ProductSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Product
-     */
-    omit?: ProductOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ProductInclude<ExtArgs> | null
-    where?: ProductWhereInput
-    orderBy?: ProductOrderByWithRelationInput | ProductOrderByWithRelationInput[]
-    cursor?: ProductWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: ProductScalarFieldEnum | ProductScalarFieldEnum[]
   }
 
   /**
@@ -5017,12 +4875,10 @@ export namespace Prisma {
 
   export type ProductAvgAggregateOutputType = {
     price: number | null
-    stock: number | null
   }
 
   export type ProductSumAggregateOutputType = {
     price: number | null
-    stock: number | null
   }
 
   export type ProductMinAggregateOutputType = {
@@ -5030,13 +4886,10 @@ export namespace Prisma {
     title: string | null
     description: string | null
     price: number | null
-    imageUrl: string | null
-    stock: number | null
-    status: $Enums.ModerationStatus | null
-    sellerId: string | null
+    image: string | null
+    status: string | null
     subcategoryId: string | null
     createdAt: Date | null
-    updatedAt: Date | null
   }
 
   export type ProductMaxAggregateOutputType = {
@@ -5044,13 +4897,10 @@ export namespace Prisma {
     title: string | null
     description: string | null
     price: number | null
-    imageUrl: string | null
-    stock: number | null
-    status: $Enums.ModerationStatus | null
-    sellerId: string | null
+    image: string | null
+    status: string | null
     subcategoryId: string | null
     createdAt: Date | null
-    updatedAt: Date | null
   }
 
   export type ProductCountAggregateOutputType = {
@@ -5058,25 +4908,20 @@ export namespace Prisma {
     title: number
     description: number
     price: number
-    imageUrl: number
-    stock: number
+    image: number
     status: number
-    sellerId: number
     subcategoryId: number
     createdAt: number
-    updatedAt: number
     _all: number
   }
 
 
   export type ProductAvgAggregateInputType = {
     price?: true
-    stock?: true
   }
 
   export type ProductSumAggregateInputType = {
     price?: true
-    stock?: true
   }
 
   export type ProductMinAggregateInputType = {
@@ -5084,13 +4929,10 @@ export namespace Prisma {
     title?: true
     description?: true
     price?: true
-    imageUrl?: true
-    stock?: true
+    image?: true
     status?: true
-    sellerId?: true
     subcategoryId?: true
     createdAt?: true
-    updatedAt?: true
   }
 
   export type ProductMaxAggregateInputType = {
@@ -5098,13 +4940,10 @@ export namespace Prisma {
     title?: true
     description?: true
     price?: true
-    imageUrl?: true
-    stock?: true
+    image?: true
     status?: true
-    sellerId?: true
     subcategoryId?: true
     createdAt?: true
-    updatedAt?: true
   }
 
   export type ProductCountAggregateInputType = {
@@ -5112,13 +4951,10 @@ export namespace Prisma {
     title?: true
     description?: true
     price?: true
-    imageUrl?: true
-    stock?: true
+    image?: true
     status?: true
-    sellerId?: true
     subcategoryId?: true
     createdAt?: true
-    updatedAt?: true
     _all?: true
   }
 
@@ -5211,15 +5047,12 @@ export namespace Prisma {
   export type ProductGroupByOutputType = {
     id: string
     title: string
-    description: string
+    description: string | null
     price: number
-    imageUrl: string
-    stock: number
-    status: $Enums.ModerationStatus
-    sellerId: string
+    image: string | null
+    status: string
     subcategoryId: string
     createdAt: Date
-    updatedAt: Date
     _count: ProductCountAggregateOutputType | null
     _avg: ProductAvgAggregateOutputType | null
     _sum: ProductSumAggregateOutputType | null
@@ -5246,14 +5079,10 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     price?: boolean
-    imageUrl?: boolean
-    stock?: boolean
+    image?: boolean
     status?: boolean
-    sellerId?: boolean
     subcategoryId?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
-    seller?: boolean | UserDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
     cartItems?: boolean | Product$cartItemsArgs<ExtArgs>
     orderItems?: boolean | Product$orderItemsArgs<ExtArgs>
@@ -5265,14 +5094,10 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     price?: boolean
-    imageUrl?: boolean
-    stock?: boolean
+    image?: boolean
     status?: boolean
-    sellerId?: boolean
     subcategoryId?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
-    seller?: boolean | UserDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["product"]>
 
@@ -5281,14 +5106,10 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     price?: boolean
-    imageUrl?: boolean
-    stock?: boolean
+    image?: boolean
     status?: boolean
-    sellerId?: boolean
     subcategoryId?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
-    seller?: boolean | UserDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["product"]>
 
@@ -5297,36 +5118,29 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     price?: boolean
-    imageUrl?: boolean
-    stock?: boolean
+    image?: boolean
     status?: boolean
-    sellerId?: boolean
     subcategoryId?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "price" | "imageUrl" | "stock" | "status" | "sellerId" | "subcategoryId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "price" | "image" | "status" | "subcategoryId" | "createdAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    seller?: boolean | UserDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
     cartItems?: boolean | Product$cartItemsArgs<ExtArgs>
     orderItems?: boolean | Product$orderItemsArgs<ExtArgs>
     _count?: boolean | ProductCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type ProductIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    seller?: boolean | UserDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
   }
   export type ProductIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    seller?: boolean | UserDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
   }
 
   export type $ProductPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Product"
     objects: {
-      seller: Prisma.$UserPayload<ExtArgs>
       subcategory: Prisma.$SubcategoryPayload<ExtArgs>
       cartItems: Prisma.$CartItemPayload<ExtArgs>[]
       orderItems: Prisma.$OrderItemPayload<ExtArgs>[]
@@ -5334,15 +5148,12 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       title: string
-      description: string
+      description: string | null
       price: number
-      imageUrl: string
-      stock: number
-      status: $Enums.ModerationStatus
-      sellerId: string
+      image: string | null
+      status: string
       subcategoryId: string
       createdAt: Date
-      updatedAt: Date
     }, ExtArgs["result"]["product"]>
     composites: {}
   }
@@ -5737,7 +5548,6 @@ export namespace Prisma {
    */
   export interface Prisma__ProductClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    seller<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     subcategory<T extends SubcategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SubcategoryDefaultArgs<ExtArgs>>): Prisma__SubcategoryClient<$Result.GetResult<Prisma.$SubcategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     cartItems<T extends Product$cartItemsArgs<ExtArgs> = {}>(args?: Subset<T, Product$cartItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CartItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orderItems<T extends Product$orderItemsArgs<ExtArgs> = {}>(args?: Subset<T, Product$orderItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -5774,13 +5584,10 @@ export namespace Prisma {
     readonly title: FieldRef<"Product", 'String'>
     readonly description: FieldRef<"Product", 'String'>
     readonly price: FieldRef<"Product", 'Float'>
-    readonly imageUrl: FieldRef<"Product", 'String'>
-    readonly stock: FieldRef<"Product", 'Int'>
-    readonly status: FieldRef<"Product", 'ModerationStatus'>
-    readonly sellerId: FieldRef<"Product", 'String'>
+    readonly image: FieldRef<"Product", 'String'>
+    readonly status: FieldRef<"Product", 'String'>
     readonly subcategoryId: FieldRef<"Product", 'String'>
     readonly createdAt: FieldRef<"Product", 'DateTime'>
-    readonly updatedAt: FieldRef<"Product", 'DateTime'>
   }
     
 
@@ -7346,88 +7153,52 @@ export namespace Prisma {
 
   export type AggregateOrder = {
     _count: OrderCountAggregateOutputType | null
-    _avg: OrderAvgAggregateOutputType | null
-    _sum: OrderSumAggregateOutputType | null
     _min: OrderMinAggregateOutputType | null
     _max: OrderMaxAggregateOutputType | null
-  }
-
-  export type OrderAvgAggregateOutputType = {
-    totalPrice: number | null
-  }
-
-  export type OrderSumAggregateOutputType = {
-    totalPrice: number | null
   }
 
   export type OrderMinAggregateOutputType = {
     id: string | null
     userId: string | null
     deliveryMethod: $Enums.DeliveryMethod | null
-    status: $Enums.OrderStatus | null
-    totalPrice: number | null
     createdAt: Date | null
-    updatedAt: Date | null
   }
 
   export type OrderMaxAggregateOutputType = {
     id: string | null
     userId: string | null
     deliveryMethod: $Enums.DeliveryMethod | null
-    status: $Enums.OrderStatus | null
-    totalPrice: number | null
     createdAt: Date | null
-    updatedAt: Date | null
   }
 
   export type OrderCountAggregateOutputType = {
     id: number
     userId: number
     deliveryMethod: number
-    status: number
-    totalPrice: number
     createdAt: number
-    updatedAt: number
     _all: number
   }
 
-
-  export type OrderAvgAggregateInputType = {
-    totalPrice?: true
-  }
-
-  export type OrderSumAggregateInputType = {
-    totalPrice?: true
-  }
 
   export type OrderMinAggregateInputType = {
     id?: true
     userId?: true
     deliveryMethod?: true
-    status?: true
-    totalPrice?: true
     createdAt?: true
-    updatedAt?: true
   }
 
   export type OrderMaxAggregateInputType = {
     id?: true
     userId?: true
     deliveryMethod?: true
-    status?: true
-    totalPrice?: true
     createdAt?: true
-    updatedAt?: true
   }
 
   export type OrderCountAggregateInputType = {
     id?: true
     userId?: true
     deliveryMethod?: true
-    status?: true
-    totalPrice?: true
     createdAt?: true
-    updatedAt?: true
     _all?: true
   }
 
@@ -7469,18 +7240,6 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Select which fields to average
-    **/
-    _avg?: OrderAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: OrderSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
      * Select which fields to find the minimum value
     **/
     _min?: OrderMinAggregateInputType
@@ -7511,8 +7270,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: OrderCountAggregateInputType | true
-    _avg?: OrderAvgAggregateInputType
-    _sum?: OrderSumAggregateInputType
     _min?: OrderMinAggregateInputType
     _max?: OrderMaxAggregateInputType
   }
@@ -7521,13 +7278,8 @@ export namespace Prisma {
     id: string
     userId: string
     deliveryMethod: $Enums.DeliveryMethod
-    status: $Enums.OrderStatus
-    totalPrice: number
     createdAt: Date
-    updatedAt: Date
     _count: OrderCountAggregateOutputType | null
-    _avg: OrderAvgAggregateOutputType | null
-    _sum: OrderSumAggregateOutputType | null
     _min: OrderMinAggregateOutputType | null
     _max: OrderMaxAggregateOutputType | null
   }
@@ -7550,12 +7302,9 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     deliveryMethod?: boolean
-    status?: boolean
-    totalPrice?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
-    items?: boolean | Order$itemsArgs<ExtArgs>
+    orderItems?: boolean | Order$orderItemsArgs<ExtArgs>
     _count?: boolean | OrderCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["order"]>
 
@@ -7563,10 +7312,7 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     deliveryMethod?: boolean
-    status?: boolean
-    totalPrice?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["order"]>
 
@@ -7574,10 +7320,7 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     deliveryMethod?: boolean
-    status?: boolean
-    totalPrice?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["order"]>
 
@@ -7585,16 +7328,13 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     deliveryMethod?: boolean
-    status?: boolean
-    totalPrice?: boolean
     createdAt?: boolean
-    updatedAt?: boolean
   }
 
-  export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "deliveryMethod" | "status" | "totalPrice" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+  export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "deliveryMethod" | "createdAt", ExtArgs["result"]["order"]>
   export type OrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
-    items?: boolean | Order$itemsArgs<ExtArgs>
+    orderItems?: boolean | Order$orderItemsArgs<ExtArgs>
     _count?: boolean | OrderCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type OrderIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7608,16 +7348,13 @@ export namespace Prisma {
     name: "Order"
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
-      items: Prisma.$OrderItemPayload<ExtArgs>[]
+      orderItems: Prisma.$OrderItemPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       userId: string
       deliveryMethod: $Enums.DeliveryMethod
-      status: $Enums.OrderStatus
-      totalPrice: number
       createdAt: Date
-      updatedAt: Date
     }, ExtArgs["result"]["order"]>
     composites: {}
   }
@@ -8013,7 +7750,7 @@ export namespace Prisma {
   export interface Prisma__OrderClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    items<T extends Order$itemsArgs<ExtArgs> = {}>(args?: Subset<T, Order$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    orderItems<T extends Order$orderItemsArgs<ExtArgs> = {}>(args?: Subset<T, Order$orderItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8046,10 +7783,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Order", 'String'>
     readonly userId: FieldRef<"Order", 'String'>
     readonly deliveryMethod: FieldRef<"Order", 'DeliveryMethod'>
-    readonly status: FieldRef<"Order", 'OrderStatus'>
-    readonly totalPrice: FieldRef<"Order", 'Float'>
     readonly createdAt: FieldRef<"Order", 'DateTime'>
-    readonly updatedAt: FieldRef<"Order", 'DateTime'>
   }
     
 
@@ -8451,9 +8185,9 @@ export namespace Prisma {
   }
 
   /**
-   * Order.items
+   * Order.orderItems
    */
-  export type Order$itemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Order$orderItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the OrderItem
      */
@@ -8507,12 +8241,10 @@ export namespace Prisma {
 
   export type OrderItemAvgAggregateOutputType = {
     quantity: number | null
-    price: number | null
   }
 
   export type OrderItemSumAggregateOutputType = {
     quantity: number | null
-    price: number | null
   }
 
   export type OrderItemMinAggregateOutputType = {
@@ -8520,7 +8252,6 @@ export namespace Prisma {
     orderId: string | null
     productId: string | null
     quantity: number | null
-    price: number | null
   }
 
   export type OrderItemMaxAggregateOutputType = {
@@ -8528,7 +8259,6 @@ export namespace Prisma {
     orderId: string | null
     productId: string | null
     quantity: number | null
-    price: number | null
   }
 
   export type OrderItemCountAggregateOutputType = {
@@ -8536,19 +8266,16 @@ export namespace Prisma {
     orderId: number
     productId: number
     quantity: number
-    price: number
     _all: number
   }
 
 
   export type OrderItemAvgAggregateInputType = {
     quantity?: true
-    price?: true
   }
 
   export type OrderItemSumAggregateInputType = {
     quantity?: true
-    price?: true
   }
 
   export type OrderItemMinAggregateInputType = {
@@ -8556,7 +8283,6 @@ export namespace Prisma {
     orderId?: true
     productId?: true
     quantity?: true
-    price?: true
   }
 
   export type OrderItemMaxAggregateInputType = {
@@ -8564,7 +8290,6 @@ export namespace Prisma {
     orderId?: true
     productId?: true
     quantity?: true
-    price?: true
   }
 
   export type OrderItemCountAggregateInputType = {
@@ -8572,7 +8297,6 @@ export namespace Prisma {
     orderId?: true
     productId?: true
     quantity?: true
-    price?: true
     _all?: true
   }
 
@@ -8667,7 +8391,6 @@ export namespace Prisma {
     orderId: string
     productId: string
     quantity: number
-    price: number
     _count: OrderItemCountAggregateOutputType | null
     _avg: OrderItemAvgAggregateOutputType | null
     _sum: OrderItemSumAggregateOutputType | null
@@ -8694,7 +8417,6 @@ export namespace Prisma {
     orderId?: boolean
     productId?: boolean
     quantity?: boolean
-    price?: boolean
     order?: boolean | OrderDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["orderItem"]>
@@ -8704,7 +8426,6 @@ export namespace Prisma {
     orderId?: boolean
     productId?: boolean
     quantity?: boolean
-    price?: boolean
     order?: boolean | OrderDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["orderItem"]>
@@ -8714,7 +8435,6 @@ export namespace Prisma {
     orderId?: boolean
     productId?: boolean
     quantity?: boolean
-    price?: boolean
     order?: boolean | OrderDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["orderItem"]>
@@ -8724,10 +8444,9 @@ export namespace Prisma {
     orderId?: boolean
     productId?: boolean
     quantity?: boolean
-    price?: boolean
   }
 
-  export type OrderItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderId" | "productId" | "quantity" | "price", ExtArgs["result"]["orderItem"]>
+  export type OrderItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderId" | "productId" | "quantity", ExtArgs["result"]["orderItem"]>
   export type OrderItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     order?: boolean | OrderDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -8752,7 +8471,6 @@ export namespace Prisma {
       orderId: string
       productId: string
       quantity: number
-      price: number
     }, ExtArgs["result"]["orderItem"]>
     composites: {}
   }
@@ -9182,7 +8900,6 @@ export namespace Prisma {
     readonly orderId: FieldRef<"OrderItem", 'String'>
     readonly productId: FieldRef<"OrderItem", 'String'>
     readonly quantity: FieldRef<"OrderItem", 'Int'>
-    readonly price: FieldRef<"OrderItem", 'Float'>
   }
     
 
@@ -9603,980 +9320,6 @@ export namespace Prisma {
 
 
   /**
-   * Model ExtremistBook
-   */
-
-  export type AggregateExtremistBook = {
-    _count: ExtremistBookCountAggregateOutputType | null
-    _min: ExtremistBookMinAggregateOutputType | null
-    _max: ExtremistBookMaxAggregateOutputType | null
-  }
-
-  export type ExtremistBookMinAggregateOutputType = {
-    id: string | null
-    title: string | null
-    createdAt: Date | null
-  }
-
-  export type ExtremistBookMaxAggregateOutputType = {
-    id: string | null
-    title: string | null
-    createdAt: Date | null
-  }
-
-  export type ExtremistBookCountAggregateOutputType = {
-    id: number
-    title: number
-    createdAt: number
-    _all: number
-  }
-
-
-  export type ExtremistBookMinAggregateInputType = {
-    id?: true
-    title?: true
-    createdAt?: true
-  }
-
-  export type ExtremistBookMaxAggregateInputType = {
-    id?: true
-    title?: true
-    createdAt?: true
-  }
-
-  export type ExtremistBookCountAggregateInputType = {
-    id?: true
-    title?: true
-    createdAt?: true
-    _all?: true
-  }
-
-  export type ExtremistBookAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which ExtremistBook to aggregate.
-     */
-    where?: ExtremistBookWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of ExtremistBooks to fetch.
-     */
-    orderBy?: ExtremistBookOrderByWithRelationInput | ExtremistBookOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: ExtremistBookWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` ExtremistBooks from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` ExtremistBooks.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned ExtremistBooks
-    **/
-    _count?: true | ExtremistBookCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: ExtremistBookMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: ExtremistBookMaxAggregateInputType
-  }
-
-  export type GetExtremistBookAggregateType<T extends ExtremistBookAggregateArgs> = {
-        [P in keyof T & keyof AggregateExtremistBook]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateExtremistBook[P]>
-      : GetScalarType<T[P], AggregateExtremistBook[P]>
-  }
-
-
-
-
-  export type ExtremistBookGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ExtremistBookWhereInput
-    orderBy?: ExtremistBookOrderByWithAggregationInput | ExtremistBookOrderByWithAggregationInput[]
-    by: ExtremistBookScalarFieldEnum[] | ExtremistBookScalarFieldEnum
-    having?: ExtremistBookScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: ExtremistBookCountAggregateInputType | true
-    _min?: ExtremistBookMinAggregateInputType
-    _max?: ExtremistBookMaxAggregateInputType
-  }
-
-  export type ExtremistBookGroupByOutputType = {
-    id: string
-    title: string
-    createdAt: Date
-    _count: ExtremistBookCountAggregateOutputType | null
-    _min: ExtremistBookMinAggregateOutputType | null
-    _max: ExtremistBookMaxAggregateOutputType | null
-  }
-
-  type GetExtremistBookGroupByPayload<T extends ExtremistBookGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<ExtremistBookGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof ExtremistBookGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], ExtremistBookGroupByOutputType[P]>
-            : GetScalarType<T[P], ExtremistBookGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type ExtremistBookSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    title?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["extremistBook"]>
-
-  export type ExtremistBookSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    title?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["extremistBook"]>
-
-  export type ExtremistBookSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    title?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["extremistBook"]>
-
-  export type ExtremistBookSelectScalar = {
-    id?: boolean
-    title?: boolean
-    createdAt?: boolean
-  }
-
-  export type ExtremistBookOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "createdAt", ExtArgs["result"]["extremistBook"]>
-
-  export type $ExtremistBookPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "ExtremistBook"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      id: string
-      title: string
-      createdAt: Date
-    }, ExtArgs["result"]["extremistBook"]>
-    composites: {}
-  }
-
-  type ExtremistBookGetPayload<S extends boolean | null | undefined | ExtremistBookDefaultArgs> = $Result.GetResult<Prisma.$ExtremistBookPayload, S>
-
-  type ExtremistBookCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<ExtremistBookFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: ExtremistBookCountAggregateInputType | true
-    }
-
-  export interface ExtremistBookDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ExtremistBook'], meta: { name: 'ExtremistBook' } }
-    /**
-     * Find zero or one ExtremistBook that matches the filter.
-     * @param {ExtremistBookFindUniqueArgs} args - Arguments to find a ExtremistBook
-     * @example
-     * // Get one ExtremistBook
-     * const extremistBook = await prisma.extremistBook.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends ExtremistBookFindUniqueArgs>(args: SelectSubset<T, ExtremistBookFindUniqueArgs<ExtArgs>>): Prisma__ExtremistBookClient<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one ExtremistBook that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {ExtremistBookFindUniqueOrThrowArgs} args - Arguments to find a ExtremistBook
-     * @example
-     * // Get one ExtremistBook
-     * const extremistBook = await prisma.extremistBook.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends ExtremistBookFindUniqueOrThrowArgs>(args: SelectSubset<T, ExtremistBookFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ExtremistBookClient<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first ExtremistBook that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ExtremistBookFindFirstArgs} args - Arguments to find a ExtremistBook
-     * @example
-     * // Get one ExtremistBook
-     * const extremistBook = await prisma.extremistBook.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends ExtremistBookFindFirstArgs>(args?: SelectSubset<T, ExtremistBookFindFirstArgs<ExtArgs>>): Prisma__ExtremistBookClient<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first ExtremistBook that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ExtremistBookFindFirstOrThrowArgs} args - Arguments to find a ExtremistBook
-     * @example
-     * // Get one ExtremistBook
-     * const extremistBook = await prisma.extremistBook.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends ExtremistBookFindFirstOrThrowArgs>(args?: SelectSubset<T, ExtremistBookFindFirstOrThrowArgs<ExtArgs>>): Prisma__ExtremistBookClient<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more ExtremistBooks that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ExtremistBookFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all ExtremistBooks
-     * const extremistBooks = await prisma.extremistBook.findMany()
-     * 
-     * // Get first 10 ExtremistBooks
-     * const extremistBooks = await prisma.extremistBook.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const extremistBookWithIdOnly = await prisma.extremistBook.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends ExtremistBookFindManyArgs>(args?: SelectSubset<T, ExtremistBookFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a ExtremistBook.
-     * @param {ExtremistBookCreateArgs} args - Arguments to create a ExtremistBook.
-     * @example
-     * // Create one ExtremistBook
-     * const ExtremistBook = await prisma.extremistBook.create({
-     *   data: {
-     *     // ... data to create a ExtremistBook
-     *   }
-     * })
-     * 
-     */
-    create<T extends ExtremistBookCreateArgs>(args: SelectSubset<T, ExtremistBookCreateArgs<ExtArgs>>): Prisma__ExtremistBookClient<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many ExtremistBooks.
-     * @param {ExtremistBookCreateManyArgs} args - Arguments to create many ExtremistBooks.
-     * @example
-     * // Create many ExtremistBooks
-     * const extremistBook = await prisma.extremistBook.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends ExtremistBookCreateManyArgs>(args?: SelectSubset<T, ExtremistBookCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many ExtremistBooks and returns the data saved in the database.
-     * @param {ExtremistBookCreateManyAndReturnArgs} args - Arguments to create many ExtremistBooks.
-     * @example
-     * // Create many ExtremistBooks
-     * const extremistBook = await prisma.extremistBook.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many ExtremistBooks and only return the `id`
-     * const extremistBookWithIdOnly = await prisma.extremistBook.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends ExtremistBookCreateManyAndReturnArgs>(args?: SelectSubset<T, ExtremistBookCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Delete a ExtremistBook.
-     * @param {ExtremistBookDeleteArgs} args - Arguments to delete one ExtremistBook.
-     * @example
-     * // Delete one ExtremistBook
-     * const ExtremistBook = await prisma.extremistBook.delete({
-     *   where: {
-     *     // ... filter to delete one ExtremistBook
-     *   }
-     * })
-     * 
-     */
-    delete<T extends ExtremistBookDeleteArgs>(args: SelectSubset<T, ExtremistBookDeleteArgs<ExtArgs>>): Prisma__ExtremistBookClient<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one ExtremistBook.
-     * @param {ExtremistBookUpdateArgs} args - Arguments to update one ExtremistBook.
-     * @example
-     * // Update one ExtremistBook
-     * const extremistBook = await prisma.extremistBook.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends ExtremistBookUpdateArgs>(args: SelectSubset<T, ExtremistBookUpdateArgs<ExtArgs>>): Prisma__ExtremistBookClient<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more ExtremistBooks.
-     * @param {ExtremistBookDeleteManyArgs} args - Arguments to filter ExtremistBooks to delete.
-     * @example
-     * // Delete a few ExtremistBooks
-     * const { count } = await prisma.extremistBook.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends ExtremistBookDeleteManyArgs>(args?: SelectSubset<T, ExtremistBookDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more ExtremistBooks.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ExtremistBookUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many ExtremistBooks
-     * const extremistBook = await prisma.extremistBook.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends ExtremistBookUpdateManyArgs>(args: SelectSubset<T, ExtremistBookUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more ExtremistBooks and returns the data updated in the database.
-     * @param {ExtremistBookUpdateManyAndReturnArgs} args - Arguments to update many ExtremistBooks.
-     * @example
-     * // Update many ExtremistBooks
-     * const extremistBook = await prisma.extremistBook.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more ExtremistBooks and only return the `id`
-     * const extremistBookWithIdOnly = await prisma.extremistBook.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends ExtremistBookUpdateManyAndReturnArgs>(args: SelectSubset<T, ExtremistBookUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Create or update one ExtremistBook.
-     * @param {ExtremistBookUpsertArgs} args - Arguments to update or create a ExtremistBook.
-     * @example
-     * // Update or create a ExtremistBook
-     * const extremistBook = await prisma.extremistBook.upsert({
-     *   create: {
-     *     // ... data to create a ExtremistBook
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the ExtremistBook we want to update
-     *   }
-     * })
-     */
-    upsert<T extends ExtremistBookUpsertArgs>(args: SelectSubset<T, ExtremistBookUpsertArgs<ExtArgs>>): Prisma__ExtremistBookClient<$Result.GetResult<Prisma.$ExtremistBookPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of ExtremistBooks.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ExtremistBookCountArgs} args - Arguments to filter ExtremistBooks to count.
-     * @example
-     * // Count the number of ExtremistBooks
-     * const count = await prisma.extremistBook.count({
-     *   where: {
-     *     // ... the filter for the ExtremistBooks we want to count
-     *   }
-     * })
-    **/
-    count<T extends ExtremistBookCountArgs>(
-      args?: Subset<T, ExtremistBookCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], ExtremistBookCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a ExtremistBook.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ExtremistBookAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends ExtremistBookAggregateArgs>(args: Subset<T, ExtremistBookAggregateArgs>): Prisma.PrismaPromise<GetExtremistBookAggregateType<T>>
-
-    /**
-     * Group by ExtremistBook.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ExtremistBookGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends ExtremistBookGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: ExtremistBookGroupByArgs['orderBy'] }
-        : { orderBy?: ExtremistBookGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, ExtremistBookGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetExtremistBookGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the ExtremistBook model
-   */
-  readonly fields: ExtremistBookFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for ExtremistBook.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__ExtremistBookClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the ExtremistBook model
-   */
-  interface ExtremistBookFieldRefs {
-    readonly id: FieldRef<"ExtremistBook", 'String'>
-    readonly title: FieldRef<"ExtremistBook", 'String'>
-    readonly createdAt: FieldRef<"ExtremistBook", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * ExtremistBook findUnique
-   */
-  export type ExtremistBookFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * Filter, which ExtremistBook to fetch.
-     */
-    where: ExtremistBookWhereUniqueInput
-  }
-
-  /**
-   * ExtremistBook findUniqueOrThrow
-   */
-  export type ExtremistBookFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * Filter, which ExtremistBook to fetch.
-     */
-    where: ExtremistBookWhereUniqueInput
-  }
-
-  /**
-   * ExtremistBook findFirst
-   */
-  export type ExtremistBookFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * Filter, which ExtremistBook to fetch.
-     */
-    where?: ExtremistBookWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of ExtremistBooks to fetch.
-     */
-    orderBy?: ExtremistBookOrderByWithRelationInput | ExtremistBookOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for ExtremistBooks.
-     */
-    cursor?: ExtremistBookWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` ExtremistBooks from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` ExtremistBooks.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of ExtremistBooks.
-     */
-    distinct?: ExtremistBookScalarFieldEnum | ExtremistBookScalarFieldEnum[]
-  }
-
-  /**
-   * ExtremistBook findFirstOrThrow
-   */
-  export type ExtremistBookFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * Filter, which ExtremistBook to fetch.
-     */
-    where?: ExtremistBookWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of ExtremistBooks to fetch.
-     */
-    orderBy?: ExtremistBookOrderByWithRelationInput | ExtremistBookOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for ExtremistBooks.
-     */
-    cursor?: ExtremistBookWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` ExtremistBooks from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` ExtremistBooks.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of ExtremistBooks.
-     */
-    distinct?: ExtremistBookScalarFieldEnum | ExtremistBookScalarFieldEnum[]
-  }
-
-  /**
-   * ExtremistBook findMany
-   */
-  export type ExtremistBookFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * Filter, which ExtremistBooks to fetch.
-     */
-    where?: ExtremistBookWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of ExtremistBooks to fetch.
-     */
-    orderBy?: ExtremistBookOrderByWithRelationInput | ExtremistBookOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing ExtremistBooks.
-     */
-    cursor?: ExtremistBookWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` ExtremistBooks from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` ExtremistBooks.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of ExtremistBooks.
-     */
-    distinct?: ExtremistBookScalarFieldEnum | ExtremistBookScalarFieldEnum[]
-  }
-
-  /**
-   * ExtremistBook create
-   */
-  export type ExtremistBookCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * The data needed to create a ExtremistBook.
-     */
-    data: XOR<ExtremistBookCreateInput, ExtremistBookUncheckedCreateInput>
-  }
-
-  /**
-   * ExtremistBook createMany
-   */
-  export type ExtremistBookCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many ExtremistBooks.
-     */
-    data: ExtremistBookCreateManyInput | ExtremistBookCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * ExtremistBook createManyAndReturn
-   */
-  export type ExtremistBookCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * The data used to create many ExtremistBooks.
-     */
-    data: ExtremistBookCreateManyInput | ExtremistBookCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * ExtremistBook update
-   */
-  export type ExtremistBookUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * The data needed to update a ExtremistBook.
-     */
-    data: XOR<ExtremistBookUpdateInput, ExtremistBookUncheckedUpdateInput>
-    /**
-     * Choose, which ExtremistBook to update.
-     */
-    where: ExtremistBookWhereUniqueInput
-  }
-
-  /**
-   * ExtremistBook updateMany
-   */
-  export type ExtremistBookUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update ExtremistBooks.
-     */
-    data: XOR<ExtremistBookUpdateManyMutationInput, ExtremistBookUncheckedUpdateManyInput>
-    /**
-     * Filter which ExtremistBooks to update
-     */
-    where?: ExtremistBookWhereInput
-    /**
-     * Limit how many ExtremistBooks to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * ExtremistBook updateManyAndReturn
-   */
-  export type ExtremistBookUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * The data used to update ExtremistBooks.
-     */
-    data: XOR<ExtremistBookUpdateManyMutationInput, ExtremistBookUncheckedUpdateManyInput>
-    /**
-     * Filter which ExtremistBooks to update
-     */
-    where?: ExtremistBookWhereInput
-    /**
-     * Limit how many ExtremistBooks to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * ExtremistBook upsert
-   */
-  export type ExtremistBookUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * The filter to search for the ExtremistBook to update in case it exists.
-     */
-    where: ExtremistBookWhereUniqueInput
-    /**
-     * In case the ExtremistBook found by the `where` argument doesn't exist, create a new ExtremistBook with this data.
-     */
-    create: XOR<ExtremistBookCreateInput, ExtremistBookUncheckedCreateInput>
-    /**
-     * In case the ExtremistBook was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<ExtremistBookUpdateInput, ExtremistBookUncheckedUpdateInput>
-  }
-
-  /**
-   * ExtremistBook delete
-   */
-  export type ExtremistBookDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-    /**
-     * Filter which ExtremistBook to delete.
-     */
-    where: ExtremistBookWhereUniqueInput
-  }
-
-  /**
-   * ExtremistBook deleteMany
-   */
-  export type ExtremistBookDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which ExtremistBooks to delete
-     */
-    where?: ExtremistBookWhereInput
-    /**
-     * Limit how many ExtremistBooks to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * ExtremistBook without action
-   */
-  export type ExtremistBookDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ExtremistBook
-     */
-    select?: ExtremistBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the ExtremistBook
-     */
-    omit?: ExtremistBookOmit<ExtArgs> | null
-  }
-
-
-  /**
    * Enums
    */
 
@@ -10596,8 +9339,7 @@ export namespace Prisma {
     password: 'password',
     yandexId: 'yandexId',
     role: 'role',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    createdAt: 'createdAt'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -10625,13 +9367,10 @@ export namespace Prisma {
     title: 'title',
     description: 'description',
     price: 'price',
-    imageUrl: 'imageUrl',
-    stock: 'stock',
+    image: 'image',
     status: 'status',
-    sellerId: 'sellerId',
     subcategoryId: 'subcategoryId',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    createdAt: 'createdAt'
   };
 
   export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
@@ -10651,10 +9390,7 @@ export namespace Prisma {
     id: 'id',
     userId: 'userId',
     deliveryMethod: 'deliveryMethod',
-    status: 'status',
-    totalPrice: 'totalPrice',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    createdAt: 'createdAt'
   };
 
   export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
@@ -10664,20 +9400,10 @@ export namespace Prisma {
     id: 'id',
     orderId: 'orderId',
     productId: 'productId',
-    quantity: 'quantity',
-    price: 'price'
+    quantity: 'quantity'
   };
 
   export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
-
-
-  export const ExtremistBookScalarFieldEnum: {
-    id: 'id',
-    title: 'title',
-    createdAt: 'createdAt'
-  };
-
-  export type ExtremistBookScalarFieldEnum = (typeof ExtremistBookScalarFieldEnum)[keyof typeof ExtremistBookScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -10780,20 +9506,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'ModerationStatus'
-   */
-  export type EnumModerationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModerationStatus'>
-    
-
-
-  /**
-   * Reference to a field of type 'ModerationStatus[]'
-   */
-  export type ListEnumModerationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModerationStatus[]'>
-    
-
-
-  /**
    * Reference to a field of type 'DeliveryMethod'
    */
   export type EnumDeliveryMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DeliveryMethod'>
@@ -10804,20 +9516,6 @@ export namespace Prisma {
    * Reference to a field of type 'DeliveryMethod[]'
    */
   export type ListEnumDeliveryMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DeliveryMethod[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'OrderStatus'
-   */
-  export type EnumOrderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderStatus'>
-    
-
-
-  /**
-   * Reference to a field of type 'OrderStatus[]'
-   */
-  export type ListEnumOrderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderStatus[]'>
     
   /**
    * Deep Input Types
@@ -10834,8 +9532,6 @@ export namespace Prisma {
     yandexId?: StringNullableFilter<"User"> | string | null
     role?: EnumRoleFilter<"User"> | $Enums.Role
     createdAt?: DateTimeFilter<"User"> | Date | string
-    updatedAt?: DateTimeFilter<"User"> | Date | string
-    products?: ProductListRelationFilter
     cartItems?: CartItemListRelationFilter
     orders?: OrderListRelationFilter
   }
@@ -10847,8 +9543,6 @@ export namespace Prisma {
     yandexId?: SortOrderInput | SortOrder
     role?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
-    products?: ProductOrderByRelationAggregateInput
     cartItems?: CartItemOrderByRelationAggregateInput
     orders?: OrderOrderByRelationAggregateInput
   }
@@ -10863,8 +9557,6 @@ export namespace Prisma {
     password?: StringNullableFilter<"User"> | string | null
     role?: EnumRoleFilter<"User"> | $Enums.Role
     createdAt?: DateTimeFilter<"User"> | Date | string
-    updatedAt?: DateTimeFilter<"User"> | Date | string
-    products?: ProductListRelationFilter
     cartItems?: CartItemListRelationFilter
     orders?: OrderListRelationFilter
   }, "id" | "email" | "yandexId">
@@ -10876,7 +9568,6 @@ export namespace Prisma {
     yandexId?: SortOrderInput | SortOrder
     role?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
     _min?: UserMinOrderByAggregateInput
@@ -10892,7 +9583,6 @@ export namespace Prisma {
     yandexId?: StringNullableWithAggregatesFilter<"User"> | string | null
     role?: EnumRoleWithAggregatesFilter<"User"> | $Enums.Role
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
 
   export type CategoryWhereInput = {
@@ -10956,7 +9646,6 @@ export namespace Prisma {
 
   export type SubcategoryWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    name_categoryId?: SubcategoryNameCategoryIdCompoundUniqueInput
     AND?: SubcategoryWhereInput | SubcategoryWhereInput[]
     OR?: SubcategoryWhereInput[]
     NOT?: SubcategoryWhereInput | SubcategoryWhereInput[]
@@ -10964,7 +9653,7 @@ export namespace Prisma {
     categoryId?: StringFilter<"Subcategory"> | string
     category?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
     products?: ProductListRelationFilter
-  }, "id" | "name_categoryId">
+  }, "id">
 
   export type SubcategoryOrderByWithAggregationInput = {
     id?: SortOrder
@@ -10990,16 +9679,12 @@ export namespace Prisma {
     NOT?: ProductWhereInput | ProductWhereInput[]
     id?: StringFilter<"Product"> | string
     title?: StringFilter<"Product"> | string
-    description?: StringFilter<"Product"> | string
+    description?: StringNullableFilter<"Product"> | string | null
     price?: FloatFilter<"Product"> | number
-    imageUrl?: StringFilter<"Product"> | string
-    stock?: IntFilter<"Product"> | number
-    status?: EnumModerationStatusFilter<"Product"> | $Enums.ModerationStatus
-    sellerId?: StringFilter<"Product"> | string
+    image?: StringNullableFilter<"Product"> | string | null
+    status?: StringFilter<"Product"> | string
     subcategoryId?: StringFilter<"Product"> | string
     createdAt?: DateTimeFilter<"Product"> | Date | string
-    updatedAt?: DateTimeFilter<"Product"> | Date | string
-    seller?: XOR<UserScalarRelationFilter, UserWhereInput>
     subcategory?: XOR<SubcategoryScalarRelationFilter, SubcategoryWhereInput>
     cartItems?: CartItemListRelationFilter
     orderItems?: OrderItemListRelationFilter
@@ -11008,16 +9693,12 @@ export namespace Prisma {
   export type ProductOrderByWithRelationInput = {
     id?: SortOrder
     title?: SortOrder
-    description?: SortOrder
+    description?: SortOrderInput | SortOrder
     price?: SortOrder
-    imageUrl?: SortOrder
-    stock?: SortOrder
+    image?: SortOrderInput | SortOrder
     status?: SortOrder
-    sellerId?: SortOrder
     subcategoryId?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
-    seller?: UserOrderByWithRelationInput
     subcategory?: SubcategoryOrderByWithRelationInput
     cartItems?: CartItemOrderByRelationAggregateInput
     orderItems?: OrderItemOrderByRelationAggregateInput
@@ -11029,16 +9710,12 @@ export namespace Prisma {
     OR?: ProductWhereInput[]
     NOT?: ProductWhereInput | ProductWhereInput[]
     title?: StringFilter<"Product"> | string
-    description?: StringFilter<"Product"> | string
+    description?: StringNullableFilter<"Product"> | string | null
     price?: FloatFilter<"Product"> | number
-    imageUrl?: StringFilter<"Product"> | string
-    stock?: IntFilter<"Product"> | number
-    status?: EnumModerationStatusFilter<"Product"> | $Enums.ModerationStatus
-    sellerId?: StringFilter<"Product"> | string
+    image?: StringNullableFilter<"Product"> | string | null
+    status?: StringFilter<"Product"> | string
     subcategoryId?: StringFilter<"Product"> | string
     createdAt?: DateTimeFilter<"Product"> | Date | string
-    updatedAt?: DateTimeFilter<"Product"> | Date | string
-    seller?: XOR<UserScalarRelationFilter, UserWhereInput>
     subcategory?: XOR<SubcategoryScalarRelationFilter, SubcategoryWhereInput>
     cartItems?: CartItemListRelationFilter
     orderItems?: OrderItemListRelationFilter
@@ -11047,15 +9724,12 @@ export namespace Prisma {
   export type ProductOrderByWithAggregationInput = {
     id?: SortOrder
     title?: SortOrder
-    description?: SortOrder
+    description?: SortOrderInput | SortOrder
     price?: SortOrder
-    imageUrl?: SortOrder
-    stock?: SortOrder
+    image?: SortOrderInput | SortOrder
     status?: SortOrder
-    sellerId?: SortOrder
     subcategoryId?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
     _count?: ProductCountOrderByAggregateInput
     _avg?: ProductAvgOrderByAggregateInput
     _max?: ProductMaxOrderByAggregateInput
@@ -11069,15 +9743,12 @@ export namespace Prisma {
     NOT?: ProductScalarWhereWithAggregatesInput | ProductScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Product"> | string
     title?: StringWithAggregatesFilter<"Product"> | string
-    description?: StringWithAggregatesFilter<"Product"> | string
+    description?: StringNullableWithAggregatesFilter<"Product"> | string | null
     price?: FloatWithAggregatesFilter<"Product"> | number
-    imageUrl?: StringWithAggregatesFilter<"Product"> | string
-    stock?: IntWithAggregatesFilter<"Product"> | number
-    status?: EnumModerationStatusWithAggregatesFilter<"Product"> | $Enums.ModerationStatus
-    sellerId?: StringWithAggregatesFilter<"Product"> | string
+    image?: StringNullableWithAggregatesFilter<"Product"> | string | null
+    status?: StringWithAggregatesFilter<"Product"> | string
     subcategoryId?: StringWithAggregatesFilter<"Product"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Product"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"Product"> | Date | string
   }
 
   export type CartItemWhereInput = {
@@ -11103,7 +9774,6 @@ export namespace Prisma {
 
   export type CartItemWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    userId_productId?: CartItemUserIdProductIdCompoundUniqueInput
     AND?: CartItemWhereInput | CartItemWhereInput[]
     OR?: CartItemWhereInput[]
     NOT?: CartItemWhereInput | CartItemWhereInput[]
@@ -11112,7 +9782,7 @@ export namespace Prisma {
     quantity?: IntFilter<"CartItem"> | number
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
-  }, "id" | "userId_productId">
+  }, "id">
 
   export type CartItemOrderByWithAggregationInput = {
     id?: SortOrder
@@ -11143,24 +9813,18 @@ export namespace Prisma {
     id?: StringFilter<"Order"> | string
     userId?: StringFilter<"Order"> | string
     deliveryMethod?: EnumDeliveryMethodFilter<"Order"> | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
-    totalPrice?: FloatFilter<"Order"> | number
     createdAt?: DateTimeFilter<"Order"> | Date | string
-    updatedAt?: DateTimeFilter<"Order"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
-    items?: OrderItemListRelationFilter
+    orderItems?: OrderItemListRelationFilter
   }
 
   export type OrderOrderByWithRelationInput = {
     id?: SortOrder
     userId?: SortOrder
     deliveryMethod?: SortOrder
-    status?: SortOrder
-    totalPrice?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
-    items?: OrderItemOrderByRelationAggregateInput
+    orderItems?: OrderItemOrderByRelationAggregateInput
   }
 
   export type OrderWhereUniqueInput = Prisma.AtLeast<{
@@ -11170,27 +9834,19 @@ export namespace Prisma {
     NOT?: OrderWhereInput | OrderWhereInput[]
     userId?: StringFilter<"Order"> | string
     deliveryMethod?: EnumDeliveryMethodFilter<"Order"> | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
-    totalPrice?: FloatFilter<"Order"> | number
     createdAt?: DateTimeFilter<"Order"> | Date | string
-    updatedAt?: DateTimeFilter<"Order"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
-    items?: OrderItemListRelationFilter
+    orderItems?: OrderItemListRelationFilter
   }, "id">
 
   export type OrderOrderByWithAggregationInput = {
     id?: SortOrder
     userId?: SortOrder
     deliveryMethod?: SortOrder
-    status?: SortOrder
-    totalPrice?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
     _count?: OrderCountOrderByAggregateInput
-    _avg?: OrderAvgOrderByAggregateInput
     _max?: OrderMaxOrderByAggregateInput
     _min?: OrderMinOrderByAggregateInput
-    _sum?: OrderSumOrderByAggregateInput
   }
 
   export type OrderScalarWhereWithAggregatesInput = {
@@ -11200,10 +9856,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Order"> | string
     userId?: StringWithAggregatesFilter<"Order"> | string
     deliveryMethod?: EnumDeliveryMethodWithAggregatesFilter<"Order"> | $Enums.DeliveryMethod
-    status?: EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
-    totalPrice?: FloatWithAggregatesFilter<"Order"> | number
     createdAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
   }
 
   export type OrderItemWhereInput = {
@@ -11214,7 +9867,6 @@ export namespace Prisma {
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
     quantity?: IntFilter<"OrderItem"> | number
-    price?: FloatFilter<"OrderItem"> | number
     order?: XOR<OrderScalarRelationFilter, OrderWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
   }
@@ -11224,7 +9876,6 @@ export namespace Prisma {
     orderId?: SortOrder
     productId?: SortOrder
     quantity?: SortOrder
-    price?: SortOrder
     order?: OrderOrderByWithRelationInput
     product?: ProductOrderByWithRelationInput
   }
@@ -11237,7 +9888,6 @@ export namespace Prisma {
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
     quantity?: IntFilter<"OrderItem"> | number
-    price?: FloatFilter<"OrderItem"> | number
     order?: XOR<OrderScalarRelationFilter, OrderWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
   }, "id">
@@ -11247,7 +9897,6 @@ export namespace Prisma {
     orderId?: SortOrder
     productId?: SortOrder
     quantity?: SortOrder
-    price?: SortOrder
     _count?: OrderItemCountOrderByAggregateInput
     _avg?: OrderItemAvgOrderByAggregateInput
     _max?: OrderItemMaxOrderByAggregateInput
@@ -11263,49 +9912,6 @@ export namespace Prisma {
     orderId?: StringWithAggregatesFilter<"OrderItem"> | string
     productId?: StringWithAggregatesFilter<"OrderItem"> | string
     quantity?: IntWithAggregatesFilter<"OrderItem"> | number
-    price?: FloatWithAggregatesFilter<"OrderItem"> | number
-  }
-
-  export type ExtremistBookWhereInput = {
-    AND?: ExtremistBookWhereInput | ExtremistBookWhereInput[]
-    OR?: ExtremistBookWhereInput[]
-    NOT?: ExtremistBookWhereInput | ExtremistBookWhereInput[]
-    id?: StringFilter<"ExtremistBook"> | string
-    title?: StringFilter<"ExtremistBook"> | string
-    createdAt?: DateTimeFilter<"ExtremistBook"> | Date | string
-  }
-
-  export type ExtremistBookOrderByWithRelationInput = {
-    id?: SortOrder
-    title?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type ExtremistBookWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
-    title?: string
-    AND?: ExtremistBookWhereInput | ExtremistBookWhereInput[]
-    OR?: ExtremistBookWhereInput[]
-    NOT?: ExtremistBookWhereInput | ExtremistBookWhereInput[]
-    createdAt?: DateTimeFilter<"ExtremistBook"> | Date | string
-  }, "id" | "title">
-
-  export type ExtremistBookOrderByWithAggregationInput = {
-    id?: SortOrder
-    title?: SortOrder
-    createdAt?: SortOrder
-    _count?: ExtremistBookCountOrderByAggregateInput
-    _max?: ExtremistBookMaxOrderByAggregateInput
-    _min?: ExtremistBookMinOrderByAggregateInput
-  }
-
-  export type ExtremistBookScalarWhereWithAggregatesInput = {
-    AND?: ExtremistBookScalarWhereWithAggregatesInput | ExtremistBookScalarWhereWithAggregatesInput[]
-    OR?: ExtremistBookScalarWhereWithAggregatesInput[]
-    NOT?: ExtremistBookScalarWhereWithAggregatesInput | ExtremistBookScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"ExtremistBook"> | string
-    title?: StringWithAggregatesFilter<"ExtremistBook"> | string
-    createdAt?: DateTimeWithAggregatesFilter<"ExtremistBook"> | Date | string
   }
 
   export type UserCreateInput = {
@@ -11315,8 +9921,6 @@ export namespace Prisma {
     yandexId?: string | null
     role?: $Enums.Role
     createdAt?: Date | string
-    updatedAt?: Date | string
-    products?: ProductCreateNestedManyWithoutSellerInput
     cartItems?: CartItemCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
   }
@@ -11328,8 +9932,6 @@ export namespace Prisma {
     yandexId?: string | null
     role?: $Enums.Role
     createdAt?: Date | string
-    updatedAt?: Date | string
-    products?: ProductUncheckedCreateNestedManyWithoutSellerInput
     cartItems?: CartItemUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
   }
@@ -11341,8 +9943,6 @@ export namespace Prisma {
     yandexId?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    products?: ProductUpdateManyWithoutSellerNestedInput
     cartItems?: CartItemUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
   }
@@ -11354,8 +9954,6 @@ export namespace Prisma {
     yandexId?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    products?: ProductUncheckedUpdateManyWithoutSellerNestedInput
     cartItems?: CartItemUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -11367,7 +9965,6 @@ export namespace Prisma {
     yandexId?: string | null
     role?: $Enums.Role
     createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
   export type UserUpdateManyMutationInput = {
@@ -11377,7 +9974,6 @@ export namespace Prisma {
     yandexId?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserUncheckedUpdateManyInput = {
@@ -11387,7 +9983,6 @@ export namespace Prisma {
     yandexId?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CategoryCreateInput = {
@@ -11477,14 +10072,11 @@ export namespace Prisma {
   export type ProductCreateInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
+    image?: string | null
+    status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
-    seller: UserCreateNestedOneWithoutProductsInput
     subcategory: SubcategoryCreateNestedOneWithoutProductsInput
     cartItems?: CartItemCreateNestedManyWithoutProductInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
@@ -11493,15 +10085,12 @@ export namespace Prisma {
   export type ProductUncheckedCreateInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    sellerId: string
+    image?: string | null
+    status?: string
     subcategoryId: string
     createdAt?: Date | string
-    updatedAt?: Date | string
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
   }
@@ -11509,14 +10098,11 @@ export namespace Prisma {
   export type ProductUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    seller?: UserUpdateOneRequiredWithoutProductsNestedInput
     subcategory?: SubcategoryUpdateOneRequiredWithoutProductsNestedInput
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
@@ -11525,15 +10111,12 @@ export namespace Prisma {
   export type ProductUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    sellerId?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
   }
@@ -11541,41 +10124,33 @@ export namespace Prisma {
   export type ProductCreateManyInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    sellerId: string
+    image?: string | null
+    status?: string
     subcategoryId: string
     createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
   export type ProductUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ProductUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    sellerId?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CartItemCreateInput = {
@@ -11628,81 +10203,59 @@ export namespace Prisma {
   export type OrderCreateInput = {
     id?: string
     deliveryMethod?: $Enums.DeliveryMethod
-    status?: $Enums.OrderStatus
-    totalPrice: number
     createdAt?: Date | string
-    updatedAt?: Date | string
     user: UserCreateNestedOneWithoutOrdersInput
-    items?: OrderItemCreateNestedManyWithoutOrderInput
+    orderItems?: OrderItemCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateInput = {
     id?: string
     userId: string
     deliveryMethod?: $Enums.DeliveryMethod
-    status?: $Enums.OrderStatus
-    totalPrice: number
     createdAt?: Date | string
-    updatedAt?: Date | string
-    items?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
+    orderItems?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutOrdersNestedInput
-    items?: OrderItemUpdateManyWithoutOrderNestedInput
+    orderItems?: OrderItemUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    items?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
+    orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderCreateManyInput = {
     id?: string
     userId: string
     deliveryMethod?: $Enums.DeliveryMethod
-    status?: $Enums.OrderStatus
-    totalPrice: number
     createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
   export type OrderUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type OrderUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type OrderItemCreateInput = {
     id?: string
     quantity: number
-    price: number
-    order: OrderCreateNestedOneWithoutItemsInput
+    order: OrderCreateNestedOneWithoutOrderItemsInput
     product: ProductCreateNestedOneWithoutOrderItemsInput
   }
 
@@ -11711,14 +10264,12 @@ export namespace Prisma {
     orderId: string
     productId: string
     quantity: number
-    price: number
   }
 
   export type OrderItemUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
-    order?: OrderUpdateOneRequiredWithoutItemsNestedInput
+    order?: OrderUpdateOneRequiredWithoutOrderItemsNestedInput
     product?: ProductUpdateOneRequiredWithoutOrderItemsNestedInput
   }
 
@@ -11727,7 +10278,6 @@ export namespace Prisma {
     orderId?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
   }
 
   export type OrderItemCreateManyInput = {
@@ -11735,13 +10285,11 @@ export namespace Prisma {
     orderId: string
     productId: string
     quantity: number
-    price: number
   }
 
   export type OrderItemUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
   }
 
   export type OrderItemUncheckedUpdateManyInput = {
@@ -11749,49 +10297,6 @@ export namespace Prisma {
     orderId?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
-  }
-
-  export type ExtremistBookCreateInput = {
-    id?: string
-    title: string
-    createdAt?: Date | string
-  }
-
-  export type ExtremistBookUncheckedCreateInput = {
-    id?: string
-    title: string
-    createdAt?: Date | string
-  }
-
-  export type ExtremistBookUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    title?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ExtremistBookUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    title?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ExtremistBookCreateManyInput = {
-    id?: string
-    title: string
-    createdAt?: Date | string
-  }
-
-  export type ExtremistBookUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    title?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ExtremistBookUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    title?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -11842,12 +10347,6 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
-  export type ProductListRelationFilter = {
-    every?: ProductWhereInput
-    some?: ProductWhereInput
-    none?: ProductWhereInput
-  }
-
   export type CartItemListRelationFilter = {
     every?: CartItemWhereInput
     some?: CartItemWhereInput
@@ -11865,10 +10364,6 @@ export namespace Prisma {
     nulls?: NullsOrder
   }
 
-  export type ProductOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
   export type CartItemOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -11884,7 +10379,6 @@ export namespace Prisma {
     yandexId?: SortOrder
     role?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
@@ -11894,7 +10388,6 @@ export namespace Prisma {
     yandexId?: SortOrder
     role?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type UserMinOrderByAggregateInput = {
@@ -11904,7 +10397,6 @@ export namespace Prisma {
     yandexId?: SortOrder
     role?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -11997,9 +10489,14 @@ export namespace Prisma {
     isNot?: CategoryWhereInput
   }
 
-  export type SubcategoryNameCategoryIdCompoundUniqueInput = {
-    name: string
-    categoryId: string
+  export type ProductListRelationFilter = {
+    every?: ProductWhereInput
+    some?: ProductWhereInput
+    none?: ProductWhereInput
+  }
+
+  export type ProductOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type SubcategoryCountOrderByAggregateInput = {
@@ -12031,29 +10528,6 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
-  export type EnumModerationStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.ModerationStatus | EnumModerationStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.ModerationStatus[] | ListEnumModerationStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ModerationStatus[] | ListEnumModerationStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumModerationStatusFilter<$PrismaModel> | $Enums.ModerationStatus
-  }
-
-  export type UserScalarRelationFilter = {
-    is?: UserWhereInput
-    isNot?: UserWhereInput
-  }
-
   export type SubcategoryScalarRelationFilter = {
     is?: SubcategoryWhereInput
     isNot?: SubcategoryWhereInput
@@ -12074,18 +10548,14 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     price?: SortOrder
-    imageUrl?: SortOrder
-    stock?: SortOrder
+    image?: SortOrder
     status?: SortOrder
-    sellerId?: SortOrder
     subcategoryId?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type ProductAvgOrderByAggregateInput = {
     price?: SortOrder
-    stock?: SortOrder
   }
 
   export type ProductMaxOrderByAggregateInput = {
@@ -12093,13 +10563,10 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     price?: SortOrder
-    imageUrl?: SortOrder
-    stock?: SortOrder
+    image?: SortOrder
     status?: SortOrder
-    sellerId?: SortOrder
     subcategoryId?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type ProductMinOrderByAggregateInput = {
@@ -12107,18 +10574,14 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     price?: SortOrder
-    imageUrl?: SortOrder
-    stock?: SortOrder
+    image?: SortOrder
     status?: SortOrder
-    sellerId?: SortOrder
     subcategoryId?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type ProductSumOrderByAggregateInput = {
     price?: SortOrder
-    stock?: SortOrder
   }
 
   export type FloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -12137,7 +10600,7 @@ export namespace Prisma {
     _max?: NestedFloatFilter<$PrismaModel>
   }
 
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+  export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
     notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -12145,32 +10608,17 @@ export namespace Prisma {
     lte?: number | IntFieldRefInput<$PrismaModel>
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
   }
 
-  export type EnumModerationStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.ModerationStatus | EnumModerationStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.ModerationStatus[] | ListEnumModerationStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ModerationStatus[] | ListEnumModerationStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumModerationStatusWithAggregatesFilter<$PrismaModel> | $Enums.ModerationStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumModerationStatusFilter<$PrismaModel>
-    _max?: NestedEnumModerationStatusFilter<$PrismaModel>
+  export type UserScalarRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
   }
 
   export type ProductScalarRelationFilter = {
     is?: ProductWhereInput
     isNot?: ProductWhereInput
-  }
-
-  export type CartItemUserIdProductIdCompoundUniqueInput = {
-    userId: string
-    productId: string
   }
 
   export type CartItemCountOrderByAggregateInput = {
@@ -12202,6 +10650,22 @@ export namespace Prisma {
     quantity?: SortOrder
   }
 
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
   export type EnumDeliveryMethodFilter<$PrismaModel = never> = {
     equals?: $Enums.DeliveryMethod | EnumDeliveryMethodFieldRefInput<$PrismaModel>
     in?: $Enums.DeliveryMethod[] | ListEnumDeliveryMethodFieldRefInput<$PrismaModel>
@@ -12209,49 +10673,25 @@ export namespace Prisma {
     not?: NestedEnumDeliveryMethodFilter<$PrismaModel> | $Enums.DeliveryMethod
   }
 
-  export type EnumOrderStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.OrderStatus | EnumOrderStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumOrderStatusFilter<$PrismaModel> | $Enums.OrderStatus
-  }
-
   export type OrderCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     deliveryMethod?: SortOrder
-    status?: SortOrder
-    totalPrice?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type OrderAvgOrderByAggregateInput = {
-    totalPrice?: SortOrder
   }
 
   export type OrderMaxOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     deliveryMethod?: SortOrder
-    status?: SortOrder
-    totalPrice?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type OrderMinOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     deliveryMethod?: SortOrder
-    status?: SortOrder
-    totalPrice?: SortOrder
     createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type OrderSumOrderByAggregateInput = {
-    totalPrice?: SortOrder
   }
 
   export type EnumDeliveryMethodWithAggregatesFilter<$PrismaModel = never> = {
@@ -12264,16 +10704,6 @@ export namespace Prisma {
     _max?: NestedEnumDeliveryMethodFilter<$PrismaModel>
   }
 
-  export type EnumOrderStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.OrderStatus | EnumOrderStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumOrderStatusWithAggregatesFilter<$PrismaModel> | $Enums.OrderStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumOrderStatusFilter<$PrismaModel>
-    _max?: NestedEnumOrderStatusFilter<$PrismaModel>
-  }
-
   export type OrderScalarRelationFilter = {
     is?: OrderWhereInput
     isNot?: OrderWhereInput
@@ -12284,12 +10714,10 @@ export namespace Prisma {
     orderId?: SortOrder
     productId?: SortOrder
     quantity?: SortOrder
-    price?: SortOrder
   }
 
   export type OrderItemAvgOrderByAggregateInput = {
     quantity?: SortOrder
-    price?: SortOrder
   }
 
   export type OrderItemMaxOrderByAggregateInput = {
@@ -12297,7 +10725,6 @@ export namespace Prisma {
     orderId?: SortOrder
     productId?: SortOrder
     quantity?: SortOrder
-    price?: SortOrder
   }
 
   export type OrderItemMinOrderByAggregateInput = {
@@ -12305,37 +10732,10 @@ export namespace Prisma {
     orderId?: SortOrder
     productId?: SortOrder
     quantity?: SortOrder
-    price?: SortOrder
   }
 
   export type OrderItemSumOrderByAggregateInput = {
     quantity?: SortOrder
-    price?: SortOrder
-  }
-
-  export type ExtremistBookCountOrderByAggregateInput = {
-    id?: SortOrder
-    title?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type ExtremistBookMaxOrderByAggregateInput = {
-    id?: SortOrder
-    title?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type ExtremistBookMinOrderByAggregateInput = {
-    id?: SortOrder
-    title?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type ProductCreateNestedManyWithoutSellerInput = {
-    create?: XOR<ProductCreateWithoutSellerInput, ProductUncheckedCreateWithoutSellerInput> | ProductCreateWithoutSellerInput[] | ProductUncheckedCreateWithoutSellerInput[]
-    connectOrCreate?: ProductCreateOrConnectWithoutSellerInput | ProductCreateOrConnectWithoutSellerInput[]
-    createMany?: ProductCreateManySellerInputEnvelope
-    connect?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
   }
 
   export type CartItemCreateNestedManyWithoutUserInput = {
@@ -12350,13 +10750,6 @@ export namespace Prisma {
     connectOrCreate?: OrderCreateOrConnectWithoutUserInput | OrderCreateOrConnectWithoutUserInput[]
     createMany?: OrderCreateManyUserInputEnvelope
     connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
-  }
-
-  export type ProductUncheckedCreateNestedManyWithoutSellerInput = {
-    create?: XOR<ProductCreateWithoutSellerInput, ProductUncheckedCreateWithoutSellerInput> | ProductCreateWithoutSellerInput[] | ProductUncheckedCreateWithoutSellerInput[]
-    connectOrCreate?: ProductCreateOrConnectWithoutSellerInput | ProductCreateOrConnectWithoutSellerInput[]
-    createMany?: ProductCreateManySellerInputEnvelope
-    connect?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
   }
 
   export type CartItemUncheckedCreateNestedManyWithoutUserInput = {
@@ -12389,20 +10782,6 @@ export namespace Prisma {
     set?: Date | string
   }
 
-  export type ProductUpdateManyWithoutSellerNestedInput = {
-    create?: XOR<ProductCreateWithoutSellerInput, ProductUncheckedCreateWithoutSellerInput> | ProductCreateWithoutSellerInput[] | ProductUncheckedCreateWithoutSellerInput[]
-    connectOrCreate?: ProductCreateOrConnectWithoutSellerInput | ProductCreateOrConnectWithoutSellerInput[]
-    upsert?: ProductUpsertWithWhereUniqueWithoutSellerInput | ProductUpsertWithWhereUniqueWithoutSellerInput[]
-    createMany?: ProductCreateManySellerInputEnvelope
-    set?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
-    disconnect?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
-    delete?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
-    connect?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
-    update?: ProductUpdateWithWhereUniqueWithoutSellerInput | ProductUpdateWithWhereUniqueWithoutSellerInput[]
-    updateMany?: ProductUpdateManyWithWhereWithoutSellerInput | ProductUpdateManyWithWhereWithoutSellerInput[]
-    deleteMany?: ProductScalarWhereInput | ProductScalarWhereInput[]
-  }
-
   export type CartItemUpdateManyWithoutUserNestedInput = {
     create?: XOR<CartItemCreateWithoutUserInput, CartItemUncheckedCreateWithoutUserInput> | CartItemCreateWithoutUserInput[] | CartItemUncheckedCreateWithoutUserInput[]
     connectOrCreate?: CartItemCreateOrConnectWithoutUserInput | CartItemCreateOrConnectWithoutUserInput[]
@@ -12429,20 +10808,6 @@ export namespace Prisma {
     update?: OrderUpdateWithWhereUniqueWithoutUserInput | OrderUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: OrderUpdateManyWithWhereWithoutUserInput | OrderUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
-  }
-
-  export type ProductUncheckedUpdateManyWithoutSellerNestedInput = {
-    create?: XOR<ProductCreateWithoutSellerInput, ProductUncheckedCreateWithoutSellerInput> | ProductCreateWithoutSellerInput[] | ProductUncheckedCreateWithoutSellerInput[]
-    connectOrCreate?: ProductCreateOrConnectWithoutSellerInput | ProductCreateOrConnectWithoutSellerInput[]
-    upsert?: ProductUpsertWithWhereUniqueWithoutSellerInput | ProductUpsertWithWhereUniqueWithoutSellerInput[]
-    createMany?: ProductCreateManySellerInputEnvelope
-    set?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
-    disconnect?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
-    delete?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
-    connect?: ProductWhereUniqueInput | ProductWhereUniqueInput[]
-    update?: ProductUpdateWithWhereUniqueWithoutSellerInput | ProductUpdateWithWhereUniqueWithoutSellerInput[]
-    updateMany?: ProductUpdateManyWithWhereWithoutSellerInput | ProductUpdateManyWithWhereWithoutSellerInput[]
-    deleteMany?: ProductScalarWhereInput | ProductScalarWhereInput[]
   }
 
   export type CartItemUncheckedUpdateManyWithoutUserNestedInput = {
@@ -12571,12 +10936,6 @@ export namespace Prisma {
     deleteMany?: ProductScalarWhereInput | ProductScalarWhereInput[]
   }
 
-  export type UserCreateNestedOneWithoutProductsInput = {
-    create?: XOR<UserCreateWithoutProductsInput, UserUncheckedCreateWithoutProductsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutProductsInput
-    connect?: UserWhereUniqueInput
-  }
-
   export type SubcategoryCreateNestedOneWithoutProductsInput = {
     create?: XOR<SubcategoryCreateWithoutProductsInput, SubcategoryUncheckedCreateWithoutProductsInput>
     connectOrCreate?: SubcategoryCreateOrConnectWithoutProductsInput
@@ -12617,26 +10976,6 @@ export namespace Prisma {
     decrement?: number
     multiply?: number
     divide?: number
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-  }
-
-  export type EnumModerationStatusFieldUpdateOperationsInput = {
-    set?: $Enums.ModerationStatus
-  }
-
-  export type UserUpdateOneRequiredWithoutProductsNestedInput = {
-    create?: XOR<UserCreateWithoutProductsInput, UserUncheckedCreateWithoutProductsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutProductsInput
-    upsert?: UserUpsertWithoutProductsInput
-    connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutProductsInput, UserUpdateWithoutProductsInput>, UserUncheckedUpdateWithoutProductsInput>
   }
 
   export type SubcategoryUpdateOneRequiredWithoutProductsNestedInput = {
@@ -12715,6 +11054,14 @@ export namespace Prisma {
     connect?: ProductWhereUniqueInput
   }
 
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type UserUpdateOneRequiredWithoutCartItemsNestedInput = {
     create?: XOR<UserCreateWithoutCartItemsInput, UserUncheckedCreateWithoutCartItemsInput>
     connectOrCreate?: UserCreateOrConnectWithoutCartItemsInput
@@ -12755,10 +11102,6 @@ export namespace Prisma {
     set?: $Enums.DeliveryMethod
   }
 
-  export type EnumOrderStatusFieldUpdateOperationsInput = {
-    set?: $Enums.OrderStatus
-  }
-
   export type UserUpdateOneRequiredWithoutOrdersNestedInput = {
     create?: XOR<UserCreateWithoutOrdersInput, UserUncheckedCreateWithoutOrdersInput>
     connectOrCreate?: UserCreateOrConnectWithoutOrdersInput
@@ -12795,9 +11138,9 @@ export namespace Prisma {
     deleteMany?: OrderItemScalarWhereInput | OrderItemScalarWhereInput[]
   }
 
-  export type OrderCreateNestedOneWithoutItemsInput = {
-    create?: XOR<OrderCreateWithoutItemsInput, OrderUncheckedCreateWithoutItemsInput>
-    connectOrCreate?: OrderCreateOrConnectWithoutItemsInput
+  export type OrderCreateNestedOneWithoutOrderItemsInput = {
+    create?: XOR<OrderCreateWithoutOrderItemsInput, OrderUncheckedCreateWithoutOrderItemsInput>
+    connectOrCreate?: OrderCreateOrConnectWithoutOrderItemsInput
     connect?: OrderWhereUniqueInput
   }
 
@@ -12807,12 +11150,12 @@ export namespace Prisma {
     connect?: ProductWhereUniqueInput
   }
 
-  export type OrderUpdateOneRequiredWithoutItemsNestedInput = {
-    create?: XOR<OrderCreateWithoutItemsInput, OrderUncheckedCreateWithoutItemsInput>
-    connectOrCreate?: OrderCreateOrConnectWithoutItemsInput
-    upsert?: OrderUpsertWithoutItemsInput
+  export type OrderUpdateOneRequiredWithoutOrderItemsNestedInput = {
+    create?: XOR<OrderCreateWithoutOrderItemsInput, OrderUncheckedCreateWithoutOrderItemsInput>
+    connectOrCreate?: OrderCreateOrConnectWithoutOrderItemsInput
+    upsert?: OrderUpsertWithoutOrderItemsInput
     connect?: OrderWhereUniqueInput
-    update?: XOR<XOR<OrderUpdateToOneWithWhereWithoutItemsInput, OrderUpdateWithoutItemsInput>, OrderUncheckedUpdateWithoutItemsInput>
+    update?: XOR<XOR<OrderUpdateToOneWithWhereWithoutOrderItemsInput, OrderUpdateWithoutOrderItemsInput>, OrderUncheckedUpdateWithoutOrderItemsInput>
   }
 
   export type ProductUpdateOneRequiredWithoutOrderItemsNestedInput = {
@@ -12960,13 +11303,6 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
-  export type NestedEnumModerationStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.ModerationStatus | EnumModerationStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.ModerationStatus[] | ListEnumModerationStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ModerationStatus[] | ListEnumModerationStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumModerationStatusFilter<$PrismaModel> | $Enums.ModerationStatus
-  }
-
   export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel>
     in?: number[] | ListFloatFieldRefInput<$PrismaModel>
@@ -12999,28 +11335,11 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
-  export type NestedEnumModerationStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.ModerationStatus | EnumModerationStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.ModerationStatus[] | ListEnumModerationStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ModerationStatus[] | ListEnumModerationStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumModerationStatusWithAggregatesFilter<$PrismaModel> | $Enums.ModerationStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumModerationStatusFilter<$PrismaModel>
-    _max?: NestedEnumModerationStatusFilter<$PrismaModel>
-  }
-
   export type NestedEnumDeliveryMethodFilter<$PrismaModel = never> = {
     equals?: $Enums.DeliveryMethod | EnumDeliveryMethodFieldRefInput<$PrismaModel>
     in?: $Enums.DeliveryMethod[] | ListEnumDeliveryMethodFieldRefInput<$PrismaModel>
     notIn?: $Enums.DeliveryMethod[] | ListEnumDeliveryMethodFieldRefInput<$PrismaModel>
     not?: NestedEnumDeliveryMethodFilter<$PrismaModel> | $Enums.DeliveryMethod
-  }
-
-  export type NestedEnumOrderStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.OrderStatus | EnumOrderStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumOrderStatusFilter<$PrismaModel> | $Enums.OrderStatus
   }
 
   export type NestedEnumDeliveryMethodWithAggregatesFilter<$PrismaModel = never> = {
@@ -13031,56 +11350,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumDeliveryMethodFilter<$PrismaModel>
     _max?: NestedEnumDeliveryMethodFilter<$PrismaModel>
-  }
-
-  export type NestedEnumOrderStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.OrderStatus | EnumOrderStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumOrderStatusWithAggregatesFilter<$PrismaModel> | $Enums.OrderStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumOrderStatusFilter<$PrismaModel>
-    _max?: NestedEnumOrderStatusFilter<$PrismaModel>
-  }
-
-  export type ProductCreateWithoutSellerInput = {
-    id?: string
-    title: string
-    description: string
-    price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    subcategory: SubcategoryCreateNestedOneWithoutProductsInput
-    cartItems?: CartItemCreateNestedManyWithoutProductInput
-    orderItems?: OrderItemCreateNestedManyWithoutProductInput
-  }
-
-  export type ProductUncheckedCreateWithoutSellerInput = {
-    id?: string
-    title: string
-    description: string
-    price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    subcategoryId: string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
-    orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
-  }
-
-  export type ProductCreateOrConnectWithoutSellerInput = {
-    where: ProductWhereUniqueInput
-    create: XOR<ProductCreateWithoutSellerInput, ProductUncheckedCreateWithoutSellerInput>
-  }
-
-  export type ProductCreateManySellerInputEnvelope = {
-    data: ProductCreateManySellerInput | ProductCreateManySellerInput[]
-    skipDuplicates?: boolean
   }
 
   export type CartItemCreateWithoutUserInput = {
@@ -13108,21 +11377,15 @@ export namespace Prisma {
   export type OrderCreateWithoutUserInput = {
     id?: string
     deliveryMethod?: $Enums.DeliveryMethod
-    status?: $Enums.OrderStatus
-    totalPrice: number
     createdAt?: Date | string
-    updatedAt?: Date | string
-    items?: OrderItemCreateNestedManyWithoutOrderInput
+    orderItems?: OrderItemCreateNestedManyWithoutOrderInput
   }
 
   export type OrderUncheckedCreateWithoutUserInput = {
     id?: string
     deliveryMethod?: $Enums.DeliveryMethod
-    status?: $Enums.OrderStatus
-    totalPrice: number
     createdAt?: Date | string
-    updatedAt?: Date | string
-    items?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
+    orderItems?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
   }
 
   export type OrderCreateOrConnectWithoutUserInput = {
@@ -13133,39 +11396,6 @@ export namespace Prisma {
   export type OrderCreateManyUserInputEnvelope = {
     data: OrderCreateManyUserInput | OrderCreateManyUserInput[]
     skipDuplicates?: boolean
-  }
-
-  export type ProductUpsertWithWhereUniqueWithoutSellerInput = {
-    where: ProductWhereUniqueInput
-    update: XOR<ProductUpdateWithoutSellerInput, ProductUncheckedUpdateWithoutSellerInput>
-    create: XOR<ProductCreateWithoutSellerInput, ProductUncheckedCreateWithoutSellerInput>
-  }
-
-  export type ProductUpdateWithWhereUniqueWithoutSellerInput = {
-    where: ProductWhereUniqueInput
-    data: XOR<ProductUpdateWithoutSellerInput, ProductUncheckedUpdateWithoutSellerInput>
-  }
-
-  export type ProductUpdateManyWithWhereWithoutSellerInput = {
-    where: ProductScalarWhereInput
-    data: XOR<ProductUpdateManyMutationInput, ProductUncheckedUpdateManyWithoutSellerInput>
-  }
-
-  export type ProductScalarWhereInput = {
-    AND?: ProductScalarWhereInput | ProductScalarWhereInput[]
-    OR?: ProductScalarWhereInput[]
-    NOT?: ProductScalarWhereInput | ProductScalarWhereInput[]
-    id?: StringFilter<"Product"> | string
-    title?: StringFilter<"Product"> | string
-    description?: StringFilter<"Product"> | string
-    price?: FloatFilter<"Product"> | number
-    imageUrl?: StringFilter<"Product"> | string
-    stock?: IntFilter<"Product"> | number
-    status?: EnumModerationStatusFilter<"Product"> | $Enums.ModerationStatus
-    sellerId?: StringFilter<"Product"> | string
-    subcategoryId?: StringFilter<"Product"> | string
-    createdAt?: DateTimeFilter<"Product"> | Date | string
-    updatedAt?: DateTimeFilter<"Product"> | Date | string
   }
 
   export type CartItemUpsertWithWhereUniqueWithoutUserInput = {
@@ -13217,10 +11447,7 @@ export namespace Prisma {
     id?: StringFilter<"Order"> | string
     userId?: StringFilter<"Order"> | string
     deliveryMethod?: EnumDeliveryMethodFilter<"Order"> | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
-    totalPrice?: FloatFilter<"Order"> | number
     createdAt?: DateTimeFilter<"Order"> | Date | string
-    updatedAt?: DateTimeFilter<"Order"> | Date | string
   }
 
   export type SubcategoryCreateWithoutCategoryInput = {
@@ -13288,14 +11515,11 @@ export namespace Prisma {
   export type ProductCreateWithoutSubcategoryInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
+    image?: string | null
+    status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
-    seller: UserCreateNestedOneWithoutProductsInput
     cartItems?: CartItemCreateNestedManyWithoutProductInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
   }
@@ -13303,14 +11527,11 @@ export namespace Prisma {
   export type ProductUncheckedCreateWithoutSubcategoryInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    sellerId: string
+    image?: string | null
+    status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
   }
@@ -13362,33 +11583,18 @@ export namespace Prisma {
     data: XOR<ProductUpdateManyMutationInput, ProductUncheckedUpdateManyWithoutSubcategoryInput>
   }
 
-  export type UserCreateWithoutProductsInput = {
-    id?: string
-    email: string
-    password?: string | null
-    yandexId?: string | null
-    role?: $Enums.Role
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    cartItems?: CartItemCreateNestedManyWithoutUserInput
-    orders?: OrderCreateNestedManyWithoutUserInput
-  }
-
-  export type UserUncheckedCreateWithoutProductsInput = {
-    id?: string
-    email: string
-    password?: string | null
-    yandexId?: string | null
-    role?: $Enums.Role
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    cartItems?: CartItemUncheckedCreateNestedManyWithoutUserInput
-    orders?: OrderUncheckedCreateNestedManyWithoutUserInput
-  }
-
-  export type UserCreateOrConnectWithoutProductsInput = {
-    where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutProductsInput, UserUncheckedCreateWithoutProductsInput>
+  export type ProductScalarWhereInput = {
+    AND?: ProductScalarWhereInput | ProductScalarWhereInput[]
+    OR?: ProductScalarWhereInput[]
+    NOT?: ProductScalarWhereInput | ProductScalarWhereInput[]
+    id?: StringFilter<"Product"> | string
+    title?: StringFilter<"Product"> | string
+    description?: StringNullableFilter<"Product"> | string | null
+    price?: FloatFilter<"Product"> | number
+    image?: StringNullableFilter<"Product"> | string | null
+    status?: StringFilter<"Product"> | string
+    subcategoryId?: StringFilter<"Product"> | string
+    createdAt?: DateTimeFilter<"Product"> | Date | string
   }
 
   export type SubcategoryCreateWithoutProductsInput = {
@@ -13433,15 +11639,13 @@ export namespace Prisma {
   export type OrderItemCreateWithoutProductInput = {
     id?: string
     quantity: number
-    price: number
-    order: OrderCreateNestedOneWithoutItemsInput
+    order: OrderCreateNestedOneWithoutOrderItemsInput
   }
 
   export type OrderItemUncheckedCreateWithoutProductInput = {
     id?: string
     orderId: string
     quantity: number
-    price: number
   }
 
   export type OrderItemCreateOrConnectWithoutProductInput = {
@@ -13452,41 +11656,6 @@ export namespace Prisma {
   export type OrderItemCreateManyProductInputEnvelope = {
     data: OrderItemCreateManyProductInput | OrderItemCreateManyProductInput[]
     skipDuplicates?: boolean
-  }
-
-  export type UserUpsertWithoutProductsInput = {
-    update: XOR<UserUpdateWithoutProductsInput, UserUncheckedUpdateWithoutProductsInput>
-    create: XOR<UserCreateWithoutProductsInput, UserUncheckedCreateWithoutProductsInput>
-    where?: UserWhereInput
-  }
-
-  export type UserUpdateToOneWithWhereWithoutProductsInput = {
-    where?: UserWhereInput
-    data: XOR<UserUpdateWithoutProductsInput, UserUncheckedUpdateWithoutProductsInput>
-  }
-
-  export type UserUpdateWithoutProductsInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
-    password?: NullableStringFieldUpdateOperationsInput | string | null
-    yandexId?: NullableStringFieldUpdateOperationsInput | string | null
-    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    cartItems?: CartItemUpdateManyWithoutUserNestedInput
-    orders?: OrderUpdateManyWithoutUserNestedInput
-  }
-
-  export type UserUncheckedUpdateWithoutProductsInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
-    password?: NullableStringFieldUpdateOperationsInput | string | null
-    yandexId?: NullableStringFieldUpdateOperationsInput | string | null
-    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    cartItems?: CartItemUncheckedUpdateManyWithoutUserNestedInput
-    orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type SubcategoryUpsertWithoutProductsInput = {
@@ -13552,7 +11721,6 @@ export namespace Prisma {
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
     quantity?: IntFilter<"OrderItem"> | number
-    price?: FloatFilter<"OrderItem"> | number
   }
 
   export type UserCreateWithoutCartItemsInput = {
@@ -13562,8 +11730,6 @@ export namespace Prisma {
     yandexId?: string | null
     role?: $Enums.Role
     createdAt?: Date | string
-    updatedAt?: Date | string
-    products?: ProductCreateNestedManyWithoutSellerInput
     orders?: OrderCreateNestedManyWithoutUserInput
   }
 
@@ -13574,8 +11740,6 @@ export namespace Prisma {
     yandexId?: string | null
     role?: $Enums.Role
     createdAt?: Date | string
-    updatedAt?: Date | string
-    products?: ProductUncheckedCreateNestedManyWithoutSellerInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -13587,14 +11751,11 @@ export namespace Prisma {
   export type ProductCreateWithoutCartItemsInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
+    image?: string | null
+    status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
-    seller: UserCreateNestedOneWithoutProductsInput
     subcategory: SubcategoryCreateNestedOneWithoutProductsInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
   }
@@ -13602,15 +11763,12 @@ export namespace Prisma {
   export type ProductUncheckedCreateWithoutCartItemsInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    sellerId: string
+    image?: string | null
+    status?: string
     subcategoryId: string
     createdAt?: Date | string
-    updatedAt?: Date | string
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
   }
 
@@ -13637,8 +11795,6 @@ export namespace Prisma {
     yandexId?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    products?: ProductUpdateManyWithoutSellerNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
   }
 
@@ -13649,8 +11805,6 @@ export namespace Prisma {
     yandexId?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    products?: ProductUncheckedUpdateManyWithoutSellerNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -13668,14 +11822,11 @@ export namespace Prisma {
   export type ProductUpdateWithoutCartItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    seller?: UserUpdateOneRequiredWithoutProductsNestedInput
     subcategory?: SubcategoryUpdateOneRequiredWithoutProductsNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
   }
@@ -13683,15 +11834,12 @@ export namespace Prisma {
   export type ProductUncheckedUpdateWithoutCartItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    sellerId?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
   }
 
@@ -13702,8 +11850,6 @@ export namespace Prisma {
     yandexId?: string | null
     role?: $Enums.Role
     createdAt?: Date | string
-    updatedAt?: Date | string
-    products?: ProductCreateNestedManyWithoutSellerInput
     cartItems?: CartItemCreateNestedManyWithoutUserInput
   }
 
@@ -13714,8 +11860,6 @@ export namespace Prisma {
     yandexId?: string | null
     role?: $Enums.Role
     createdAt?: Date | string
-    updatedAt?: Date | string
-    products?: ProductUncheckedCreateNestedManyWithoutSellerInput
     cartItems?: CartItemUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -13727,7 +11871,6 @@ export namespace Prisma {
   export type OrderItemCreateWithoutOrderInput = {
     id?: string
     quantity: number
-    price: number
     product: ProductCreateNestedOneWithoutOrderItemsInput
   }
 
@@ -13735,7 +11878,6 @@ export namespace Prisma {
     id?: string
     productId: string
     quantity: number
-    price: number
   }
 
   export type OrderItemCreateOrConnectWithoutOrderInput = {
@@ -13766,8 +11908,6 @@ export namespace Prisma {
     yandexId?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    products?: ProductUpdateManyWithoutSellerNestedInput
     cartItems?: CartItemUpdateManyWithoutUserNestedInput
   }
 
@@ -13778,8 +11918,6 @@ export namespace Prisma {
     yandexId?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    products?: ProductUncheckedUpdateManyWithoutSellerNestedInput
     cartItems?: CartItemUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -13799,42 +11937,33 @@ export namespace Prisma {
     data: XOR<OrderItemUpdateManyMutationInput, OrderItemUncheckedUpdateManyWithoutOrderInput>
   }
 
-  export type OrderCreateWithoutItemsInput = {
+  export type OrderCreateWithoutOrderItemsInput = {
     id?: string
     deliveryMethod?: $Enums.DeliveryMethod
-    status?: $Enums.OrderStatus
-    totalPrice: number
     createdAt?: Date | string
-    updatedAt?: Date | string
     user: UserCreateNestedOneWithoutOrdersInput
   }
 
-  export type OrderUncheckedCreateWithoutItemsInput = {
+  export type OrderUncheckedCreateWithoutOrderItemsInput = {
     id?: string
     userId: string
     deliveryMethod?: $Enums.DeliveryMethod
-    status?: $Enums.OrderStatus
-    totalPrice: number
     createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
-  export type OrderCreateOrConnectWithoutItemsInput = {
+  export type OrderCreateOrConnectWithoutOrderItemsInput = {
     where: OrderWhereUniqueInput
-    create: XOR<OrderCreateWithoutItemsInput, OrderUncheckedCreateWithoutItemsInput>
+    create: XOR<OrderCreateWithoutOrderItemsInput, OrderUncheckedCreateWithoutOrderItemsInput>
   }
 
   export type ProductCreateWithoutOrderItemsInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
+    image?: string | null
+    status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
-    seller: UserCreateNestedOneWithoutProductsInput
     subcategory: SubcategoryCreateNestedOneWithoutProductsInput
     cartItems?: CartItemCreateNestedManyWithoutProductInput
   }
@@ -13842,15 +11971,12 @@ export namespace Prisma {
   export type ProductUncheckedCreateWithoutOrderItemsInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    sellerId: string
+    image?: string | null
+    status?: string
     subcategoryId: string
     createdAt?: Date | string
-    updatedAt?: Date | string
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
   }
 
@@ -13859,35 +11985,29 @@ export namespace Prisma {
     create: XOR<ProductCreateWithoutOrderItemsInput, ProductUncheckedCreateWithoutOrderItemsInput>
   }
 
-  export type OrderUpsertWithoutItemsInput = {
-    update: XOR<OrderUpdateWithoutItemsInput, OrderUncheckedUpdateWithoutItemsInput>
-    create: XOR<OrderCreateWithoutItemsInput, OrderUncheckedCreateWithoutItemsInput>
+  export type OrderUpsertWithoutOrderItemsInput = {
+    update: XOR<OrderUpdateWithoutOrderItemsInput, OrderUncheckedUpdateWithoutOrderItemsInput>
+    create: XOR<OrderCreateWithoutOrderItemsInput, OrderUncheckedCreateWithoutOrderItemsInput>
     where?: OrderWhereInput
   }
 
-  export type OrderUpdateToOneWithWhereWithoutItemsInput = {
+  export type OrderUpdateToOneWithWhereWithoutOrderItemsInput = {
     where?: OrderWhereInput
-    data: XOR<OrderUpdateWithoutItemsInput, OrderUncheckedUpdateWithoutItemsInput>
+    data: XOR<OrderUpdateWithoutOrderItemsInput, OrderUncheckedUpdateWithoutOrderItemsInput>
   }
 
-  export type OrderUpdateWithoutItemsInput = {
+  export type OrderUpdateWithoutOrderItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutOrdersNestedInput
   }
 
-  export type OrderUncheckedUpdateWithoutItemsInput = {
+  export type OrderUncheckedUpdateWithoutOrderItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ProductUpsertWithoutOrderItemsInput = {
@@ -13904,14 +12024,11 @@ export namespace Prisma {
   export type ProductUpdateWithoutOrderItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    seller?: UserUpdateOneRequiredWithoutProductsNestedInput
     subcategory?: SubcategoryUpdateOneRequiredWithoutProductsNestedInput
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
   }
@@ -13919,29 +12036,13 @@ export namespace Prisma {
   export type ProductUncheckedUpdateWithoutOrderItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    sellerId?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
-  }
-
-  export type ProductCreateManySellerInput = {
-    id?: string
-    title: string
-    description: string
-    price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    subcategoryId: string
-    createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
   export type CartItemCreateManyUserInput = {
@@ -13953,53 +12054,7 @@ export namespace Prisma {
   export type OrderCreateManyUserInput = {
     id?: string
     deliveryMethod?: $Enums.DeliveryMethod
-    status?: $Enums.OrderStatus
-    totalPrice: number
     createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ProductUpdateWithoutSellerInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    subcategory?: SubcategoryUpdateOneRequiredWithoutProductsNestedInput
-    cartItems?: CartItemUpdateManyWithoutProductNestedInput
-    orderItems?: OrderItemUpdateManyWithoutProductNestedInput
-  }
-
-  export type ProductUncheckedUpdateWithoutSellerInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    subcategoryId?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
-    orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
-  }
-
-  export type ProductUncheckedUpdateManyWithoutSellerInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    subcategoryId?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CartItemUpdateWithoutUserInput = {
@@ -14023,30 +12078,21 @@ export namespace Prisma {
   export type OrderUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    items?: OrderItemUpdateManyWithoutOrderNestedInput
+    orderItems?: OrderItemUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    items?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
+    orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
   }
 
   export type OrderUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     deliveryMethod?: EnumDeliveryMethodFieldUpdateOperationsInput | $Enums.DeliveryMethod
-    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
-    totalPrice?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SubcategoryCreateManyCategoryInput = {
@@ -14074,27 +12120,21 @@ export namespace Prisma {
   export type ProductCreateManySubcategoryInput = {
     id?: string
     title: string
-    description: string
+    description?: string | null
     price: number
-    imageUrl: string
-    stock?: number
-    status?: $Enums.ModerationStatus
-    sellerId: string
+    image?: string | null
+    status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
   export type ProductUpdateWithoutSubcategoryInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    seller?: UserUpdateOneRequiredWithoutProductsNestedInput
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
   }
@@ -14102,14 +12142,11 @@ export namespace Prisma {
   export type ProductUncheckedUpdateWithoutSubcategoryInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    sellerId?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
   }
@@ -14117,14 +12154,11 @@ export namespace Prisma {
   export type ProductUncheckedUpdateManyWithoutSubcategoryInput = {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
-    description?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
-    imageUrl?: StringFieldUpdateOperationsInput | string
-    stock?: IntFieldUpdateOperationsInput | number
-    status?: EnumModerationStatusFieldUpdateOperationsInput | $Enums.ModerationStatus
-    sellerId?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CartItemCreateManyProductInput = {
@@ -14137,7 +12171,6 @@ export namespace Prisma {
     id?: string
     orderId: string
     quantity: number
-    price: number
   }
 
   export type CartItemUpdateWithoutProductInput = {
@@ -14161,35 +12194,30 @@ export namespace Prisma {
   export type OrderItemUpdateWithoutProductInput = {
     id?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
-    order?: OrderUpdateOneRequiredWithoutItemsNestedInput
+    order?: OrderUpdateOneRequiredWithoutOrderItemsNestedInput
   }
 
   export type OrderItemUncheckedUpdateWithoutProductInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
   }
 
   export type OrderItemUncheckedUpdateManyWithoutProductInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
   }
 
   export type OrderItemCreateManyOrderInput = {
     id?: string
     productId: string
     quantity: number
-    price: number
   }
 
   export type OrderItemUpdateWithoutOrderInput = {
     id?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
     product?: ProductUpdateOneRequiredWithoutOrderItemsNestedInput
   }
 
@@ -14197,14 +12225,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
   }
 
   export type OrderItemUncheckedUpdateManyWithoutOrderInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
   }
 
 

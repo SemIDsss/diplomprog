@@ -126,8 +126,7 @@ exports.Prisma.UserScalarFieldEnum = {
   password: 'password',
   yandexId: 'yandexId',
   role: 'role',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.CategoryScalarFieldEnum = {
@@ -146,13 +145,10 @@ exports.Prisma.ProductScalarFieldEnum = {
   title: 'title',
   description: 'description',
   price: 'price',
-  imageUrl: 'imageUrl',
-  stock: 'stock',
+  image: 'image',
   status: 'status',
-  sellerId: 'sellerId',
   subcategoryId: 'subcategoryId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.CartItemScalarFieldEnum = {
@@ -166,24 +162,14 @@ exports.Prisma.OrderScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   deliveryMethod: 'deliveryMethod',
-  status: 'status',
-  totalPrice: 'totalPrice',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.OrderItemScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
   productId: 'productId',
-  quantity: 'quantity',
-  price: 'price'
-};
-
-exports.Prisma.ExtremistBookScalarFieldEnum = {
-  id: 'id',
-  title: 'title',
-  createdAt: 'createdAt'
+  quantity: 'quantity'
 };
 
 exports.Prisma.SortOrder = {
@@ -206,24 +192,10 @@ exports.Role = exports.$Enums.Role = {
   ADMIN: 'ADMIN'
 };
 
-exports.ModerationStatus = exports.$Enums.ModerationStatus = {
-  PENDING: 'PENDING',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED'
-};
-
 exports.DeliveryMethod = exports.$Enums.DeliveryMethod = {
   PICKUP: 'PICKUP',
   CDEK: 'CDEK',
   BOXBERRY: 'BOXBERRY'
-};
-
-exports.OrderStatus = exports.$Enums.OrderStatus = {
-  PENDING: 'PENDING',
-  PROCESSING: 'PROCESSING',
-  SHIPPED: 'SHIPPED',
-  DELIVERED: 'DELIVERED',
-  CANCELLED: 'CANCELLED'
 };
 
 exports.Prisma.ModelName = {
@@ -233,8 +205,7 @@ exports.Prisma.ModelName = {
   Product: 'Product',
   CartItem: 'CartItem',
   Order: 'Order',
-  OrderItem: 'OrderItem',
-  ExtremistBook: 'ExtremistBook'
+  OrderItem: 'OrderItem'
 };
 
 /**

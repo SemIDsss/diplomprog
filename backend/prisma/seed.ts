@@ -1,88 +1,122 @@
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma/index.js';
-import 'dotenv/config';
-
-// 1. Получаем строку подключения из окружения
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  console.error('Ошибка: Переменная окружения DATABASE_URL не задана в файле .env');
-  process.exit(1);
-}
-
-// 2. Инициализируем стандартный пул соединений PostgreSQL
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-
-// 3. Передаем адаптер драйвера в конструктор Prisma v7
-const prisma = new PrismaClient({ adapter });
+import 'dotenv/config'; 
+import { prisma } from '../db'; 
 
 async function main() {
-  console.log('Очистка старых данных перед заполнением...');
-  await prisma.cartItem.deleteMany({});
-  await prisma.orderItem.deleteMany({});
-  await prisma.order.deleteMany({});
+  console.log('⏳ Очистка старых данных перед заполнением...');
+  
+  
   await prisma.product.deleteMany({});
   await prisma.subcategory.deleteMany({});
   await prisma.category.deleteMany({});
-  await prisma.extremistBook.deleteMany({});
 
-  // 1. Создание категорий и подкатегорий из ТЗ
-  const catalogStructure = [
-    {
-      category: 'Книги',
-      subs: ['Манга', 'Раритет', 'Классика'],
-    },
-    {
-      category: 'Мебель',
-      subs: ['Кухня', 'Гостинная', 'Дача', 'Спальня', 'Раритет', 'Детская'],
-    },
-    {
-      category: 'Игрушки',
-      subs: ['Детские', 'Мягкие', 'Для собак', 'Для кошек'],
-    },
-  ];
+  console.log('🌱 Наполнение базы данных актуальными категориями и товарами...');
 
-  for (const item of catalogStructure) {
-    await prisma.category.create({
-      data: {
-        name: item.category,
-        subcategories: {
-          create: item.subs.map((sub) => ({ name: sub })),
-        },
+  
+  const books = await prisma.category.create({
+    data: {
+      name: 'Книги',
+      subcategories: {
+        create: [
+          { name: 'Учебная литература' },
+          { name: 'Художественная литература' },
+        ],
       },
-    });
-  }
-
-  // 2. Наполнение базы запрещенных книг для фильтра администратора
-  const forbiddenBooks = ['Запрещенная книга 1', 'Манифест Экстремизма', 'Терроризм и хаос'];
-  for (const title of forbiddenBooks) {
-    await prisma.extremistBook.create({
-      data: { title },
-    });
-  }
-
-  // 3. Создание одного главного администратора разработчика
-  await prisma.user.upsert({
-    where: { email: 'admin@diplom.ru' },
-    update: {},
-    create: {
-      email: 'admin@diplom.ru',
-      role: 'ADMIN',
     },
+    include: { subcategories: true },
   });
 
-  console.log('Данные каталога, экстремистских книг и суперадмина успешно добавлены!');
+ 
+  const toys = await prisma.category.create({
+    data: {
+      name: 'Игрушки',
+      subcategories: {
+        create: [
+          { name: 'Развивающие игры' },
+          { name: 'Мягкие игрушки' },
+        ],
+      },
+    },
+    include: { subcategories: true },
+  });
+
+  
+  const furniture = await prisma.category.create({
+    data: {
+      name: 'Мебель',
+      subcategories: {
+        create: [
+          { name: 'Офисная мебель' },
+          { name: 'Мягкая мебель' },
+        ],
+      },
+    },
+    include: { subcategories: true },
+  });
+
+  // Получаем ID подкатегорий
+  const fictionId = books.subcategories.find(s => s.name === 'Художественная литература')?.id!;
+  const educationalId = books.subcategories.find(s => s.name === 'Учебная литература')?.id!;
+  const devToysId = toys.subcategories.find(s => s.name === 'Развивающие игры')?.id!;
+  const softToysId = toys.subcategories.find(s => s.name === 'Мягкие игрушки')?.id!;
+  const officeFurnitureId = furniture.subcategories.find(s => s.name === 'Офисная мебель')?.id!;
+  const softFurnitureId = furniture.subcategories.find(s => s.name === 'Мягкая мебель')?.id!;
+
+  
+  await prisma.product.createMany({
+    data: [
+      {
+        title: 'Классический Роман "Время"',
+        description: 'Подарочное издание мирового бестселлера в твердом переплете.',
+        price: 850,
+        status: 'APPROVED',
+        subcategoryId: fictionId,
+      },
+      {
+        title: 'Учебник по TypeScript',
+        description: 'Полное руководство от базовых типов до продвинутой архитектуры.',
+        price: 2450,
+        status: 'APPROVED',
+        subcategoryId: educationalId,
+      },
+      {
+        title: 'Деревянный конструктор-головоломка',
+        description: 'Развивающий набор для моделирования пространственного мышления.',
+        price: 1890,
+        status: 'APPROVED',
+        subcategoryId: devToysId,
+      },
+      {
+        title: 'Плюшевый Медведь',
+        description: 'Гипоаллергенная мягкая игрушка высотой 50 см.',
+        price: 3200,
+        status: 'APPROVED',
+        subcategoryId: softToysId,
+      },
+      {
+        title: 'Офисное Кресло Aero',
+        description: 'Анатомическая поддержка спины и регулировка подлокотников.',
+        price: 14500,
+        status: 'APPROVED',
+        subcategoryId: officeFurnitureId,
+      },
+      {
+        title: 'Диван Трехместный Сканди',
+        description: 'Стильный велюровый диван с механизмом трансформации.',
+        price: 42000,
+        status: 'APPROVED',
+        subcategoryId: softFurnitureId,
+      },
+    ],
+  });
+
+  console.log('✨ База данных маркетплейса успешно заполнена книгами, игрушками и мебелью!');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('❌ Ошибка при выполнении сида:', e);
     process.exit(1);
   })
   .finally(async () => {
-    // Корректно закрываем соединения
     await prisma.$disconnect();
-    await pool.end();
   });

@@ -1,5 +1,7 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Subcategory {
   id: string;
@@ -12,80 +14,98 @@ interface Category {
   subcategories: Subcategory[];
 }
 
-export default function Sidebar({ onSelectSubcategory }: { onSelectSubcategory: (id: string) => void }) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [openCategory, setOpenCategory] = useState<string | null>(null);
+interface SidebarProps {
+  categories: Category[];
+}
 
-  useEffect(() => {
-    // В реальном приложении: fetch('/api/categories')
-    // Ниже статический массив, полностью соответствующий ТЗ
-    const mockCategories: Category[] = [
-      {
-        id: '1',
-        name: 'Книги',
-        subcategories: [
-          { id: 'b1', name: 'Манга' },
-          { id: 'b2', name: 'Раритет' },
-          { id: 'b3', name: 'Классика' }
-        ]
-      },
-      {
-        id: '2',
-        name: 'Мебель',
-        subcategories: [
-          { id: 'f1', name: 'Кухня' },
-          { id: 'f2', name: 'Гостинная' },
-          { id: 'f3', name: 'Дача' },
-          { id: 'f4', name: 'Спальня' },
-          { id: 'f5', name: 'Раритет' },
-          { id: 'f6', name: 'Детская' }
-        ]
-      },
-      {
-        id: '3',
-        name: 'Игрушки',
-        subcategories: [
-          { id: 't1', name: 'Детские' },
-          { id: 't2', name: 'Мягкие' },
-          { id: 't3', name: 'Для собак' },
-          { id: 't4', name: 'Для кошек' }
-        ]
-      }
-    ];
-    setCategories(mockCategories);
-  }, []);
+export function Sidebar({ categories = [] }: SidebarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentSubcatId = searchParams.get('subcategoryId');
+  
+  // Состояние для хранения ID раскрытых категорий (аккордеон)
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
+
+  const toggleCategory = (categoryId: string) => {
+    setOpenCategories((prev) => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+
+  const handleSubcategorySelect = (subcategoryId: string) => {
+    // Выполняем переход на URL с параметром, инициируя серверный SSR перезапрос данных
+    router.push(`/catalog?subcategoryId=${subcategoryId}`);
+  };
+
+  const handleResetFilter = () => {
+    router.push('/catalog');
+  };
 
   return (
-    <aside className="w-64 bg-gray-900 text-white h-screen p-4 border-r border-gray-800">
-      <h2 className="text-xl font-bold mb-6 border-b border-gray-700 pb-2">Каталог товаров</h2>
-      <ul className="space-y-3">
-        {categories.map((cat) => (
-          <li key={cat.id} className="block">
-            <button
-              onClick={() => setOpenCategory(openCategory === cat.id ? null : cat.id)}
-              className="w-full text-left font-medium p-2 hover:bg-gray-800 rounded transition flex justify-between items-center"
-            >
-              <span>{cat.name}</span>
-              <span>{openCategory === cat.id ? '▼' : '►'}</span>
-            </button>
+    <aside className="w-full md:w-64 bg-white border rounded-xl p-4 shadow-sm h-fit">
+      <div className="flex items-center justify-between mb-4 pb-2 border-b">
+        <h2 className="font-bold text-gray-800 text-lg">Категории</h2>
+        {currentSubcatId && (
+          <button 
+            onClick={handleResetFilter}
+            className="text-xs text-blue-600 hover:underline font-medium"
+          >
+            Сбросить
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {categories.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-4">Нет доступных категорий</p>
+        ) : (
+          categories.map((category) => {
+            const isOpen = openCategories[category.id] || false;
             
-            {openCategory === cat.id && (
-              <ul className="pl-4 mt-1 space-y-1 bg-gray-850 rounded">
-                {cat.subcategories.map((sub) => (
-                  <li key={sub.id}>
-                    <button
-                      onClick={() => onSelectSubcategory(sub.id)}
-                      className="w-full text-left text-sm text-gray-300 p-2 hover:text-white hover:bg-gray-700 rounded transition"
-                    >
-                      • {sub.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
-      </ul>
+            return (
+              <div key={category.id} className="border-b border-gray-100 last:border-0 pb-2">
+                <button
+                  onClick={() => toggleCategory(category.id)}
+                  className="w-full flex items-center justify-between py-2 text-left font-semibold text-gray-700 hover:text-blue-600 transition"
+                >
+                  <span>{category.name}</span>
+                  <svg
+                    className={`w-4 h-4 transform transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isOpen && category.subcategories && (
+                  <div className="pl-4 mt-1 space-y-1 bg-gray-50 rounded-lg p-2 transition-all">
+                    {category.subcategories.map((subcat) => {
+                      const isSelected = currentSubcatId === subcat.id;
+                      
+                      return (
+                        <button
+                          key={subcat.id}
+                          onClick={() => handleSubcategorySelect(subcat.id)}
+                          className={`w-full text-left py-1.5 px-2 rounded-md text-sm transition ${
+                            isSelected
+                              ? 'bg-blue-50 text-blue-600 font-bold'
+                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          }`}
+                        >
+                          {subcat.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
     </aside>
   );
 }
