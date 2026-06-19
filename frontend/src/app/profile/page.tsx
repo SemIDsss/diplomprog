@@ -1,5 +1,8 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { 
+  useState, 
+  useEffect 
+} from 'react';
 import SellerDashboard from '../seller/page';
 import AdminDashboard from '../admin/page';
 import { Product } from '../seller/page';
@@ -10,12 +13,10 @@ interface CartItem {
 }
 
 export default function ProfilePage() {
-  // Активируем роль по умолчанию
   const [role, setRole] = useState<
     'USER' | 'SELLER' | 'ADMIN'
   >('USER');
 
-  // ИСПРАВЛЕНО: Чтение сессии строго после монтирования в DOM
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(
@@ -34,7 +35,6 @@ export default function ProfilePage() {
   );
   const [mapCost, setMapCost] = useState(0);
   const geo: [number, number] = [55.7558, 37.6173];
-
   const [db, setDb] = useState<Product[]>([
     {
       id: 'p-1', title: 'Манга Наруто Том 1',
@@ -64,7 +64,6 @@ export default function ProfilePage() {
     }
   ]);
 
-
   const changeQty = (id: string, d: number) => {
     setCart(prev => prev.map(item => {
       if (item.product.id !== id) return item;
@@ -73,7 +72,6 @@ export default function ProfilePage() {
       return { ...item, qty: next };
     }).filter(item => item.qty > 0));
   };
-
   const totalW = cart.reduce(
     (acc, i) => acc + (i.product.weight * i.qty), 0
   );
@@ -109,6 +107,7 @@ export default function ProfilePage() {
       } : p
     ));
   };
+
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-4 text-xs text-gray-800">
       
@@ -149,7 +148,6 @@ export default function ProfilePage() {
           onMod={handleModerate}
         />
       )}
-
       {role === 'USER' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           
