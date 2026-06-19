@@ -12,7 +12,16 @@ interface CartItem {
 export default function ProfilePage() {
   const [role, setRole] = useState<
     'USER' | 'SELLER' | 'ADMIN'
-  >('USER');
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(
+        'diplom_role'
+      );
+      return (saved as any) || 'USER';
+    }
+    return 'USER';
+  });
+
   const [delivery, setDelivery] = useState<
     'PICKUP' | 'CDEK' | 'BOXBERRY'
   >('PICKUP');
@@ -21,31 +30,31 @@ export default function ProfilePage() {
     'UKASSA'
   );
   const [mapCost, setMapCost] = useState(0);
+  const geo: [number, number] = [55.7558, 37.6173];
 
   const [db, setDb] = useState<Product[]>([
     {
-      id: 'p-1',
-      title: 'Манга Наруто Том 1',
-      category: 'Книги',
-      subcategory: 'Манга',
+      id: 'p-1', title: 'Манга Наруто Том 1',
+      category: 'Книги', subcategory: 'Манга',
       description: 'Твердый переплет.',
       price: 850, stock: 15, weight: 0.3,
       width: 13, height: 18, length: 2,
-      imageUrl: 'https://unsplash.com',
+      imageUrl: 'https://unsplash.com' +
+        '/photo-1578632767115-351597cf2477?w=200',
       status: 'APPROVED', specs: {}
     }
   ]);
+
   const [cart, setCart] = useState<CartItem[]>([
     {
       product: {
-        id: 'p-init',
-        title: 'Кухонный стол Сканди',
-        category: 'Мебель',
-        subcategory: 'Кухня',
+        id: 'p-init', title: 'Кухонный стол',
+        category: 'Мебель', subcategory: 'Кухня',
         description: 'Массив сосны.',
         price: 12500, stock: 4, weight: 18,
         width: 120, height: 75, length: 80,
-        imageUrl: 'https://unsplash.com',
+        imageUrl: 'https://unsplash.com' +
+          '/photo-1577140917170-285929fb55b7?w=200',
         status: 'APPROVED', specs: {}
       },
       qty: 1
@@ -60,6 +69,7 @@ export default function ProfilePage() {
       return { ...item, qty: next };
     }).filter(item => item.qty > 0));
   };
+
   const totalW = cart.reduce(
     (acc, i) => acc + (i.product.weight * i.qty), 0
   );
@@ -75,17 +85,43 @@ export default function ProfilePage() {
   );
   const finalTotal = itemsCost + getDeliveryCost();
 
+  const handleRoleChange = (
+    newRole: 'USER' | 'SELLER' | 'ADMIN'
+  ) => {
+    setRole(newRole);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('diplom_role', newRole);
+    }
+  };
+
+  const handleModerate = (
+    id: string,
+    st: 'APPROVED' | 'REJECTED',
+    r?: string
+  ) => {
+    setDb(prev => prev.map(p => 
+      p.id === id ? {
+        ...p, status: st, rejectReason: r
+      } : p
+    ));
+  };
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-4 text-xs text-gray-800">
       
       <div className="bg-blue-50 border p-2 rounded-xl flex justify-between items-center">
-        <span className="font-bold text-xxs">РЕЖИМ:</span>
+        <span className="font-bold text-xxs">
+          РЕЖИМ:
+        </span>
         <div className="flex bg-white border p-1 rounded-lg gap-1">
           {['USER', 'SELLER', 'ADMIN'].map(r => (
             <button
-              key={r} onClick={() => setRole(r as any)}
+              key={r}
+              type="button"
+              onClick={() => handleRoleChange(r as any)}
               className={`px-2 py-0.5 rounded font-bold text-xxs ${
-                role === r ? 'bg-blue-600 text-white' : 'text-gray-600'
+                role === r 
+                  ? 'bg-blue-600 text-white shadow' 
+                  : 'text-gray-600'
               }`}
             >
               {r === 'USER' && '👤 Клиент'}
@@ -97,17 +133,16 @@ export default function ProfilePage() {
       </div>
 
       {role === 'SELLER' && (
-        <SellerDashboard list={db} onAdd={p => setDb([p, ...db])} />
+        <SellerDashboard
+          list={db}
+          onAdd={p => setDb([p, ...db])}
+        />
       )}
       
       {role === 'ADMIN' && (
         <AdminDashboard
           list={db}
-          onMod={(id, st, r) => setDb(
-            db.map(p => p.id === id ? 
-              { ...p, status: st, rejectReason: r } : p
-            )
-          )}
+          onMod={handleModerate}
         />
       )}
 
@@ -120,13 +155,19 @@ export default function ProfilePage() {
                 🛒 Корзина товаров
               </h2>
               {cart.length === 0 ? (
-                <p className="text-center py-2 text-gray-400">Пусто</p>
+                <p className="text-center py-2 text-gray-400">
+                  Пусто
+                </p>
               ) : (
                 <div className="divide-y text-xxs">
                   {cart.map(item => (
-                    <div key={item.product.id} className="py-2 flex gap-2 items-center">
+                    <div
+                      key={item.product.id}
+                      className="py-2 flex gap-2 items-center"
+                    >
                       <img
-                        src={item.product.imageUrl} alt=""
+                        src={item.product.imageUrl}
+                        alt=""
                         className="w-8 h-8 rounded object-cover border"
                       />
                       <div className="flex-1 min-w-0">
@@ -140,7 +181,10 @@ export default function ProfilePage() {
                       
                       <div className="flex items-center border rounded bg-gray-50">
                         <button
-                          onClick={() => changeQty(item.product.id, -1)}
+                          type="button"
+                          onClick={() => changeQty(
+                            item.product.id, -1
+                          )}
                           className="px-1.5 py-0.5 font-bold"
                         >
                           -
@@ -149,7 +193,10 @@ export default function ProfilePage() {
                           {item.qty}
                         </span>
                         <button
-                          onClick={() => changeQty(item.product.id, 1)}
+                          type="button"
+                          onClick={() => changeQty(
+                            item.product.id, 1
+                          )}
                           className="px-1.5 py-0.5 font-bold"
                         >
                           +
@@ -157,7 +204,10 @@ export default function ProfilePage() {
                       </div>
                       
                       <button
-                        onClick={() => changeQty(item.product.id, -10)}
+                        type="button"
+                        onClick={() => changeQty(
+                          item.product.id, -10
+                        )}
                         className="text-red-500 font-bold px-1"
                       >
                         ✕
@@ -180,7 +230,9 @@ export default function ProfilePage() {
                 />
                 <select
                   value={delivery}
-                  onChange={e => setDelivery(e.target.value as any)}
+                  onChange={e => setDelivery(
+                    e.target.value as any
+                  )}
                   className="border p-1.5 rounded-lg bg-white"
                 >
                   <option value="PICKUP">Самовывоз</option>
@@ -189,7 +241,6 @@ export default function ProfilePage() {
                 </select>
               </div>
               
-              {/* Стабильная нативная карта без внешних библиотек */}
               {delivery !== 'PICKUP' && (
                 <div className="space-y-1">
                   <p className="text-xxs font-bold text-gray-400">
@@ -199,7 +250,7 @@ export default function ProfilePage() {
                     className="h-32 w-full border rounded-lg overflow-hidden cursor-pointer"
                     onClick={() => setMapCost(150)}
                   >
-                                     <iframe
+                    <iframe
                       src="https://openstreetmap.org"
                       style={{
                         height: '100%',
@@ -207,14 +258,12 @@ export default function ProfilePage() {
                         border: 'none'
                       }}
                     />
-
                   </div>
                 </div>
               )}
             </section>
           </div>
 
-          {/* Платежный блок ЮKassa / СБП */}
           <div className="bg-slate-900 text-white p-4 rounded-xl space-y-3 shadow-md">
             <h2 className="text-xxs font-bold uppercase text-slate-400">
               Баланс заказа
@@ -236,7 +285,7 @@ export default function ProfilePage() {
             
             <div className="space-y-1">
               <label className="text-xxs text-slate-400 block">
-            СИСТЕМА ОПЛАТЫ:
+                СИСТЕМА ОПЛАТЫ:
               </label>
               <div className="grid grid-cols-2 gap-2 text-xxs">
                 <button
@@ -294,4 +343,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
