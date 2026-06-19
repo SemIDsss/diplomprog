@@ -1,117 +1,54 @@
-'use client';
-import React, { useState } from 'react';
+import React from 'react';
 
-export default function PersonalProfile() {
-  const [deliveryMethod, setDeliveryMethod] = useState<'PICKUP' | 'CDEK' | 'BOXBERRY'>('PICKUP');
-  
-  // Тестовые данные корзины
-  const [cartItems, setCartItems] = useState([
-    { id: 'p1', title: 'Манга "Атака Титанов" Том 1', price: 750, quantity: 2 },
-    { id: 'p2', title: 'Мягкая игрушка Гусь-Обнимусь', price: 1200, quantity: 1 }
-  ]);
-
-  // Тестовая история покупок со статусами из БД
-  const purchaseHistory = [
-    { id: 'o-101', date: '2026-06-15', total: 3400, method: 'CDEK', status: 'Доставлен' },
-    { id: 'o-102', date: '2026-06-18', total: 1500, method: 'Самовывоз', status: 'Ожидает подтверждения' }
-  ];
-
-  const financialTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
+export default function HomePage() {
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8 bg-gray-50 min-h-screen text-gray-800">
-      <h1 className="text-3xl font-bold border-b pb-4">Личный кабинет покупателя</h1>
-
-      {/* Блок 1: Корзина товаров */}
-      <section className="bg-white p-6 rounded-lg shadow-sm border">
-        <h2 className="text-2xl font-semibold mb-4 text-blue-600">🛒 Ваша корзина</h2>
-        {cartItems.length === 0 ? (
-          <p className="text-gray-500">Корзина пуста</p>
-        ) : (
-          <div className="divide-y">
-            {cartItems.map(item => (
-              <div key={item.id} className="py-3 flex justify-between items-center">
-                <div>
-                  <p className="font-medium text-lg">{item.title}</p>
-                  <p className="text-sm text-gray-500">{item.price} ₽ × {item.quantity}</p>
-                </div>
-                <p className="font-semibold">{item.price * item.quantity} ₽</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Блок 2: Выбор доставки */}
-      <section className="bg-white p-6 rounded-lg shadow-sm border">
-        <h2 className="text-2xl font-semibold mb-4 text-blue-600">🚚 Способ доставки</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { id: 'PICKUP', label: '🚶 Самовывоз' },
-            { id: 'CDEK', label: '📦 СДЭК (CDEK)' },
-            { id: 'BOXBERRY', label: '📦 Boxberry' }
-          ].map((method) => (
-            <label
-              key={method.id}
-              className={`p-4 border rounded-xl cursor-pointer text-center font-medium block transition ${
-                deliveryMethod === method.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'hover:bg-gray-50'
-              }`}
+    <div className="space-y-12 pb-12">
+      {/* Главный промо-баннер (Hero Section) */}
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16 md:py-24 px-4">
+        <div className="max-w-5xl mx-auto text-center space-y-6">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">
+            Современный маркетплейс <br className="hidden md:block"/> нового поколения
+          </h1>
+          <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto font-medium">
+            Покупайте книги, мебель и игрушки с гарантией модерации качества администрацией и безопасным входом.
+          </p>
+          <div className="pt-4">
+            <a 
+              href="/catalog" 
+              className="inline-block bg-white text-blue-700 font-bold px-8 py-3.5 rounded-xl shadow-lg hover:bg-gray-100 transition transform hover:-translate-y-0.5"
             >
-              <input
-                type="radio"
-                name="delivery"
-                value={method.id}
-                checked={deliveryMethod === method.id}
-                onChange={() => setDeliveryMethod(method.id as any)}
-                className="sr-only"
-              />
-              {method.label}
-            </label>
-          ))}
+              Перейти в каталог →
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* Блок 3: Финансовый итог */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-lg shadow-md text-white flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-medium opacity-90">Финансовый итог к оплате</h2>
-          <p className="text-sm opacity-75">Выбранный метод: {deliveryMethod}</p>
-        </div>
-        <p className="text-3xl font-black">{financialTotal} ₽</p>
-      </section>
+      {/* Сетка категорий ТЗ */}
+      <section className="max-w-7xl mx-auto px-4 md:px-8 space-y-6">
+        <h2 className="text-2xl md:text-3xl font-black text-gray-900 text-center">Наши категории товаров</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <div className="bg-white p-6 border rounded-2xl shadow-sm hover:shadow-md transition space-y-4">
+            <div className="text-4xl">📚</div>
+            <h3 className="text-xl font-bold">Книги</h3>
+            <p className="text-sm text-gray-500">Уникальные коллекции: Манга, классическая литература и редкий книжный раритет.</p>
+            <a href="/catalog" className="text-sm font-semibold text-blue-600 hover:underline inline-block">Смотреть книги →</a>
+          </div>
 
-      {/* Блок 4: История покупок */}
-      <section className="bg-white p-6 rounded-lg shadow-sm border">
-        <h2 className="text-2xl font-semibold mb-4 text-blue-600">📋 История покупок и статусы</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
-                <th className="p-3 border-b">ID Заказа</th>
-                <th className="p-3 border-b">Дата</th>
-                <th className="p-3 border-b">Сумма</th>
-                <th className="p-3 border-b">Доставка</th>
-                <th className="p-3 border-b">Статус подтверждения</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y text-sm">
-              {purchaseHistory.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="p-3 font-mono font-bold text-gray-700">{order.id}</td>
-                  <td className="p-3 text-gray-500">{order.date}</td>
-                  <td className="p-3 font-semibold">{order.total} ₽</td>
-                  <td className="p-3"><span className="bg-gray-200 px-2 py-1 rounded text-xs">{order.method}</span></td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      order.status === 'Доставлен' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="bg-white p-6 border rounded-2xl shadow-sm hover:shadow-md transition space-y-4">
+            <div className="text-4xl">🪑</div>
+            <h3 className="text-xl font-bold">Мебель</h3>
+            <p className="text-sm text-gray-500">Решения для интерьера: уютные кухни, гостиные, спальни, детские и дачные гарнитуры.</p>
+            <a href="/catalog" className="text-sm font-semibold text-blue-600 hover:underline inline-block">Смотреть мебель →</a>
+          </div>
+
+          <div className="bg-white p-6 border rounded-2xl shadow-sm hover:shadow-md transition space-y-4">
+            <div className="text-4xl">🧸</div>
+            <h3 className="text-xl font-bold">Игрушки</h3>
+            <p className="text-sm text-gray-500">Радость для всех: развивающие детские, мягкие игрушки, а также товары для кошек и собак.</p>
+            <a href="/catalog" className="text-sm font-semibold text-blue-600 hover:underline inline-block">Смотреть игрушки →</a>
+          </div>
+
         </div>
       </section>
     </div>

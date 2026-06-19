@@ -4,10 +4,14 @@ import { PrismaClient } from './src/generated/prisma/index.js';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Находим файл .env точно в папке бэкенда, откуда бы ни запускался скрипт
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const connectionString = process.env.DATABASE_URL;
+let connectionString = process.env.DATABASE_URL;
+
+// ИСПРАВЛЕНО: Автоматическое переключение портов, если сервер уходит внутрь Docker-сети
+if (process.env.NODE_ENV === 'production' && connectionString) {
+  connectionString = connectionString.replace('localhost:5433', 'postgres_db:5432');
+}
 
 if (!connectionString) {
   throw new Error('DATABASE_URL is missing in .env file');

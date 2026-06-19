@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+// ИСПРАВЛЕНО: Прямой относительный путь к файлу компонента
+import Sidebar from '../../components/Sidebar'; 
+
 
 // Описываем типы данных, пришедшие из Prisma через API
 interface Subcategory {
@@ -65,15 +68,7 @@ export default function CatalogPage() {
         ЗДЕСЬ НАХОДИТСЯ ВАШ ОРИГИНАЛЬНЫЙ HEADER / ШАПКА САЙТА. 
         Она сохраняет свои стили.
       */}
-      <header className="bg-white border-b p-4 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <span className="text-2xl font-black text-blue-600 tracking-wider uppercase">Diplom Market</span>
-          <div className="space-x-4 text-sm font-medium text-gray-600">
-            <a href="/catalog" className="text-blue-600 underline">Каталог</a>
-            <a href="/profile" className="hover:text-gray-900">Личный кабинет</a>
-          </div>
-        </div>
-      </header>
+   
 
       {/* Основной контейнер каталога */}
       <div className="flex-1 max-w-7xl w-full mx-auto flex flex-col md:flex-row gap-6 p-4 md:p-8">
@@ -180,9 +175,7 @@ export default function CatalogPage() {
       </div>
 
       {/* ФУТЕР САЙТА */}
-      <footer className="bg-white border-t p-4 mt-auto text-center text-xs text-gray-400 font-medium shadow-inner">
-        &copy; 2026 Diplom Market. Все права защищены. Дипломный проект СУБД Prisma 7 & Next.js.
-      </footer>
+     
     </div>
   );
 }
