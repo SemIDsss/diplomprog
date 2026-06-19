@@ -1,17 +1,11 @@
-import { defineConfig } from '@prisma/config';
-import dotenv from 'dotenv';
-import path from 'path';
-
-dotenv.config({
-  path: path.resolve(process.cwd(), '.env')
-});
-
-if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL отсутствует в .env');
-}
+import "dotenv/config";
+import path from "node:path";
+import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
+  engine: "classic",
+  schema: path.join("prisma", "schema.prisma"),
   datasource: {
-    url: process.env.DATABASE_URL
-  }
+    url: env("DATABASE_URL"),
+  },
 });
