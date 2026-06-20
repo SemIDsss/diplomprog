@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  role      Role      @default(USER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  products  Product[]
+  cartItems CartItem[]
+  orders    Order[]
+  
+  @@map("users")
+}
+
+model Category {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  subcategories Subcategory[]
+  
+  @@map("categories")
+}
+
+model Subcategory {
+  id          String   @id @default(cuid())
+  name        String
+  categoryId  String
+  
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products    Product[]
+  
+  @@map("subcategories")
+}
+
+model Product {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  price          Float
+  image          String?
+  status         String    @default("PENDING")
+  subcategoryId  String
+  userId         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  rejectReason  String?   // причина отказа
+  //  НОВЫЕ ПОЛЯ ДЛЯ ТОВАРА
+  sku            String?   // Артикул
+  brand          String?   // Бренд
+  material       String?   // Материал
+  color          String?   // Цвет
+  weight         Float?    // Вес в кг
+  width          Float?    // Ширина в см
+  height         Float?    // Высота в см
+  depth          Float?    // Глубина в см
+  year           Int?      // Год выпуска
+  country        String?   // Страна производства
+  season         String?   // Сезон
+  collection     String?   // Коллекция
+  images         String[]  // Массив ссылок на изображения
+   
+  reviews        Review[]
+
+  subcategory    Subcategory @relation(fields: [subcategoryId], references: [id])
+  user           User?     @relation(fields: [userId], references: [id])
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  
+  @@map("products")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  userName  String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  deliveryMethod  String
+  deliveryPrice   Float       @default(0)
+  totalAmount     Float
+  status          OrderStatus @default(PENDING)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           OrderItem[]
+  
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([orderId, productId])
+  @@map("order_items")
+}

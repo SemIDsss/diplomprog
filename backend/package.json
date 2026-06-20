@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "start": "node server.ts",
-    "build": "prisma generate --schema=./prisma/schema.prisma",
+    "build": "prisma generate --schema=./schema.prisma",
     "postinstall": "prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {
