@@ -1,152 +1,185 @@
 'use client';
-import React, { useState } from 'react';
 
-type AuthView = 'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { sendMetricaEvent } from '@/components/YandexMetrica';
+import { trackEvent, identifyUser, setUserGroup } from '@/lib/amplitude';
 
 export default function AuthPage() {
-  const [view, setView] = useState<AuthView>('LOGIN');
+  const router = useRouter();
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('USER');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (view === 'LOGIN') {
-      alert(`Вход выполнен для: ${email}`);
-      window.location.href = '/profile';
-    } else if (view === 'REGISTER') {
-      if (password !== confirmPassword) {
-        alert('Пароли не совпадают!');
-        return;
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user.role === 'ADMIN') router.push('/admin');
+          else if (user.role === 'SELLER') router.push('/seller');
+          else router.push('/buyer');
+        } catch (e) {}
       }
-      alert(`Успешная регистрация аккаунта: ${email}`);
-      setView('LOGIN');
-    } else {
-      alert(`Ссылка для сброса пароля отправлена на почту: ${email}`);
-      setView('LOGIN');
+    }
+  }, [router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const query = isLogin ? `
+        mutation Login($email: String!, $password: String!) {
+          login(email: $email, password: $password) {
+            token
+            user { id email role }
+          }
+        }
+      ` : `
+        mutation Register($email: String!, $password: String!, $role: String!) {
+          register(email: $email, password: $password, role: $role) {
+            token
+            user { id email role }
+          }
+        }
+      `;
+
+      const variables = isLogin 
+        ? { email, password }
+        : { email, password, role };
+
+      const res = await fetch('http://localhost:5000/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables })
+      });
+
+      const json = await res.json();
+      if (json.errors) throw new Error(json.errors[0].message);
+
+      const data = json.data[isLogin ? 'login' : 'register'];
+      if (!data?.token) throw new Error('Ошибка аутентификации');
+
+      // ✅ СОБЫТИЯ
+      if (isLogin) {
+        sendMetricaEvent('login', { email: data.user.email });
+        trackEvent('user_login', { email: data.user.email });
+      } else {
+        sendMetricaEvent('register', { 
+          email: data.user.email, 
+          role: data.user.role 
+        });
+        trackEvent('user_register', { 
+          email: data.user.email, 
+          role: data.user.role 
+        });
+      }
+      identifyUser(data.user.id, { email: data.user.email, role: data.user.role });
+      setUserGroup('role', data.user.role);
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userId', data.user.id);
+
+      const userRole = data.user.role;
+      if (userRole === 'ADMIN') router.push('/admin');
+      else if (userRole === 'SELLER') router.push('/seller');
+      else router.push('/buyer');
+    } catch (err: any) {
+      setError(err.message || 'Ошибка');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center p-4 bg-gray-50">
-      <div className="max-w-md w-full bg-white border border-gray-200 p-6 md:p-8 rounded-2xl shadow-sm space-y-6">
-        
-        {/* Заголовки в зависимости от режима */}
-        <div className="text-center space-y-1">
-          <h2 className="text-xl font-black text-gray-900">
-            {view === 'LOGIN' && 'Вход в систему'}
-            {view === 'REGISTER' && 'Регистрация аккаунта'}
-            {view === 'FORGOT_PASSWORD' && 'Восстановление пароля'}
-          </h2>
-          <p className="text-xs text-gray-400 font-medium">
-            {view === 'LOGIN' && 'Введите свои данные для авторизации'}
-            {view === 'REGISTER' && 'Создайте учетную запись клиента'}
-            {view === 'FORGOT_PASSWORD' && 'Укажите email для получения ссылки сброса'}
-          </p>
-        </div>
+    <div className="flex-1 flex items-center justify-center bg-gray-100 px-4 py-8">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 md:p-8">
+        <h1 className="text-3xl font-black text-center text-gray-900 mb-2">
+          {isLogin ? 'Вход' : 'Регистрация'}
+        </h1>
+        <p className="text-center text-gray-500 text-sm mb-6">
+          {isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}
+        </p>
 
-        {/* Форма */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xxs font-bold text-gray-400 uppercase mb-1">Email адрес</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={e => setEmail(e.target.value)}
-              className="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-500" 
-              placeholder="name@diplom.ru" 
-              required 
+        {error && (
+          <div className="bg-red-50 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="relative">
+            <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="w-full bg-gray-50 rounded-xl py-4 pl-10 pr-4 text-base outline-none focus:ring-2 focus:ring-blue-500/30 border border-gray-200"
+              required
             />
           </div>
 
-          {view !== 'FORGOT_PASSWORD' && (
-            <div>
-              <label className="block text-xxs font-bold text-gray-400 uppercase mb-1">Пароль</label>
-              <input 
-                type="password" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)}
-                className="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-500" 
-                placeholder="••••••••" 
-                required 
-              />
-            </div>
-          )}
+          <div className="relative">
+            <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Пароль"
+              className="w-full bg-gray-50 rounded-xl py-4 pl-10 pr-12 text-base outline-none focus:ring-2 focus:ring-blue-500/30 border border-gray-200"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
-          {view === 'REGISTER' && (
+          {!isLogin && (
             <div>
-              <label className="block text-xxs font-bold text-gray-400 uppercase mb-1">Повторите пароль</label>
-              <input 
-                type="password" 
-                value={confirmPassword} 
-                onChange={e => setConfirmPassword(e.target.value)}
-                className="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-500" 
-                placeholder="••••••••" 
-                required 
-              />
-            </div>
-          )}
-
-          {view === 'LOGIN' && (
-            <div className="text-right">
-              <button 
-                type="button" 
-                onClick={() => setView('FORGOT_PASSWORD')}
-                className="text-xxs font-bold text-blue-600 hover:underline"
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full bg-gray-50 rounded-xl py-4 px-4 text-base outline-none focus:ring-2 focus:ring-blue-500/30 border border-gray-200"
               >
-                Забыли пароль?
-              </button>
+                <option value="USER">Покупатель</option>
+                <option value="SELLER">Продавец</option>
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Администратор создаётся вручную</p>
             </div>
           )}
 
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-xl text-xs transition">
-            {view === 'LOGIN' && 'Войти в личный кабинет'}
-            {view === 'REGISTER' && 'Зарегистрироваться'}
-            {view === 'FORGOT_PASSWORD' && 'Получить ссылку'}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl transition active:scale-95 disabled:opacity-70"
+          >
+            {loading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Зарегистрироваться')}
           </button>
         </form>
 
-        {/* Переключатели режимов */}
-        <div className="text-center text-xs space-y-2 border-t pt-4">
-          {view === 'LOGIN' ? (
-            <p className="text-gray-500">
-              Ещё нет аккаунта?{' '}
-              <button onClick={() => setView('REGISTER')} className="text-blue-600 font-bold hover:underline">
-                Зарегистрироваться
-              </button>
-            </p>
-          ) : (
-            <p className="text-gray-500">
-              Уже есть аккаунт?{' '}
-              <button onClick={() => setView('LOGIN')} className="text-blue-600 font-bold hover:underline">
-                Вернуться ко входу
-              </button>
-            </p>
-          )}
+        <div className="text-center mt-6">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-sm font-medium text-blue-600 hover:underline"
+          >
+            {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
+          </button>
         </div>
-
-        {/* Разделитель и Яндекс ID для ТЗ */}
-        {view === 'LOGIN' && (
-          <>
-            <div className="relative flex py-1 items-center text-xxs text-gray-400 uppercase font-bold">
-              <div className="flex-grow border-t"></div>
-              <span className="mx-3">Для продавцов</span>
-              <div className="flex-grow border-t"></div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                alert('Вход через Яндекс ID выполнен!');
-                window.location.href = '/profile';
-              }}
-              className="w-full inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold p-2.5 rounded-xl text-xs transition"
-            >
-              <span className="bg-white text-red-600 font-black px-1 rounded text-xxs">Я</span>
-              Войти с Яндекс ID
-            </button>
-          </>
-        )}
-
       </div>
     </div>
   );

@@ -1,112 +1,271 @@
 'use client';
-import React, { useState } from 'react';
-import { Product } from '../profile/page';
 
-interface AdminProps {
-  list?: Product[];
-  onMod?: (id: string, st: 'APPROVED' | 'REJECTED', r?: string) => void;
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { sendMetricaEvent } from '@/components/YandexMetrica';
+import { trackEvent } from '@/lib/amplitude';
+
+interface Product {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  image?: string;
+  status: string;
+  subcategoryId: string;
+  userId: string;
+  user?: {
+    email: string;
+  };
 }
 
-export default function AdminDashboard({ list = [], onMod }: AdminProps) {
-  const [zoom, setZoom] = useState<string | null>(null);
-  const [rejId, setRejId] = useState<string | null>(null);
-  const [reason, setReason] = useState('');
+export default function AdminPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<{ open: boolean; productId: string | null; reason: string }>({
+    open: false,
+    productId: null,
+    reason: ''
+  });
 
-  // Выбираем строго товары со статусом ожидания PENDING
-  const activeRequests = list.filter(r => r.status === 'PENDING');
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (!token || !userStr) {
+      router.push('/login');
+      return;
+    }
+    try {
+      const userData = JSON.parse(userStr);
+      if (userData.role !== 'ADMIN') {
+        router.push('/buyer');
+        return;
+      }
+      setUser(userData);
+    } catch (error) {
+      router.push('/login');
+      return;
+    }
+    fetchPendingProducts();
+    setLoading(false);
+  }, [router]);
 
-  const rejectSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!rejId || !reason.trim()) return;
-    
-    if (onMod) onMod(rejId, 'REJECTED', reason.trim());
-    
-    setRejId(null);
-    setReason('');
+  const fetchPendingProducts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          query: `
+            query GetPendingProducts {
+              pendingProducts {
+                id
+                title
+                description
+                price
+                image
+                status
+                subcategoryId
+                userId
+              }
+            }
+          `
+        })
+      });
+      const json = await res.json();
+      if (json.data?.pendingProducts) {
+        setProducts(json.data.pendingProducts);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки заявок:', error);
+    }
   };
 
-  return (
-    <div className="space-y-4 text-xs text-gray-800">
-      <div className="bg-slate-900 text-white p-3 rounded-xl flex justify-between items-center shadow-sm">
-        <h1 className="font-bold uppercase tracking-wide">Панель верификации спецификаций</h1>
-        <span className="text-xxs px-2 bg-blue-600 rounded font-bold">ADMIN MODE</span>
-      </div>
+  const handleApprove = async (productId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          query: `
+            mutation ApproveProduct($id: ID!) {
+              approveProduct(id: $id)
+            }
+          `,
+          variables: { id: productId }
+        })
+      });
+      const json = await res.json();
+      if (json.errors) throw new Error(json.errors[0].message);
 
-      <div className="space-y-3">
-        {activeRequests.length === 0 ? (
-          <p className="text-gray-400 text-center p-6 bg-white border rounded-xl font-medium shadow-sm">
-            Активных заявок от продавцов не обнаружено. Очередь пуста.
-          </p>
-        ) : (
-          activeRequests.map(req => (
-            <div key={req.id} className="bg-white border p-4 rounded-xl space-y-3 shadow-sm">
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="font-bold text-sm text-gray-900">{req.title}</span>
-                <span className="font-black text-blue-600 text-sm">{req.price} ₽</span>
-              </div>
+      // ✅ СОБЫТИЕ: одобрение товара
+      sendMetricaEvent('product_approved', { productId });
+      trackEvent('product_approved', { 
+        productId, 
+        moderator: user?.email 
+      });
 
-              {/* Информационная таблица параметров карточки */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-gray-50 p-3 rounded-lg border">
-                <div 
-                  onClick={() => setZoom(req.imageUrl)} 
-                  className="w-16 h-16 border rounded bg-white cursor-zoom-in overflow-hidden relative group mx-auto sm:mx-0"
-                >
-                  <img src={req.imageUrl} alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className="sm:col-span-3 space-y-1 font-medium text-xxs text-gray-600">
-                  <p><strong>Модуль / Категория:</strong> {req.category} ({req.subcategory})</p>
-                  <p><strong>Ресурсы склада:</strong> {req.stock} шт.</p>
-                  <p><strong>Параметры логистики:</strong> {req.weight} кг | {req.width}х{req.height}х{req.length} см</p>
-                  {Object.entries(req.specs).map(([k, v]) => (
-                    <p key={k}><strong>{k}:</strong> {v}</p>
-                  ))}
-                </div>
-              </div>
+      alert('✅ Товар одобрен!');
+      fetchPendingProducts();
+    } catch (error: any) {
+      alert('Ошибка: ' + error.message);
+    }
+  };
 
-              {/* Кнопки модерации */}
-              <div className="flex gap-3 font-bold text-xxs">
-                <button 
-                  onClick={() => onMod && onMod(req.id, 'APPROVED')} 
-                  className="flex-1 bg-green-600 text-white py-1.5 rounded-md hover:bg-green-700 transition"
-                >
-                  ✓ Одобрить спецификацию
-                </button>
-                <button 
-                  onClick={() => setRejId(req.id)} 
-                  className="flex-1 bg-red-600 text-white py-1.5 rounded-md hover:bg-red-700 transition"
-                >
-                  ✕ Отклонить и указать причину
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+  const handleReject = (productId: string) => {
+    setModal({ open: true, productId, reason: '' });
+  };
 
-      {/* Модальное окно увеличения картинки */}
-      {zoom && (
-        <div onClick={() => setZoom(null)} className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <img src={zoom} alt="" className="max-w-full max-h-[80vh] rounded bg-white p-1 shadow-2xl" />
+  const submitReject = async () => {
+    if (!modal.productId) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          query: `
+            mutation RejectProduct($id: ID!, $reason: String!) {
+              rejectProduct(id: $id, reason: $reason)
+            }
+          `,
+          variables: { id: modal.productId, reason: modal.reason }
+        })
+      });
+      const json = await res.json();
+      if (json.errors) throw new Error(json.errors[0].message);
+
+      // ✅ СОБЫТИЕ: отклонение товара
+      sendMetricaEvent('product_rejected', { 
+        productId: modal.productId, 
+        reason: modal.reason 
+      });
+      trackEvent('product_rejected', { 
+        productId: modal.productId, 
+        reason: modal.reason,
+        moderator: user?.email
+      });
+
+      alert('❌ Товар отклонён');
+      setModal({ open: false, productId: null, reason: '' });
+      fetchPendingProducts();
+    } catch (error: any) {
+      alert('Ошибка: ' + error.message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-400 mt-4 text-sm">Загрузка...</p>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {/* Модальное окно указания причины отказа */}
-      {rejId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <form onSubmit={rejectSubmit} className="bg-white p-4 rounded-xl space-y-3 w-full max-w-xs border shadow-2xl">
-            <h3 className="font-bold text-gray-900 text-xs">Укажите причину отказа продавцу</h3>
-            <textarea 
-              value={reason} 
-              onChange={e => setReason(e.target.value)} 
-              placeholder="Пример: Неверные габариты упаковки для СДЭК..."
-              className="w-full border p-2 rounded-lg h-16 resize-none text-xxs outline-none focus:border-red-500" 
-              required 
-            />
-            <div className="flex gap-2 justify-end font-bold text-xxs">
-              <button type="button" onClick={() => { setRejId(null); setReason(''); }} className="bg-gray-100 px-3 py-1 rounded-lg">Отмена</button>
-              <button type="submit" className="bg-red-600 text-white px-3 py-1 rounded-lg">Отправить</button>
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="container-mobile py-4 md:py-8">
+        <div className="bg-white rounded-2xl p-4 md:p-6 border shadow-sm mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-black text-gray-900">⚙️ Администратор</h1>
+              <p className="text-sm text-gray-500">{user?.email}</p>
             </div>
-          </form>
+            <button
+              onClick={() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('userId');
+                router.push('/login');
+              }}
+              className="text-sm font-bold text-red-600 bg-red-50 px-4 py-2 rounded-xl hover:bg-red-100 transition min-h-[44px]"
+            >
+              Выйти
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 md:p-6 border shadow-sm">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">📋 Заявки на модерацию</h2>
+          {products.length === 0 ? (
+            <p className="text-gray-400 text-center py-8">Нет заявок на модерацию</p>
+          ) : (
+            <div className="space-y-4">
+              {products.map((product) => (
+                <div key={product.id} className="border rounded-xl p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                      <h3 className="font-bold text-gray-800">{product.title}</h3>
+                      <p className="text-sm text-gray-500">{product.description || 'Без описания'}</p>
+                      <p className="text-sm font-bold text-blue-600 mt-1">{product.price} ₽</p>
+                      <p className="text-xs text-gray-400">ID: {product.id}</p>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => handleApprove(product.id)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 transition text-sm font-bold min-h-[44px]"
+                      >
+                        ✅ Одобрить
+                      </button>
+                      <button
+                        onClick={() => handleReject(product.id)}
+                        className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition text-sm font-bold min-h-[44px]"
+                      >
+                        ❌ Отклонить
+                      </button>
+                    </div>
+                  </div>
+                  {product.image && (
+                    <img src={product.image} alt={product.title} className="w-24 h-24 object-cover rounded-lg" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {modal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="font-bold text-lg mb-2">Укажите причину отказа</h3>
+            <textarea
+              value={modal.reason}
+              onChange={(e) => setModal({ ...modal, reason: e.target.value })}
+              placeholder="Причина отклонения товара..."
+              className="w-full border rounded-xl p-3 h-24 resize-none text-sm outline-none focus:ring-2 focus:ring-red-500/20"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setModal({ open: false, productId: null, reason: '' })}
+                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl font-medium hover:bg-gray-300 transition"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={submitReject}
+                className="flex-1 bg-red-600 text-white py-2 rounded-xl font-medium hover:bg-red-700 transition"
+              >
+                Отправить
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

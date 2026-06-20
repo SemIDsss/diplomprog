@@ -1,130 +1,198 @@
-import React from 'react';
-import { Sidebar } from '../../components/sidebar';
-import { AddToCartButton } from '../../components/AddToCartButton';
+'use client';
 
-interface Subcategory { id: string; name: string; }
-interface Category { id: string; name: string; subcategories: Subcategory[]; }
-interface Product { id: string; title: string; description?: string; price: number; image?: string; }
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
+import { AddToCartButton } from '@/components/AddToCartButton';
+import { Search, X, Package } from 'lucide-react';
+import { sendMetricaEvent } from '@/components/YandexMetrica';
+import { trackEvent } from '@/lib/amplitude';
 
-interface CatalogPageProps {
-  searchParams: {
-    subcategoryId?: string;
-    search?: string; // Добавили параметр поиска в пропсы страницы
-  };
+interface Product {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  image?: string;
+  status: string;
 }
 
-async function getCategories(): Promise<Category[]> {
-  try {
-    const res = await fetch('http://localhost:5000/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `query GetCategories { categories { id name subcategories { id name } } }`
-      }),
-      cache: 'no-store'
+interface ProductsResponse {
+  items: Product[];
+  totalCount: number;
+  hasMore: boolean;
+}
+
+export default function CatalogPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastProductRef = useCallback((node: HTMLDivElement) => {
+    if (loading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMore();
+      }
     });
-    const json = await res.json();
-    return json.data?.categories || [];
-  } catch (error) { return []; }
-}
+    if (node) observerRef.current.observe(node);
+  }, [loading, hasMore]);
 
-async function getProducts(subcategoryId?: string, search?: string): Promise<Product[]> {
-  try {
-    const res = await fetch('http://localhost:5000/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `
-          query GetProducts($subcategoryId: String, $search: String) {
-            products(subcategoryId: $subcategoryId, search: $search) {
-              id
-              title
-              description
-              price
-              image
+  const loadProducts = async (reset: boolean = false, search?: string) => {
+    setLoading(true);
+    try {
+      const skip = reset ? 0 : products.length;
+      const res = await fetch('http://localhost:5000/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `
+            query GetProducts($skip: Int, $take: Int, $search: String) {
+              products(skip: $skip, take: $take, search: $search) {
+                items { id title description price image status }
+                totalCount
+                hasMore
+              }
             }
-          }
-        `,
-        variables: { 
-          subcategoryId: subcategoryId || null,
-          search: search || null 
-        }
-      }),
-      cache: 'no-store'
-    });
-    const json = await res.json();
-    return json.data?.products || [];
-  } catch (error) { return []; }
-}
+          `,
+          variables: { skip, take: 10, search: search || '' }
+        })
+      });
+      const json = await res.json();
+      const data: ProductsResponse = json.data?.products || { items: [], totalCount: 0, hasMore: false };
+      if (reset) {
+        setProducts(data.items);
+        setPage(1);
+      } else {
+        setProducts(prev => [...prev, ...data.items]);
+        setPage(prev => prev + 1);
+      }
+      setHasMore(data.hasMore);
+    } catch (e) {
+      console.error('Ошибка загрузки товаров:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-export default async function CatalogPage({ searchParams }: CatalogPageProps) {
-  const selectedSubcategory = searchParams?.subcategoryId;
-  const searchQuery = searchParams?.search; // Извлекаем поисковый запрос из URL
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      loadProducts(false, searchQuery);
+    }
+  };
 
-  const [categories, products] = await Promise.all([
-    getCategories(),
-    getProducts(selectedSubcategory, searchQuery) // Передаем текст поиска в функцию загрузки
-  ]);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(inputValue);
+    setProducts([]);
+    setHasMore(true);
+    setPage(0);
+
+    // ✅ СОБЫТИЕ: поиск
+    if (inputValue.trim()) {
+      sendMetricaEvent('search', { query: inputValue.trim() });
+      trackEvent('search_performed', { 
+        query: inputValue.trim()
+      });
+    }
+
+    loadProducts(true, inputValue);
+  };
+
+  useEffect(() => {
+    loadProducts(true);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col w-full">
-      <div className="flex-1 max-w-7xl w-full mx-auto flex flex-col md:flex-row gap-6 p-4 md:p-8">
-        <Sidebar categories={categories} />
-        
-        <main className="flex-1 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-4">
-            <h1 className="text-2xl font-black text-gray-900">Каталог товаров</h1>
-            
-           
-            <form method="GET" action="/catalog" className="flex w-full sm:w-72">
-              {selectedSubcategory && (
-                <input type="hidden" name="subcategoryId" value={selectedSubcategory} />
-              )}
-              <input
-                type="text"
-                name="search"
-                defaultValue={searchQuery || ''}
-                placeholder="Поиск по названию..."
-                className="w-full border rounded-l-xl px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500 text-gray-800 font-medium"
-              />
-              <button 
-                type="submit" 
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 rounded-r-xl text-sm transition active:scale-95"
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="bg-white sticky top-0 z-10 shadow-sm">
+        <div className="container-mobile py-4 flex flex-col justify-center">
+          <form onSubmit={handleSearch} className="relative w-full">
+            <Search size={24} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Найти товары..."
+              className="w-full bg-gray-100 rounded-2xl pl-14 pr-14 py-5 text-lg outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/30 transition placeholder:text-gray-400"
+            />
+            {inputValue && (
+              <button
+                type="button"
+                onClick={() => { setInputValue(''); setSearchQuery(''); loadProducts(true); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                Найти
+                <X size={22} />
               </button>
-            </form>
-          </div>
-          
-          {products.length === 0 ? (
-            <div className="bg-white border rounded-xl p-12 text-center text-gray-500 shadow-sm">
-              <p className="text-lg font-medium">Товары не найдены.</p>
-              <p className="text-xs text-gray-400 mt-1">Попробуйте изменить поисковый запрос или выбрать другую категорию.</p>
+            )}
+          </form>
+          {searchQuery && (
+            <div className="text-base text-gray-500 mt-2">
+              По запросу <span className="font-semibold text-gray-800">"{searchQuery}"</span> найдено {products.length} товаров
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => (
-                <div key={product.id} className="bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col p-4">
-                  <div className="w-full h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-between overflow-hidden">
+          )}
+        </div>
+      </div>
+
+      <div className="container-mobile py-4">
+        {products.length === 0 && !loading ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+            <Package size={56} className="text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-800">Ничего не найдено</h3>
+            <p className="text-base text-gray-400 mt-1">Попробуйте изменить поисковый запрос</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {products.map((product, index) => {
+              const isLast = index === products.length - 1;
+              return (
+                <Link
+                  key={product.id}
+                  href={`/product/${product.id}`}
+                  ref={isLast ? lastProductRef : null}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition duration-200 active:scale-[0.98] border border-gray-100"
+                >
+                  <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
                     {product.image ? (
                       <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-gray-400 text-sm mx-auto">Нет фото</span>
+                      <Package size={48} className="text-gray-300" />
                     )}
                   </div>
-                  <h3 className="font-bold text-gray-800 text-lg mb-1">{product.title}</h3>
-                  {product.description && (
-                    <p className="text-gray-500 text-sm mb-4 line-clamp-2">{product.description}</p>
-                  )}
-                  <div className="flex items-center justify-between pt-2 border-t mt-auto">
-                    <span className="text-xl font-black text-blue-600">{product.price} ₽</span>
-                    <AddToCartButton productId={product.id} />
+                  <div className="p-4">
+                    <h3 className="font-semibold text-base text-gray-800 line-clamp-2 min-h-[3rem]">
+                      {product.title}
+                    </h3>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                      <span className="text-lg font-bold text-blue-600">
+                        {product.price.toLocaleString()} ₽
+                      </span>
+                      <AddToCartButton
+                        productId={product.id}
+                        productName={product.title}
+                        productPrice={product.price}
+                        productImage={product.image}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </main>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+        {loading && (
+          <div className="text-center py-4">
+            <span className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+          </div>
+        )}
+        {!hasMore && products.length > 0 && (
+          <div className="text-center text-sm text-gray-400 py-4">
+            Вы просмотрели все товары
+          </div>
+        )}
       </div>
     </div>
   );

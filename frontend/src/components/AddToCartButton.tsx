@@ -1,35 +1,48 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ShoppingCart, Check } from 'lucide-react';
+import { sendMetricaEvent } from '@/components/YandexMetrica';
+import { trackEvent } from '@/lib/amplitude';
 
 interface AddToCartButtonProps {
   productId: string;
+  productName?: string;
+  productPrice?: number;
+  productImage?: string;
 }
 
-export function AddToCartButton({ productId }: AddToCartButtonProps) {
+export function AddToCartButton({
+  productId,
+  productName = 'Товар',
+  productPrice = 0,
+  productImage
+}: AddToCartButtonProps) {
   const [isAdded, setIsAdded] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      // ИСПРАВЛЕНО: Динамически берем ID реально вошедшего пользователя
-      const userId = localStorage.getItem('userId'); 
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('token');
 
-      if (!userId) {
-        alert('Пожалуйста, войдите в свой личный кабинет для добавления товаров в корзину!');
+      if (!userId || !token) {
+        alert('Войдите в аккаунт');
         return;
       }
 
-      const res = await fetch('http://localhost:5000/graphql', {
+      const response = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           query: `
             mutation AddToCart($userId: String!, $productId: String!, $quantity: Int!) {
               addToCart(userId: $userId, productId: $productId, quantity: $quantity) {
-                id
-                quantity
+                id quantity
               }
             }
           `,
@@ -37,21 +50,49 @@ export function AddToCartButton({ productId }: AddToCartButtonProps) {
         })
       });
 
-      const responseData = await res.json();
-      
-      if (responseData.errors) {
-        console.error('GraphQL ошибки добавления:', responseData.errors);
-        alert('Не удалось добавить товар. Ошибка на сервере.');
-        return;
+      const result = await response.json();
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      // ✅ СОБЫТИЯ
+      sendMetricaEvent('add_to_cart', { 
+        productId, 
+        productName, 
+        price: productPrice 
+      });
+      trackEvent('add_to_cart', { 
+        productId, 
+        productName, 
+        price: productPrice,
+        userId
+      });
+
+      // ... остальная логика (сохранение в localStorage)
+      const savedCart = localStorage.getItem('cart');
+      let cart = savedCart ? JSON.parse(savedCart) : [];
+
+      const existingItem = cart.find((item: any) => item.id === productId);
+      if (existingItem) {
+        cart = cart.map((item: any) =>
+          item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      } else {
+        cart.push({
+          id: productId,
+          name: productName,
+          price: productPrice,
+          quantity: 1,
+          image: productImage || null,
+          weightGrams: 400
+        });
       }
 
-      if (res.ok) {
-        setIsAdded(true);
-        setTimeout(() => setIsAdded(false), 2000);
-      }
-    } catch (error) {
-      console.error('Сетевая ошибка:', error);
-      alert('Сбой сети при добавлении в корзину.');
+      localStorage.setItem('cart', JSON.stringify(cart));
+
+      setIsAdded(true);
+      setTimeout(() => setIsAdded(false), 1500);
+      window.dispatchEvent(new Event('cartUpdated'));
+    } catch (error: any) {
+      alert('Ошибка: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -60,14 +101,33 @@ export function AddToCartButton({ productId }: AddToCartButtonProps) {
   return (
     <button
       onClick={handleAddToCart}
-      disabled={loading}
-      className={`px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
-        isAdded 
-          ? 'bg-green-600 text-white shadow-inner' 
-          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+      disabled={loading || isAdded}
+      className={`
+        min-h-[36px] md:min-h-[40px] 
+        px-3 md:px-4 
+        rounded-lg md:rounded-xl 
+        text-xs md:text-sm font-medium 
+        transition-all duration-200 
+        active:scale-95 
+        flex items-center justify-center gap-1.5
+        ${isAdded
+          ? 'bg-green-500 text-white shadow-md shadow-green-500/20'
+          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20'
+        }
+        disabled:opacity-60 disabled:cursor-not-allowed
+      `}
     >
-      {loading ? '...' : isAdded ? 'Добавлено ✓' : 'В корзину'}
+      {loading ? (
+        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+      ) : isAdded ? (
+        <>
+          <Check size={16} /> В корзине
+        </>
+      ) : (
+        <>
+          <ShoppingCart size={16} /> Купить
+        </>
+      )}
     </button>
   );
 }
