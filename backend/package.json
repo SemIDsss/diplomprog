@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "tsx server.ts",
-    "start": "node server.ts"
+    "start": "node server.ts",
+    "build": "prisma generate --schema=./prisma/schema.prisma",
+    "postinstall": "prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {
     "@apollo/server": "^4.0.0",
