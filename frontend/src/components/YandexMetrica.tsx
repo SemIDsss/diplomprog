@@ -9,9 +9,12 @@ const YANDEX_METRICA_ID = process.env.NEXT_PUBLIC_YANDEX_METRICA_ID || '';
 export function YandexMetricaProviderWrapper({ children }: { children: React.ReactNode }) {
   if (!YANDEX_METRICA_ID) return <>{children}</>;
 
+  // ✅ Преобразуем строку в число
+  const tagId = parseInt(YANDEX_METRICA_ID, 10);
+
   return (
     <YandexMetricaProvider
-      tagID={YANDEX_METRICA_ID}  // ✅ tagID (с большой D)
+      tagID={tagId}  // ✅ теперь число
       initOptions={{
         defer: true,
         clickmap: true,
