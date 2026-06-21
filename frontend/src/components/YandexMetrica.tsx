@@ -1,24 +1,18 @@
 'use client';
 
-import { YandexMetricaProvider, useMetrica } from '@artginzburg/next-ym';
+import { YandexMetricaProvider } from 'next-yandex-metrica';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 const YANDEX_METRICA_ID = process.env.NEXT_PUBLIC_YANDEX_METRICA_ID || '';
 
-// Обёртка провайдера
 export function YandexMetricaProviderWrapper({ children }: { children: React.ReactNode }) {
-  if (!YANDEX_METRICA_ID) {
-    return <>{children}</>;
-  }
-
-  // Преобразуем строку в число
-  const tagId = parseInt(YANDEX_METRICA_ID, 10);
+  if (!YANDEX_METRICA_ID) return <>{children}</>;
 
   return (
     <YandexMetricaProvider
-      tagID={tagId}
-      options={{
+      tagId={YANDEX_METRICA_ID}
+      initOptions={{
         defer: true,
         clickmap: true,
         trackLinks: true,
@@ -30,23 +24,23 @@ export function YandexMetricaProviderWrapper({ children }: { children: React.Rea
   );
 }
 
-// Автоматическое отслеживание просмотров страниц
 export function YandexMetricaPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { hit } = useMetrica();
 
   useEffect(() => {
-    if (hit && pathname) {
-      const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
-      hit(url, { title: document.title });
+    if (typeof window !== 'undefined' && (window as any).ym) {
+      const ymId = YANDEX_METRICA_ID;
+      if (ymId) {
+        const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
+        (window as any).ym(ymId, 'hit', url, { title: document.title });
+      }
     }
-  }, [pathname, searchParams, hit]);
+  }, [pathname, searchParams]);
 
   return null;
 }
 
-// Хелпер для отправки произвольных событий (целей)
 export const sendMetricaEvent = (eventName: string, params?: Record<string, any>) => {
   if (typeof window !== 'undefined' && (window as any).ym) {
     const ymId = YANDEX_METRICA_ID;
