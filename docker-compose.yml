@@ -10,9 +10,27 @@ services:
       POSTGRES_PASSWORD: rootpassword
       POSTGRES_DB: dev_db
     ports:
-      - "5433:5432" # Изменили внешний порт на 5433
+      - "5433:5432"
     volumes:
       - pgdata3:/var/lib/postgresql/data
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3001:3000"  # Grafana будет доступна на порту 3001
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - postgres_server
+
 volumes:
   pgdata3:
+  grafana_data:

@@ -1,7 +1,7 @@
 {
-  "name": "TechMarket Маркетплейс цифровой техники",
-  "short_name": "TechMarket",
-  "description": "Покупка и продажа гаджетов с автоматическим расчетом логистики СДЭК и Boxberry",
+  "name": "Diplom Market",
+  "short_name": "Diplom",
+  "description": "Современный маркетплейс книг, мебели и игрушек с доставкой",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -24,18 +24,18 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshot-pc.jpg",
+      "src": "/screenshot-pc.png",
       "sizes": "1280x720",
-      "type": "image/jpeg",
+      "type": "image/png",
       "form_factor": "wide",
-      "label": "Спецификация каталога на ПК"
+      "label": "Каталог товаров на ПК"
     },
     {
-      "src": "/screenshot-mobile.jpg",
+      "src": "/screenshot-mobile.png",
       "sizes": "720x1280",
-      "type": "image/jpeg",
+      "type": "image/png",
       "form_factor": "narrow",
-      "label": "Мобильная витрина маркетплейса"
+      "label": "Мобильная версия маркетплейса"
     }
   ]
 }

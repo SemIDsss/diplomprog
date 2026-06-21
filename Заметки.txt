@@ -1,0 +1,44 @@
+npm run dev /монорепозит в главной папке
+
+
+git add .
+git commit -m "f"
+git push origin main       ///гитхаб пуш
+
+https://github.com/SemIDsss/diplomprog
+grafana    port 3001  admin 32759605
+https://diplomprog-1.onrender.com    ///render  иногда виснет без впна
+supabase  внешний сервер
+amplitude тоже работает но мертв без впна
+?_ym_debug=2 в конце строки поиска для бара яндекс метрики
+
+diplomprog.vercel.app   /// versel 
+diplomprog-git-main-sem-id-s-projects.vercel.app
+diplomprog-qg52jt3fv-sem-id-s-projects.vercel.app
+
+
+
+docker exec -it postgres_db psql -U admin -d dev_db
+UPDATE products SET image = '/images/1984.jpg' WHERE title = '1984';   /// пуш картник
+
+
+docker ps                    	Показать запущенные контейнеры
+docker ps -a                     	Показать все контейнеры
+docker-compose up -d              Запустить контейнеры в фоне
+docker-compose down                Остановить контейнеры
+docker logs postgres_db           Показать логи контейнера с БД
+
+
+
+npm install 1232131 --legacy-peer-deps     Установить пакет с игнорированием конфликтов
+rmdir /s 123231                Удалить папку через консоль
+
+
+npx prisma generate                    Сгенерировать Prisma Client 
+npx prisma db push                     Применить изменения схемы к БД
+npx prisma migrate dev --name init      Создать миграцию    
+npx prisma studio                      Открыть графический интерфейс БД
+
+
+
+

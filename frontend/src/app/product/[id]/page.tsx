@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Star, User, Calendar, Package } from 'lucide-react';
+import { Star, User, Calendar, ShoppingBag } from 'lucide-react';
 import { AddToCartButton } from '@/components/AddToCartButton';
-import { sendMetricaEvent } from '@/components/YandexMetrica';
-import { trackEvent } from '@/lib/amplitude';
 
 interface Product {
   id: string;
@@ -25,33 +23,23 @@ interface Review {
 }
 
 export default function ProductPage() {
-  const params = useParams();
+  const { id } = useParams();
   const router = useRouter();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
-
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewText, setReviewText] = useState('');
   const [rating, setRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    if (!id) return;
     const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    if (token && userStr) {
-      try {
-        setUser(JSON.parse(userStr));
-      } catch (e) {}
-    }
-    if (!id) {
-      router.push('/catalog');
-      return;
-    }
+    setIsLoggedIn(!!token);
     fetchProduct();
     fetchReviews();
-  }, [id, router]);
+  }, [id]);
 
   const fetchProduct = async () => {
     try {
@@ -70,15 +58,8 @@ export default function ProductPage() {
         })
       });
       const json = await res.json();
-      if (json.data?.product) {
-        setProduct(json.data.product);
-      } else {
-        router.push('/catalog');
-      }
-    } catch (e) {
-      console.error(e);
-      router.push('/catalog');
-    }
+      setProduct(json.data?.product || null);
+    } catch (e) { console.error(e); }
   };
 
   const fetchReviews = async () => {
@@ -105,20 +86,22 @@ export default function ProductPage() {
   const submitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewText.trim()) return;
+    if (!isLoggedIn) {
+      alert('Войдите, чтобы оставить отзыв');
+      return;
+    }
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Войдите, чтобы оставить отзыв');
-        setSubmitting(false);
+      const userStr = localStorage.getItem('user');
+      if (!token || !userStr) {
+        alert('Войдите в аккаунт');
         return;
       }
+      const user = JSON.parse(userStr);
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           query: `
             mutation CreateReview($productId: ID!, $userName: String!, $rating: Int!, $comment: String!) {
@@ -129,7 +112,7 @@ export default function ProductPage() {
           `,
           variables: {
             productId: id,
-            userName: user?.email || 'Покупатель',
+            userName: user.email || 'Пользователь',
             rating,
             comment: reviewText
           }
@@ -137,23 +120,8 @@ export default function ProductPage() {
       });
       const json = await res.json();
       if (json.errors) throw new Error(json.errors[0].message);
-
-      // ✅ СОБЫТИЕ: добавление отзыва
-      sendMetricaEvent('add_review', {
-        productId: id,
-        rating,
-        productName: product?.title
-      });
-      trackEvent('review_added', {
-        productId: id,
-        rating,
-        productName: product?.title,
-        userId: user?.id
-      });
-
       setReviewText('');
       fetchReviews();
-      alert('✅ Отзыв отправлен!');
     } catch (e: any) {
       alert('Ошибка: ' + e.message);
     } finally {
@@ -161,50 +129,32 @@ export default function ProductPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-400 mt-4 text-sm">Загрузка товара...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Товар не найден</p>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center min-h-screen">Загрузка...</div>;
+  if (!product) return <div className="flex items-center justify-center min-h-screen">Товар не найден</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="container-mobile py-4">
-        {/* Карточка товара */}
+        {/* Информация о товаре */}
         <div className="bg-white rounded-2xl shadow-sm border p-4 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
               {product.image ? (
                 <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
               ) : (
-                <Package size={64} className="text-gray-300" />
+                <ShoppingBag size={64} className="text-gray-300" />
               )}
             </div>
-            <div className="flex flex-col">
+            <div>
               <h1 className="text-2xl font-bold text-gray-900">{product.title}</h1>
               {product.description && <p className="text-gray-600 mt-2">{product.description}</p>}
               <p className="text-3xl font-black text-blue-600 mt-4">{product.price} ₽</p>
-              <div className="mt-4">
-                <AddToCartButton
-                  productId={product.id}
-                  productName={product.title}
-                  productPrice={product.price}
-                  productImage={product.image}
-                />
-              </div>
+              <AddToCartButton
+                productId={product.id}
+                productName={product.title}
+                productPrice={product.price}
+                productImage={product.image}
+              />
             </div>
           </div>
         </div>
@@ -238,36 +188,48 @@ export default function ProductPage() {
           )}
 
           {/* Форма добавления отзыва */}
-          <form onSubmit={submitReview} className="mt-6 border-t pt-4">
-            <h3 className="font-bold text-gray-800 mb-2">Оставить отзыв</h3>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium">Оценка:</span>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  className="focus:outline-none"
-                >
-                  <Star size={24} className={star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
-                </button>
-              ))}
+          {isLoggedIn ? (
+            <form onSubmit={submitReview} className="mt-6 border-t pt-4">
+              <h3 className="font-bold text-gray-800 mb-2">Оставить отзыв</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-medium">Оценка:</span>
+                {[1,2,3,4,5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="focus:outline-none"
+                  >
+                    <Star size={24} className={star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                placeholder="Поделитесь впечатлениями..."
+                rows={3}
+                className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+              />
+              <button
+                type="submit"
+                disabled={submitting || !reviewText.trim()}
+                className="mt-2 bg-blue-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {submitting ? 'Отправка...' : 'Отправить отзыв'}
+              </button>
+            </form>
+          ) : (
+            <div className="mt-6 border-t pt-4 text-center text-sm text-gray-500">
+              <p>Войдите, чтобы оставить отзыв</p>
+              <button
+                onClick={() => router.push('/login')}
+                className="mt-1 text-blue-600 font-bold hover:underline"
+              >
+                Войти
+              </button>
             </div>
-            <textarea
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-              placeholder="Поделитесь впечатлениями..."
-              rows={3}
-              className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-            />
-            <button
-              type="submit"
-              disabled={submitting || !reviewText.trim()}
-              className="mt-2 bg-blue-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-blue-700 transition disabled:opacity-50 min-h-[44px]"
-            >
-              {submitting ? 'Отправка...' : 'Отправить отзыв'}
-            </button>
-          </form>
+          )}
         </div>
       </div>
     </div>

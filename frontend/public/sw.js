@@ -1,23 +1,26 @@
-// frontend/public/sw.js
-const CACHE_NAME = 'techmarket-v9';
+// Service Worker для офлайн-режима и кэширования
+const CACHE_NAME = 'diplom-market-v1';
 
-// Кэшируем только манифест и иконки. Страницы и стили воркер сохранит целиком.
+// Базовые файлы, которые кэшируются при установке
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/favicon.ico'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('📦 [PWA] Фиксация базовых ассетов...');
-      return cache.addAll(STATIC_ASSETS);
+      console.log('📦 [PWA] Кэширование базовых файлов');
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('⚠️ [PWA] Некоторые файлы не закэшированы:', err);
+      });
     }).then(() => self.skipWaiting())
   );
 });
 
-// Жестко вычищаем старый кэш, чтобы он не конфликтовал со стилями Next.js
+// Очистка старого кэша при активации
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -32,35 +35,46 @@ self.addEventListener('activate', (event) => {
     }).then(() => self.clients.claim())
   );
 });
-// Перехват трафика: Надежная стратегия Cache-First для стилей и страниц
+
+// Стратегия кэширования: сначала кэш, потом сеть
 self.addEventListener('fetch', (event) => {
-  // Полностью игнорируем динамические запросы к базе данных (GraphQL/REST)
-  if (event.request.url.includes('/graphql') || event.request.url.includes('/api/')) {
+  const url = new URL(event.request.url);
+  
+  // Пропускаем запросы к API (GraphQL и REST)
+  if (url.pathname.includes('/graphql') || url.pathname.includes('/api/')) {
+    return;
+  }
+
+  // Пропускаем динамические данные Next.js
+  if (url.pathname.includes('/_next/data/')) {
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Если каркас страницы или файл стилей Tailwind уже есть в кэше — отдаем его мгновенно
         return cachedResponse;
       }
 
       return fetch(event.request).then((networkResponse) => {
-        // Автоматически кэшируем все успешные GET-запросы (страницы, CSS, JS, картинки)
+        // Кэшируем успешные GET-запросы
         if (networkResponse.status === 200 && event.request.method === 'GET') {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
+            cache.put(event.request, responseClone).catch(() => {});
           });
         }
         return networkResponse;
       }).catch(() => {
-        // 🔥 ЗАЩИТА ОТ ПОЛОМКИ СТИЛЕЙ: Если сеть пропала, а браузер запрашивает HTML-страницу,
-        // принудительно возвращаем из кэша уже сохраненную ранее страницу каталога
+        // Офлайн-запасной вариант: показываем главную страницу или каталог
         if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/catalog') || caches.match('/catalog/') || caches.match('/');
+          return caches.match('/catalog') || caches.match('/') || caches.match('/catalog/');
         }
+        // Для стилей и скриптов возвращаем пустой ответ, чтобы не ломать страницу
+        if (event.request.url.match(/\.(css|js)$/)) {
+          return new Response('', { status: 200, statusText: 'OK' });
+        }
+        return new Response('Страница не доступна офлайн', { status: 503 });
       });
     })
   );

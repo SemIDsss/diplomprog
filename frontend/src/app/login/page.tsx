@@ -1,6 +1,6 @@
 'use client';
 
-
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -71,6 +71,7 @@ export default function AuthPage() {
       const data = json.data[isLogin ? 'login' : 'register'];
       if (!data?.token) throw new Error('Ошибка аутентификации');
 
+      // Отправка событий в аналитику
       if (isLogin) {
         sendMetricaEvent('login', { email: data.user.email });
         trackEvent('user_login', { email: data.user.email });
