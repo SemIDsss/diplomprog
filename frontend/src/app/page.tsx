@@ -1,5 +1,5 @@
 'use client';
-// ✅ Тестовый комментарий для проверки CI/CD — 21.06.2026
+export const dynamic = 'force-dynamic';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, TrendingUp, Star, Shield, Truck, BookOpen, Sofa, ToyBrick, User, LogIn } from 'lucide-react';
