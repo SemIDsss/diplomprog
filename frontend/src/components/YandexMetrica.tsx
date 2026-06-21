@@ -12,9 +12,12 @@ export function YandexMetricaProviderWrapper({ children }: { children: React.Rea
     return <>{children}</>;
   }
 
+  // ✅ Преобразуем строку в число
+  const tagId = parseInt(YANDEX_METRICA_ID, 10);
+
   return (
     <YandexMetricaProvider
-      tagID={YANDEX_METRICA_ID}
+      tagID={tagId}
       initOptions={{
         defer: true,
         clickmap: true,
