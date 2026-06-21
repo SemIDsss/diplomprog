@@ -1,12 +1,13 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowRight, TrendingUp, Star, Shield, Truck, 
   BookOpen, Sofa, ToyBrick, LogIn, User, ShoppingBag 
 } from 'lucide-react';
-import ClientOnly from '@/components/ClientOnly';
 
 const categories = [
   { id: 'books', title: 'Книги', icon: <BookOpen size={32} className="text-blue-600" />, count: '12+', color: 'bg-blue-50', link: '/catalog?category=books' },
@@ -38,79 +39,77 @@ export default function HomePage() {
   }, []);
 
   return (
-    <ClientOnly>
-      <div className="min-h-screen bg-gray-50 pb-20">
-        <section className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white px-4 py-10 md:py-14">
-          <div className="container-mobile text-center space-y-4">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium">
-              <span className="text-yellow-300">✦</span> Новая коллекция
-            </div>
-            <h1 className="text-3xl md:text-5xl font-black leading-tight">
-              Покупай <br className="block md:hidden"/> с умом
-            </h1>
-            <p className="text-base md:text-lg text-blue-100 max-w-2xl mx-auto font-medium">
-              Книги, мебель и игрушки с гарантией качества
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <Link
-                href="/catalog"
-                className="bg-white text-blue-600 font-bold px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-xl transition active:scale-95 min-h-[48px] flex items-center justify-center gap-2"
-              >
-                В каталог <ArrowRight size={18} />
-              </Link>
-              {!isLoggedIn ? (
-                <Link
-                  href="/login"
-                  className="bg-white/20 text-white font-bold px-8 py-3.5 rounded-2xl border border-white/30 hover:bg-white/30 transition active:scale-95 min-h-[48px] flex items-center justify-center gap-2"
-                >
-                  <LogIn size={18} /> Войти
-                </Link>
-              ) : (
-                <Link
-                  href="/buyer"
-                  className="bg-white/20 text-white font-bold px-8 py-3.5 rounded-2xl border border-white/30 hover:bg-white/30 transition active:scale-95 min-h-[48px] flex items-center justify-center gap-2"
-                >
-                  <User size={18} /> {userName.split('@')[0]}
-                </Link>
-              )}
-            </div>
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <section className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white px-4 py-10 md:py-14">
+        <div className="container-mobile text-center space-y-4">
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium">
+            <span className="text-yellow-300">✦</span> Новая коллекция
           </div>
-        </section>
-
-        <section className="container-mobile -mt-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {advantages.map((item, i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100/80 hover:shadow-md transition">
-                <div className="flex justify-center mb-1">{item.icon}</div>
-                <p className="text-sm font-bold text-gray-800">{item.label}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="container-mobile py-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Категории</h2>
-            <Link href="/catalog" className="text-sm font-medium text-blue-600 hover:underline">
-              Все товары →
+          <h1 className="text-3xl md:text-5xl font-black leading-tight">
+            Покупай <br className="block md:hidden"/> с умом
+          </h1>
+          <p className="text-base md:text-lg text-blue-100 max-w-2xl mx-auto font-medium">
+            Книги, мебель и игрушки с гарантией качества
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Link
+              href="/catalog"
+              className="bg-white text-blue-600 font-bold px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-xl transition active:scale-95 min-h-[48px] flex items-center justify-center gap-2"
+            >
+              В каталог <ArrowRight size={18} />
             </Link>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {categories.map((cat) => (
+            {!isLoggedIn ? (
               <Link
-                key={cat.id}
-                href={cat.link}
-                className={`${cat.color} rounded-2xl p-5 text-center hover:shadow-md transition active:scale-95 border border-transparent hover:border-gray-200`}
+                href="/login"
+                className="bg-white/20 text-white font-bold px-8 py-3.5 rounded-2xl border border-white/30 hover:bg-white/30 transition active:scale-95 min-h-[48px] flex items-center justify-center gap-2"
               >
-                <div className="flex justify-center mb-1">{cat.icon}</div>
-                <h3 className="font-bold text-sm text-gray-800">{cat.title}</h3>
-                <p className="text-xs text-gray-400">{cat.count} товаров</p>
+                <LogIn size={18} /> Войти
               </Link>
-            ))}
+            ) : (
+              <Link
+                href="/buyer"
+                className="bg-white/20 text-white font-bold px-8 py-3.5 rounded-2xl border border-white/30 hover:bg-white/30 transition active:scale-95 min-h-[48px] flex items-center justify-center gap-2"
+              >
+                <User size={18} /> {userName.split('@')[0]}
+              </Link>
+            )}
           </div>
-        </section>
-      </div>
-    </ClientOnly>
+        </div>
+      </section>
+
+      <section className="container-mobile -mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {advantages.map((item, i) => (
+            <div key={i} className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100/80 hover:shadow-md transition">
+              <div className="flex justify-center mb-1">{item.icon}</div>
+              <p className="text-sm font-bold text-gray-800">{item.label}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="container-mobile py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-800">Категории</h2>
+          <Link href="/catalog" className="text-sm font-medium text-blue-600 hover:underline">
+            Все товары →
+          </Link>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {categories.map((cat) => (
+            <Link
+              key={cat.id}
+              href={cat.link}
+              className={`${cat.color} rounded-2xl p-5 text-center hover:shadow-md transition active:scale-95 border border-transparent hover:border-gray-200`}
+            >
+              <div className="flex justify-center mb-1">{cat.icon}</div>
+              <h3 className="font-bold text-sm text-gray-800">{cat.title}</h3>
+              <p className="text-xs text-gray-400">{cat.count} товаров</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }

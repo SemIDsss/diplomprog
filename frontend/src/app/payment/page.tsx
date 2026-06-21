@@ -1,8 +1,9 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import ClientOnly from '@/components/ClientOnly';
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
@@ -146,87 +147,85 @@ export default function PaymentPage() {
   }
 
   return (
-    <ClientOnly>
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="container-mobile">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl p-6 md:p-8 border shadow-sm">
-              <div className="text-center mb-8">
-                <h1 className="text-2xl md:text-3xl font-black text-gray-900">💳 Оплата заказа</h1>
-                <p className="text-gray-500 text-sm mt-1">Заполните данные для оплаты</p>
-              </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container-mobile">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl p-6 md:p-8 border shadow-sm">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl md:text-3xl font-black text-gray-900">💳 Оплата заказа</h1>
+              <p className="text-gray-500 text-sm mt-1">Заполните данные для оплаты</p>
+            </div>
 
-              <div className="space-y-6">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Заказ #{orderData.id.substring(0, 8)}</p>
-                  <p className="font-bold text-gray-900 text-lg">
-                    {orderData.totalAmount} ₽
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Доставка: {orderData.deliveryMethod} · {orderData.deliveryPrice} ₽
-                  </p>
-                </div>
-
-                <div className="border rounded-xl p-4">
-                  <h3 className="font-bold text-gray-800 text-sm mb-3">Товары в заказе:</h3>
-                  <div className="space-y-2">
-                    {orderData.items?.map((item: any) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span className="text-gray-600">
-                          {item.product.title} × {item.quantity}
-                        </span>
-                        <span className="font-bold text-gray-800">
-                          {item.price * item.quantity} ₽
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border rounded-xl p-4">
-                  <h3 className="font-bold text-gray-800 text-sm mb-3">Способ оплаты</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="YUKASSA"
-                        defaultChecked
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <label className="text-sm font-medium text-gray-700">
-                        💳 Банковская карта (ЮKassa)
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="SBP"
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <label className="text-sm font-medium text-gray-700">
-                        📱 СБП (Система быстрых платежей)
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handlePayment}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition active:scale-95"
-                >
-                  Оплатить {orderData.totalAmount} ₽
-                </button>
-
-                <p className="text-center text-xs text-gray-400">
-                  🔒 Тестовый режим. Реальные деньги не списываются.
+            <div className="space-y-6">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm text-gray-500">Заказ #{orderData.id.substring(0, 8)}</p>
+                <p className="font-bold text-gray-900 text-lg">
+                  {orderData.totalAmount} ₽
+                </p>
+                <p className="text-xs text-gray-400">
+                  Доставка: {orderData.deliveryMethod} · {orderData.deliveryPrice} ₽
                 </p>
               </div>
+
+              <div className="border rounded-xl p-4">
+                <h3 className="font-bold text-gray-800 text-sm mb-3">Товары в заказе:</h3>
+                <div className="space-y-2">
+                  {orderData.items?.map((item: any) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-gray-600">
+                        {item.product.title} × {item.quantity}
+                      </span>
+                      <span className="font-bold text-gray-800">
+                        {item.price * item.quantity} ₽
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border rounded-xl p-4">
+                <h3 className="font-bold text-gray-800 text-sm mb-3">Способ оплаты</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="YUKASSA"
+                      defaultChecked
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <label className="text-sm font-medium text-gray-700">
+                      💳 Банковская карта (ЮKassa)
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="SBP"
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <label className="text-sm font-medium text-gray-700">
+                      📱 СБП (Система быстрых платежей)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handlePayment}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition active:scale-95"
+              >
+                Оплатить {orderData.totalAmount} ₽
+              </button>
+
+              <p className="text-center text-xs text-gray-400">
+                🔒 Тестовый режим. Реальные деньги не списываются.
+              </p>
             </div>
           </div>
         </div>
       </div>
-    </ClientOnly>
+    </div>
   );
 }
