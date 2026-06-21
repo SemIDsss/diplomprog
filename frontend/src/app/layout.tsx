@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ru">
       <body className="min-h-screen bg-gray-50 flex flex-col pb-20 md:pb-0">
         <YandexMetricaProviderWrapper>
-          {/* ✅ Suspense оборачивает весь контент, включая страницы с useSearchParams */}
+          {/*  Suspense оборачивает весь контент, включая страницы с useSearchParams */}
           <Suspense fallback={null}>
             <YandexMetricaPageView />
             
