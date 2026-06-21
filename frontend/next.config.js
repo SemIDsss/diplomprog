@@ -23,7 +23,7 @@ const nextConfig = {
   compress: true,
 };
 
-// ⚠️ ВРЕМЕННО ОТКЛЮЧАЕМ SENTRY
+//  ВРЕМЕННО ОТКЛЮЧАЕМ SENTRY
 // const { withSentryConfig } = require('@sentry/nextjs');
 // module.exports = withSentryConfig(nextConfig, {
 //   org: process.env.SENTRY_ORG || 'diplom-market',
