@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', //  ГЛАВНОЕ: серверный режим без статического экспорта
+  
   async rewrites() {
     return [
       {
@@ -8,22 +10,26 @@ const nextConfig = {
       },
     ];
   },
+  
   images: {
     domains: ['localhost', 'via.placeholder.com', 'unsplash.com'],
   },
+  
   typescript: {
     ignoreBuildErrors: false,
   },
+  
   eslint: {
     ignoreDuringBuilds: false,
   },
+  
   swcMinify: true,
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
 };
 
-//  ВРЕМЕННО ОТКЛЮЧАЕМ SENTRY
+// ⚠️ SENTRY ВРЕМЕННО ОТКЛЮЧЕН
 // const { withSentryConfig } = require('@sentry/nextjs');
 // module.exports = withSentryConfig(nextConfig, {
 //   org: process.env.SENTRY_ORG || 'diplom-market',
