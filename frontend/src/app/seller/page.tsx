@@ -1,5 +1,5 @@
 'use client';
-export const dynamic = 'force-dynamic';
+
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
@@ -7,6 +7,7 @@ import {
   Image as ImageIcon, Tag, Calendar, Ruler, Scale, 
   MapPin, Palette, Layers, Sparkles, Star, ChevronUp 
 } from 'lucide-react';
+import ClientOnly from '@/components/ClientOnly';
 
 interface ProductForm {
   title: string;
@@ -203,358 +204,352 @@ export default function SellerPage() {
   );
 
   return (
-    <div ref={pageRef} className="min-h-screen bg-[#f5f5f5] pb-28">
-      {/* Шапка */}
-      <div className="bg-white sticky top-0 z-10 shadow-sm">
-        <div className="container-mobile py-3 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-              <User size={20} className="text-amber-600" />
+    <ClientOnly>
+      <div ref={pageRef} className="min-h-screen bg-[#f5f5f5] pb-28">
+        <div className="bg-white sticky top-0 z-10 shadow-sm">
+          <div className="container-mobile py-3 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <User size={20} className="text-amber-600" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">Панель продавца</h1>
+                <p className="text-xs text-gray-400">{user?.email}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Панель продавца</h1>
-              <p className="text-xs text-gray-400">{user?.email}</p>
-            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 text-sm font-medium text-red-500 px-3 py-1.5 bg-red-50 rounded-xl hover:bg-red-100 transition"
+            >
+              <LogOut size={16} /> Выйти
+            </button>
           </div>
+        </div>
+
+        <div className="container-mobile py-4 space-y-6 pb-8">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border">
+            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Plus size={20} className="text-blue-600" /> Новый товар
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Название *</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={form.title}
+                    onChange={handleChange}
+                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Цена (₽) *</label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={form.price}
+                    onChange={handleChange}
+                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Описание</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Категория *</label>
+                <select
+                  name="subcategoryId"
+                  value={form.subcategoryId}
+                  onChange={handleChange}
+                  className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                  required
+                >
+                  <option value="">Выберите подкатегорию</option>
+                  {categories.map((cat) => (
+                    <optgroup key={cat.id} label={cat.name}>
+                      {cat.subcategories.map((sub: any) => (
+                        <option key={sub.id} value={sub.id}>
+                          {cat.name} → {sub.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              <div className="border-t pt-4 mt-2">
+                <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <Tag size={16} /> Характеристики
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Артикул (SKU)</label>
+                    <input
+                      type="text"
+                      name="sku"
+                      value={form.sku}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="SKU-001"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Бренд</label>
+                    <input
+                      type="text"
+                      name="brand"
+                      value={form.brand}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="Nike, IKEA..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Материал</label>
+                    <input
+                      type="text"
+                      name="material"
+                      value={form.material}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="Дуб, пластик..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Цвет</label>
+                    <input
+                      type="text"
+                      name="color"
+                      value={form.color}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="Белый, черный..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Год выпуска</label>
+                    <input
+                      type="number"
+                      name="year"
+                      value={form.year}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="2024"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Страна производства</label>
+                    <input
+                      type="text"
+                      name="country"
+                      value={form.country}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="Китай, Россия..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-2">
+                <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <Scale size={16} /> Габариты и вес
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Вес (кг)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      name="weight"
+                      value={form.weight}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="0.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Ширина (см)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      name="width"
+                      value={form.width}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Высота (см)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      name="height"
+                      value={form.height}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Глубина (см)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      name="depth"
+                      value={form.depth}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="20"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-2">
+                <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <Sparkles size={16} /> Дополнительно
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Сезон</label>
+                    <select
+                      name="season"
+                      value={form.season}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                    >
+                      <option value="">Не указан</option>
+                      <option value="Весна">Весна</option>
+                      <option value="Лето">Лето</option>
+                      <option value="Осень">Осень</option>
+                      <option value="Зима">Зима</option>
+                      <option value="Всесезонный">Всесезонный</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Коллекция</label>
+                    <input
+                      type="text"
+                      name="collection"
+                      value={form.collection}
+                      onChange={handleChange}
+                      className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                      placeholder="Весна 2025"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-2">
+                <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <ImageIcon size={16} /> Изображения
+                </h3>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="URL изображения"
+                    className="flex-1 bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={addImage}
+                    className="bg-blue-600 text-white font-medium px-4 py-2.5 rounded-xl hover:bg-blue-700 transition active:scale-95"
+                  >
+                    Добавить
+                  </button>
+                </div>
+                {form.images.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {form.images.map((url, idx) => (
+                      <div key={idx} className="relative w-16 h-16 bg-gray-100 rounded-xl overflow-hidden group">
+                        <img src={url} alt={`img-${idx}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-blue-500/25 hover:shadow-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {submitting ? 'Отправка...' : 'Отправить на модерацию'}
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm border">
+            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Package size={20} className="text-blue-600" /> Мои товары
+            </h2>
+            {products.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">У вас пока нет товаров</p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {products.map((p) => (
+                  <div key={p.id} className="py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                        {p.images && p.images.length > 0 ? (
+                          <img src={p.images[0]} className="w-full h-full object-cover" />
+                        ) : (
+                          <Package size={20} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm text-gray-800">{p.title}</p>
+                        <p className="text-xs text-gray-400">
+                          {p.price} ₽ · {p.sku || 'без артикула'}
+                        </p>
+                        {p.material && <p className="text-xs text-gray-400">Материал: {p.material}</p>}
+                      </div>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      p.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                      p.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {p.status === 'APPROVED' ? '✅ Одобрен' :
+                       p.status === 'PENDING' ? '⏳ Модерация' : '❌ Отклонен'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-sm font-medium text-red-500 px-3 py-1.5 bg-red-50 rounded-xl hover:bg-red-100 transition"
+            onClick={scrollToTop}
+            className="fixed bottom-24 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition active:scale-95 z-50"
           >
-            <LogOut size={16} /> Выйти
+            <ChevronUp size={24} />
           </button>
         </div>
       </div>
-
-      <div className="container-mobile py-4 space-y-6 pb-8">
-        {/* Форма создания товара */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Plus size={20} className="text-blue-600" /> Новый товар
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Название *</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Цена (₽) *</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={form.price}
-                  onChange={handleChange}
-                  className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Описание</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                rows={3}
-                className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Категория *</label>
-              <select
-                name="subcategoryId"
-                value={form.subcategoryId}
-                onChange={handleChange}
-                className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                required
-              >
-                <option value="">Выберите подкатегорию</option>
-                {categories.map((cat) => (
-                  <optgroup key={cat.id} label={cat.name}>
-                    {cat.subcategories.map((sub: any) => (
-                      <option key={sub.id} value={sub.id}>
-                        {cat.name} → {sub.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </div>
-
-            {/* Расширенные характеристики */}
-            <div className="border-t pt-4 mt-2">
-              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                <Tag size={16} /> Характеристики
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Артикул (SKU)</label>
-                  <input
-                    type="text"
-                    name="sku"
-                    value={form.sku}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="SKU-001"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Бренд</label>
-                  <input
-                    type="text"
-                    name="brand"
-                    value={form.brand}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="Nike, IKEA..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Материал</label>
-                  <input
-                    type="text"
-                    name="material"
-                    value={form.material}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="Дуб, пластик..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Цвет</label>
-                  <input
-                    type="text"
-                    name="color"
-                    value={form.color}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="Белый, черный..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Год выпуска</label>
-                  <input
-                    type="number"
-                    name="year"
-                    value={form.year}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="2024"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Страна производства</label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={form.country}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="Китай, Россия..."
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Вес и габариты */}
-            <div className="border-t pt-4 mt-2">
-              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                <Scale size={16} /> Габариты и вес
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Вес (кг)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    name="weight"
-                    value={form.weight}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="0.5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Ширина (см)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    name="width"
-                    value={form.width}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="30"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Высота (см)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    name="height"
-                    value={form.height}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="40"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Глубина (см)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    name="depth"
-                    value={form.depth}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="20"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Дополнительные параметры */}
-            <div className="border-t pt-4 mt-2">
-              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                <Sparkles size={16} /> Дополнительно
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Сезон</label>
-                  <select
-                    name="season"
-                    value={form.season}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                  >
-                    <option value="">Не указан</option>
-                    <option value="Весна">Весна</option>
-                    <option value="Лето">Лето</option>
-                    <option value="Осень">Осень</option>
-                    <option value="Зима">Зима</option>
-                    <option value="Всесезонный">Всесезонный</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Коллекция</label>
-                  <input
-                    type="text"
-                    name="collection"
-                    value={form.collection}
-                    onChange={handleChange}
-                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                    placeholder="Весна 2025"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Изображения */}
-            <div className="border-t pt-4 mt-2">
-              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                <ImageIcon size={16} /> Изображения
-              </h3>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="URL изображения"
-                  className="flex-1 bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                />
-                <button
-                  type="button"
-                  onClick={addImage}
-                  className="bg-blue-600 text-white font-medium px-4 py-2.5 rounded-xl hover:bg-blue-700 transition active:scale-95"
-                >
-                  Добавить
-                </button>
-              </div>
-              {form.images.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {form.images.map((url, idx) => (
-                    <div key={idx} className="relative w-16 h-16 bg-gray-100 rounded-xl overflow-hidden group">
-                      <img src={url} alt={`img-${idx}`} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(idx)}
-                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-blue-500/25 hover:shadow-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {submitting ? 'Отправка...' : 'Отправить на модерацию'}
-            </button>
-          </form>
-        </div>
-
-        {/* Список товаров продавца */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Package size={20} className="text-blue-600" /> Мои товары
-          </h2>
-          {products.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">У вас пока нет товаров</p>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {products.map((p) => (
-                <div key={p.id} className="py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                      {p.images && p.images.length > 0 ? (
-                        <img src={p.images[0]} className="w-full h-full object-cover" />
-                      ) : (
-                        <Package size={20} className="text-gray-400" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm text-gray-800">{p.title}</p>
-                      <p className="text-xs text-gray-400">
-                        {p.price} ₽ · {p.sku || 'без артикула'}
-                      </p>
-                      {p.material && <p className="text-xs text-gray-400">Материал: {p.material}</p>}
-                    </div>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                    p.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                    p.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {p.status === 'APPROVED' ? '✅ Одобрен' :
-                     p.status === 'PENDING' ? '⏳ Модерация' : '❌ Отклонен'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Кнопка "Наверх" */}
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-24 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition active:scale-95 z-50"
-        >
-          <ChevronUp size={24} />
-        </button>
-      </div>
-    </div>
+    </ClientOnly>
   );
 }

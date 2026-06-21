@@ -1,9 +1,10 @@
 'use client';
-export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
+import ClientOnly from '@/components/ClientOnly';
 
 interface Product {
   id: string;
@@ -14,9 +15,6 @@ interface Product {
   status: string;
   subcategoryId: string;
   userId: string;
-  user?: {
-    email: string;
-  };
 }
 
 export default function AdminPage() {
@@ -108,7 +106,6 @@ export default function AdminPage() {
       const json = await res.json();
       if (json.errors) throw new Error(json.errors[0].message);
 
-      // ✅ СОБЫТИЕ: одобрение товара
       sendMetricaEvent('product_approved', { productId });
       trackEvent('product_approved', { 
         productId, 
@@ -148,7 +145,6 @@ export default function AdminPage() {
       const json = await res.json();
       if (json.errors) throw new Error(json.errors[0].message);
 
-      // ✅ СОБЫТИЕ: отклонение товара
       sendMetricaEvent('product_rejected', { 
         productId: modal.productId, 
         reason: modal.reason 
@@ -179,95 +175,97 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="container-mobile py-4 md:py-8">
-        <div className="bg-white rounded-2xl p-4 md:p-6 border shadow-sm mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <h1 className="text-2xl font-black text-gray-900">⚙️ Администратор</h1>
-              <p className="text-sm text-gray-500">{user?.email}</p>
+    <ClientOnly>
+      <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="container-mobile py-4 md:py-8">
+          <div className="bg-white rounded-2xl p-4 md:p-6 border shadow-sm mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <h1 className="text-2xl font-black text-gray-900">⚙️ Администратор</h1>
+                <p className="text-sm text-gray-500">{user?.email}</p>
+              </div>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  localStorage.removeItem('userId');
+                  router.push('/login');
+                }}
+                className="text-sm font-bold text-red-600 bg-red-50 px-4 py-2 rounded-xl hover:bg-red-100 transition min-h-[44px]"
+              >
+                Выйти
+              </button>
             </div>
-            <button
-              onClick={() => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                localStorage.removeItem('userId');
-                router.push('/login');
-              }}
-              className="text-sm font-bold text-red-600 bg-red-50 px-4 py-2 rounded-xl hover:bg-red-100 transition min-h-[44px]"
-            >
-              Выйти
-            </button>
           </div>
-        </div>
 
-        <div className="bg-white rounded-2xl p-4 md:p-6 border shadow-sm">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">📋 Заявки на модерацию</h2>
-          {products.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">Нет заявок на модерацию</p>
-          ) : (
-            <div className="space-y-4">
-              {products.map((product) => (
-                <div key={product.id} className="border rounded-xl p-4 space-y-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
-                      <h3 className="font-bold text-gray-800">{product.title}</h3>
-                      <p className="text-sm text-gray-500">{product.description || 'Без описания'}</p>
-                      <p className="text-sm font-bold text-blue-600 mt-1">{product.price} ₽</p>
-                      <p className="text-xs text-gray-400">ID: {product.id}</p>
+          <div className="bg-white rounded-2xl p-4 md:p-6 border shadow-sm">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">📋 Заявки на модерацию</h2>
+            {products.length === 0 ? (
+              <p className="text-gray-400 text-center py-8">Нет заявок на модерацию</p>
+            ) : (
+              <div className="space-y-4">
+                {products.map((product) => (
+                  <div key={product.id} className="border rounded-xl p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div>
+                        <h3 className="font-bold text-gray-800">{product.title}</h3>
+                        <p className="text-sm text-gray-500">{product.description || 'Без описания'}</p>
+                        <p className="text-sm font-bold text-blue-600 mt-1">{product.price} ₽</p>
+                        <p className="text-xs text-gray-400">ID: {product.id}</p>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => handleApprove(product.id)}
+                          className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 transition text-sm font-bold min-h-[44px]"
+                        >
+                          ✅ Одобрить
+                        </button>
+                        <button
+                          onClick={() => handleReject(product.id)}
+                          className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition text-sm font-bold min-h-[44px]"
+                        >
+                          ❌ Отклонить
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        onClick={() => handleApprove(product.id)}
-                        className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 transition text-sm font-bold min-h-[44px]"
-                      >
-                        ✅ Одобрить
-                      </button>
-                      <button
-                        onClick={() => handleReject(product.id)}
-                        className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition text-sm font-bold min-h-[44px]"
-                      >
-                        ❌ Отклонить
-                      </button>
-                    </div>
+                    {product.image && (
+                      <img src={product.image} alt={product.title} className="w-24 h-24 object-cover rounded-lg" />
+                    )}
                   </div>
-                  {product.image && (
-                    <img src={product.image} alt={product.title} className="w-24 h-24 object-cover rounded-lg" />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {modal.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="font-bold text-lg mb-2">Укажите причину отказа</h3>
-            <textarea
-              value={modal.reason}
-              onChange={(e) => setModal({ ...modal, reason: e.target.value })}
-              placeholder="Причина отклонения товара..."
-              className="w-full border rounded-xl p-3 h-24 resize-none text-sm outline-none focus:ring-2 focus:ring-red-500/20"
-            />
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => setModal({ open: false, productId: null, reason: '' })}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl font-medium hover:bg-gray-300 transition"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={submitReject}
-                className="flex-1 bg-red-600 text-white py-2 rounded-xl font-medium hover:bg-red-700 transition"
-              >
-                Отправить
-              </button>
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </div>
+
+        {modal.open && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <h3 className="font-bold text-lg mb-2">Укажите причину отказа</h3>
+              <textarea
+                value={modal.reason}
+                onChange={(e) => setModal({ ...modal, reason: e.target.value })}
+                placeholder="Причина отклонения товара..."
+                className="w-full border rounded-xl p-3 h-24 resize-none text-sm outline-none focus:ring-2 focus:ring-red-500/20"
+              />
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => setModal({ open: false, productId: null, reason: '' })}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl font-medium hover:bg-gray-300 transition"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={submitReject}
+                  className="flex-1 bg-red-600 text-white py-2 rounded-xl font-medium hover:bg-red-700 transition"
+                >
+                  Отправить
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </ClientOnly>
   );
 }
