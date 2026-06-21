@@ -11,7 +11,7 @@ export function YandexMetricaProviderWrapper({ children }: { children: React.Rea
 
   return (
     <YandexMetricaProvider
-      tagId={YANDEX_METRICA_ID}
+      tagID={YANDEX_METRICA_ID}  // ✅ tagID (с большой D)
       initOptions={{
         defer: true,
         clickmap: true,
