@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, Package, Upload, X, User, LogOut, Image as ImageIcon, Tag, Calendar, Ruler, Weight, MapPin, Palette, Layers, Sparkles, Star, ChevronUp } from 'lucide-react';
+import { 
+  Plus, Trash2, Package, Upload, X, User, LogOut, 
+  Image as ImageIcon, Tag, Calendar, Ruler, Scale, 
+  MapPin, Palette, Layers, Sparkles, Star, ChevronUp 
+} from 'lucide-react';
 
 interface ProductForm {
   title: string;
@@ -199,7 +203,7 @@ export default function SellerPage() {
   );
 
   return (
-    <div ref={pageRef} className="min-h-screen bg-[#f5f5f5] pb-30">
+    <div ref={pageRef} className="min-h-screen bg-[#f5f5f5] pb-28">
       {/* Шапка */}
       <div className="bg-white sticky top-0 z-10 shadow-sm">
         <div className="container-mobile py-3 flex justify-between items-center">
@@ -221,7 +225,7 @@ export default function SellerPage() {
         </div>
       </div>
 
-      <div className="container-mobile py-4 space-y-10 pb-12">
+      <div className="container-mobile py-4 space-y-6 pb-8">
         {/* Форма создания товара */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border">
           <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -364,7 +368,7 @@ export default function SellerPage() {
             {/* Вес и габариты */}
             <div className="border-t pt-4 mt-2">
               <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                <Ruler size={16} /> Габариты и вес
+                <Scale size={16} /> Габариты и вес
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
