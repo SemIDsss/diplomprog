@@ -24,7 +24,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    Sentry.captureException(error, { extra: errorInfo });
+    // ✅ Исправлено: передаём errorInfo как строку или отдельно
+    Sentry.captureException(error, {
+      extra: {
+        componentStack: errorInfo.componentStack || 'Нет данных',
+      },
+    });
     console.error('❌ ErrorBoundary поймал ошибку:', error, errorInfo);
   }
 
