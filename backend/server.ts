@@ -516,14 +516,7 @@ async function startServer() {
     throw error;
   }
 }
-   app.get('/test-sentry', (req, res) => {
-  try {
-    throw new Error('Тестовая ошибка Sentry (бэкенд)');
-  } catch (error) {
-    captureException(error as Error);
-    res.json({ message: 'Ошибка отправлена в Sentry' });
-  }
-});
+
 startServer().catch((err) => {
   console.error('❌ Критическая ошибка:', err);
   process.exit(1);
