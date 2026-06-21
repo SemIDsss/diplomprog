@@ -64,21 +64,20 @@ model Product {
   userId         String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  rejectReason  String?   // причина отказа
-  //  НОВЫЕ ПОЛЯ ДЛЯ ТОВАРА
-  sku            String?   // Артикул
-  brand          String?   // Бренд
-  material       String?   // Материал
-  color          String?   // Цвет
-  weight         Float?    // Вес в кг
-  width          Float?    // Ширина в см
-  height         Float?    // Высота в см
-  depth          Float?    // Глубина в см
-  year           Int?      // Год выпуска
-  country        String?   // Страна производства
-  season         String?   // Сезон
-  collection     String?   // Коллекция
-  images         String[]  // Массив ссылок на изображения
+  rejectReason  String?   //  
+  sku            String?   // 
+  brand          String?   // 
+  material       String?   // 
+  color          String?   // 
+  weight         Float?    //  в кг
+  width          Float?    //  в см
+  height         Float?    //  в см
+  depth          Float?    //  в см
+  year           Int?      //  
+  country        String?   //  
+  season         String?   // 
+  collection     String?   // 
+  images         String[]  //    
    
   reviews        Review[]
 

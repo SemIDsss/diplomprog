@@ -20,7 +20,7 @@ async function main() {
     return;
   }
 
-  // ✅ В КАЖДОМ ТОВАРЕ УКАЗАНА ПОДКАТЕГОРИЯ
+  //  В КАЖДОМ ТОВАРЕ УКАЗАНА ПОДКАТЕГОРИЯ
   const productsData = [
     { title: '1984', description: 'Культовый роман Джорджа Оруэлла', price: 450, subcategoryName: 'Фантастика', image: '/images/1984.jpg' },
     { title: 'Преступление и наказание', description: 'Великий роман Федора Достоевского', price: 350, subcategoryName: 'Классика', image: '/images/crime.jpg' },

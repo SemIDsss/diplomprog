@@ -7,9 +7,7 @@ interface ShippingCalculated {
 }
 
 export class ShippingService {
-  /**
-   * Расчет параметров доставки по методу из ТЗ
-   */
+  
   public static calculateShipping(method: DeliveryMethod, orderTotal: number): ShippingCalculated {
     switch (method) {
       case 'CDEK':
