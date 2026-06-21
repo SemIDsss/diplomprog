@@ -2,12 +2,11 @@
   "name": "shop-frontend",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
+ "scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start"
+},
   "dependencies": {
     "@amplitude/analytics-browser": "^2.42.4",
     "@sentry/nextjs": "^10.59.0",
