@@ -29,17 +29,44 @@ export default function CatalogPage() {
   const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
+  
+  // ✅ Правильное использование MutableRefObject
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const lastProductRef = useCallback((node: HTMLDivElement) => {
+  const lastProductRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ Используем useEffect для настройки IntersectionObserver
+  useEffect(() => {
     if (loading) return;
-    if (observerRef.current) observerRef.current.disconnect();
-    observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
+    if (!lastProductRef.current) return;
+
+    // Отключаем старый observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Создаём новый observer
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !loading) {
         loadMore();
       }
+    }, {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1,
     });
-    if (node) observerRef.current.observe(node);
-  }, [loading, hasMore]);
+
+    // Начинаем наблюдение за последним элементом
+    if (lastProductRef.current) {
+      observerRef.current.observe(lastProductRef.current);
+    }
+
+    // Очистка при размонтировании
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, hasMore, products.length]);
 
   const loadProducts = async (reset: boolean = false, search?: string) => {
     setLoading(true);
@@ -91,12 +118,9 @@ export default function CatalogPage() {
     setHasMore(true);
     setPage(0);
 
-    // ✅ СОБЫТИЕ: поиск
     if (inputValue.trim()) {
       sendMetricaEvent('search', { query: inputValue.trim() });
-      trackEvent('search_performed', { 
-        query: inputValue.trim()
-      });
+      trackEvent('search_performed', { query: inputValue.trim() });
     }
 
     loadProducts(true, inputValue);
@@ -149,36 +173,37 @@ export default function CatalogPage() {
             {products.map((product, index) => {
               const isLast = index === products.length - 1;
               return (
-                <Link
+                <div
                   key={product.id}
-                  href={`/product/${product.id}`}
                   ref={isLast ? lastProductRef : null}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition duration-200 active:scale-[0.98] border border-gray-100"
                 >
-                  <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
-                    {product.image ? (
-                      <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package size={48} className="text-gray-300" />
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-base text-gray-800 line-clamp-2 min-h-[3rem]">
-                      {product.title}
-                    </h3>
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                      <span className="text-lg font-bold text-blue-600">
-                        {product.price.toLocaleString()} ₽
-                      </span>
-                      <AddToCartButton
-                        productId={product.id}
-                        productName={product.title}
-                        productPrice={product.price}
-                        productImage={product.image}
-                      />
+                  <Link href={`/product/${product.id}`}>
+                    <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                      {product.image ? (
+                        <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package size={48} className="text-gray-300" />
+                      )}
                     </div>
-                  </div>
-                </Link>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-base text-gray-800 line-clamp-2 min-h-[3rem]">
+                        {product.title}
+                      </h3>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                        <span className="text-lg font-bold text-blue-600">
+                          {product.price.toLocaleString()} ₽
+                        </span>
+                        <AddToCartButton
+                          productId={product.id}
+                          productName={product.title}
+                          productPrice={product.price}
+                          productImage={product.image}
+                        />
+                      </div>
+                    </div>
+                  </Link>
+                </div>
               );
             })}
           </div>
