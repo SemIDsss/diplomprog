@@ -2,7 +2,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
+ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
@@ -20,16 +20,18 @@ enum OrderStatus {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  password  String
-  role      Role      @default(USER)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  
-  products  Product[]
-  cartItems CartItem[]
-  orders    Order[]
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  role        Role     @default(USER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isBlocked   Boolean  @default(false)
+  blockReason String?
+
+  products    Product[]
+  cartItems   CartItem[]
+  orders      Order[]
   
   @@map("users")
 }

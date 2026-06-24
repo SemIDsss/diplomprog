@@ -8,7 +8,7 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent, identifyUser, setUserGroup } from '@/lib/amplitude';
 
-export default function AuthPage() {
+export default function LoginPage() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -69,9 +69,8 @@ export default function AuthPage() {
       if (json.errors) throw new Error(json.errors[0].message);
 
       const data = json.data[isLogin ? 'login' : 'register'];
-      if (!data?.token) throw new Error('Ошибка аутентификации');
+      if (!data?.token) throw new Error('Ошибка');
 
-      // Отправка событий в аналитику
       if (isLogin) {
         sendMetricaEvent('login', { email: data.user.email });
         trackEvent('user_login', { email: data.user.email });
@@ -104,14 +103,14 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 md:p-8">
-        <h1 className="text-3xl font-black text-center text-gray-900 mb-2">
-          {isLogin ? 'Вход' : 'Регистрация'}
-        </h1>
-        <p className="text-center text-gray-500 text-sm mb-6">
-          {isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 md:p-8 border border-gray-100">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-black text-[#ff8012]">DIPLOM</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            {isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}
+          </p>
+        </div>
 
         {error && (
           <div className="bg-red-50 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
@@ -119,7 +118,7 @@ export default function AuthPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -127,7 +126,7 @@ export default function AuthPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
-              className="w-full bg-gray-50 rounded-xl py-4 pl-10 pr-4 text-base outline-none focus:ring-2 focus:ring-blue-500/30 border border-gray-200"
+              className="w-full bg-gray-50 rounded-xl py-3.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[#ff8012] border border-gray-200"
               required
             />
           </div>
@@ -139,7 +138,7 @@ export default function AuthPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Пароль"
-              className="w-full bg-gray-50 rounded-xl py-4 pl-10 pr-12 text-base outline-none focus:ring-2 focus:ring-blue-500/30 border border-gray-200"
+              className="w-full bg-gray-50 rounded-xl py-3.5 pl-10 pr-12 text-sm outline-none focus:ring-2 focus:ring-[#ff8012] border border-gray-200"
               required
             />
             <button
@@ -156,19 +155,18 @@ export default function AuthPage() {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full bg-gray-50 rounded-xl py-4 px-4 text-base outline-none focus:ring-2 focus:ring-blue-500/30 border border-gray-200"
+                className="w-full bg-gray-50 rounded-xl py-3.5 px-4 text-sm outline-none focus:ring-2 focus:ring-[#ff8012] border border-gray-200"
               >
                 <option value="USER">Покупатель</option>
                 <option value="SELLER">Продавец</option>
               </select>
-              <p className="text-xs text-gray-400 mt-1">Администратор создаётся вручную</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl transition active:scale-95 disabled:opacity-70"
+            className="w-full bg-[#ff8012] hover:bg-[#e06a00] text-white font-bold py-3.5 rounded-xl transition text-sm disabled:opacity-70"
           >
             {loading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Зарегистрироваться')}
           </button>
@@ -177,9 +175,9 @@ export default function AuthPage() {
         <div className="text-center mt-6">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm font-medium text-blue-600 hover:underline"
+            className="text-sm font-medium text-[#ff8012] hover:underline"
           >
-            {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
+            {isLogin ? 'Нет аккаунта? Создать' : 'Уже есть аккаунт? Войти'}
           </button>
         </div>
       </div>

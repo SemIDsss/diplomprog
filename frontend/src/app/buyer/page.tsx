@@ -1,6 +1,6 @@
 'use client';
 
-
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -48,7 +48,6 @@ export default function BuyerPage() {
     } catch (e) {
       router.push('/login');
     }
-
     const savedCart = localStorage.getItem('cart');
     if (savedCart) setCart(JSON.parse(savedCart));
     fetchOrders();
@@ -63,7 +62,6 @@ export default function BuyerPage() {
     }
     const weight = cart.reduce((sum, item) => sum + ((item.weightGrams || 400) * item.quantity), 0) / 1000;
     setTotalWeight(weight);
-
     let price = (deliveryMethod === 'cdek' ? 350 : 400) * (city === 'Москва' || city === 'Санкт-Петербург' ? 1 : 1.5);
     if (weight > 5) price *= 1.5;
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -170,9 +168,9 @@ export default function BuyerPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <div className="w-12 h-12 border-4 border-[#ff8012] border-t-transparent rounded-full animate-spin mx-auto" />
         <p className="text-gray-400 mt-4 text-base">Загрузка...</p>
       </div>
     </div>
@@ -182,164 +180,160 @@ export default function BuyerPage() {
   const totalWithShipping = total + shippingPrice;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-white sticky top-0 z-10 shadow-sm">
-        <div className="container-mobile py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <User size={24} className="text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Мой профиль</h1>
-              <p className="text-sm text-gray-400">{user?.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-base font-medium text-red-500 px-4 py-2 bg-red-50 rounded-xl hover:bg-red-100 transition"
-          >
-            <LogOut size={20} /> Выйти
-          </button>
-        </div>
-      </div>
-
-      <div className="container-mobile py-4 space-y-4">
-        <div className="flex bg-white rounded-xl p-1 shadow-sm border">
-          <button
-            onClick={() => setActiveTab('cart')}
-            className={`flex-1 py-3 rounded-xl text-base font-semibold transition flex items-center justify-center gap-2 ${
-              activeTab === 'cart' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            <ShoppingCart size={22} /> Корзина
-          </button>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`flex-1 py-3 rounded-xl text-base font-semibold transition flex items-center justify-center gap-2 ${
-              activeTab === 'orders' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            <History size={22} /> Заказы
-          </button>
-        </div>
-
-        {activeTab === 'cart' && (
-          <div className="space-y-4">
-            {cart.length === 0 ? (
-              <div className="bg-white rounded-2xl p-12 text-center shadow-sm border">
-                <ShoppingCart size={56} className="text-gray-300 mx-auto mb-4" />
-                <p className="text-xl font-medium text-gray-500">Корзина пуста</p>
-                <p className="text-base text-gray-400 mt-1">Добавьте товары из каталога</p>
-                <Link href="/catalog" className="inline-block mt-4 text-base font-bold text-blue-600 hover:underline">
-                  Перейти в каталог
-                </Link>
+    <div className="min-h-screen bg-gray-100 pb-20 lg:pb-8">
+      <div className="container mx-auto px-4 py-6 max-w-5xl">
+        <div className="bg-white rounded-3xl shadow-2xl p-4 md:p-6 border border-gray-100">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#ff8012]/10 rounded-full flex items-center justify-center">
+                <User size={24} className="text-[#ff8012]" />
               </div>
-            ) : (
-              <>
-                {cart.map((item) => (
-                  <div key={item.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm border">
-                    <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
-                      {item.image ? <img src={item.image} className="w-full h-full object-cover" /> : <Package size={28} className="text-gray-400" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-base truncate">{item.name}</h4>
-                      <p className="text-sm text-gray-400">{item.price} ₽ × {item.quantity}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center active:scale-95 hover:bg-gray-200 transition">
-                        <Minus size={18} />
-                      </button>
-                      <span className="w-8 text-center font-bold text-base">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center active:scale-95 hover:bg-gray-200 transition">
-                        <Plus size={18} />
-                      </button>
-                      <button onClick={() => removeFromCart(item.id)} className="w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 flex items-center justify-center transition">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="bg-white rounded-2xl p-4 shadow-sm border space-y-3">
-                  <h3 className="font-bold text-base flex items-center gap-2"><Truck size={22} className="text-blue-600" /> Доставка</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="relative">
-                      <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        placeholder="Город"
-                        className="w-full bg-gray-50 rounded-xl pl-10 pr-3 py-3 text-base outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                      />
-                    </div>
-                    <div className="relative">
-                      <Home size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <select
-                        value={deliveryMethod}
-                        onChange={(e) => setDeliveryMethod(e.target.value as 'cdek' | 'boxberry')}
-                        className="w-full bg-gray-50 rounded-xl pl-10 pr-3 py-3 text-base outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
-                      >
-                        <option value="cdek">СДЭК</option>
-                        <option value="boxberry">Boxberry</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-400 px-1">
-                    <span>Вес: {totalWeight.toFixed(1)} кг</span>
-                    <span>Доставка: {shippingPrice} ₽</span>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-medium text-gray-600">Итого:</span>
-                    <span className="text-3xl font-black text-blue-600">{totalWithShipping} ₽</span>
-                  </div>
-                  <button
-                    onClick={handlePayment}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl mt-3 shadow-lg shadow-blue-500/25 hover:shadow-xl transition active:scale-95 text-lg flex items-center justify-center gap-2"
-                  >
-                    <CreditCard size={22} /> Оплатить заказ
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'orders' && (
-          <div className="space-y-3">
-            {orders.length === 0 ? (
-              <div className="bg-white rounded-2xl p-12 text-center shadow-sm border">
-                <Package size={56} className="text-gray-300 mx-auto mb-4" />
-                <p className="text-xl font-medium text-gray-500">Нет заказов</p>
-                <p className="text-base text-gray-400 mt-1">Оформите первый заказ</p>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Мой профиль</h1>
+                <p className="text-sm text-gray-400">{user?.email}</p>
               </div>
-            ) : (
-              orders.map((order) => (
-                <div key={order.id} className="bg-white rounded-2xl p-4 shadow-sm border hover:shadow-md transition">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-start gap-4">
-                      <ShoppingBag size={22} className="text-blue-600 mt-1" />
-                      <div>
-                        <p className="font-bold text-base text-gray-800">Заказ #{order.id.substring(0, 8)}</p>
-                        <p className="text-sm text-gray-400 mt-0.5">{new Date(Number(order.createdAt)).toLocaleString('ru-RU')}</p>
-                        <p className="text-sm text-gray-400">{order.items?.length || 0} товаров · {order.deliveryMethod}</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-medium text-red-500 bg-red-50 px-4 py-2 rounded-xl hover:bg-red-100 transition"
+            >
+              <LogOut size={18} /> Выйти
+            </button>
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setActiveTab('cart')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${
+                activeTab === 'cart' ? 'bg-[#ff8012] text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <ShoppingCart size={18} className="inline mr-2" /> Корзина
+            </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${
+                activeTab === 'orders' ? 'bg-[#ff8012] text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <History size={18} className="inline mr-2" /> Заказы
+            </button>
+          </div>
+
+          {activeTab === 'cart' && (
+            <div className="mt-4 space-y-4">
+              {cart.length === 0 ? (
+                <div className="text-center py-12">
+                  <ShoppingCart size={48} className="text-gray-300 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-gray-500">Корзина пуста</p>
+                  <Link href="/catalog" className="text-sm font-bold text-[#ff8012] hover:underline inline-block mt-2">
+                    Перейти в каталог
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex items-center gap-4 bg-gray-50 rounded-xl p-3">
+                      <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center overflow-hidden shrink-0">
+                        {item.image ? <img src={item.image} className="w-full h-full object-cover" /> : <Package size={24} className="text-gray-400" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-sm truncate">{item.name}</h4>
+                        <p className="text-xs text-gray-400">{item.price} ₽ × {item.quantity}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-8 h-8 rounded-lg bg-white flex items-center justify-center active:scale-95 hover:bg-gray-200 transition">
+                          <Minus size={14} />
+                        </button>
+                        <span className="w-6 text-center font-bold text-sm">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-8 h-8 rounded-lg bg-white flex items-center justify-center active:scale-95 hover:bg-gray-200 transition">
+                          <Plus size={14} />
+                        </button>
+                        <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 flex items-center justify-center transition">
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="font-bold text-blue-600 text-lg">{order.totalAmount} ₽</span>
-                      <p className={`text-sm font-semibold flex items-center gap-1 justify-end mt-0.5 ${order.status === 'APPROVED' ? 'text-green-600' : 'text-yellow-600'}`}>
-                        {order.status === 'APPROVED' ? <><CheckCircle size={18} /> Оплачен</> : <><Clock size={18} /> В обработке</>}
-                      </p>
+                  ))}
+
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                    <h3 className="font-bold text-sm flex items-center gap-2"><Truck size={18} className="text-[#ff8012]" /> Доставка</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="Город"
+                          className="w-full bg-white rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ff8012] border border-gray-200"
+                        />
+                      </div>
+                      <div className="relative">
+                        <Home size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <select
+                          value={deliveryMethod}
+                          onChange={(e) => setDeliveryMethod(e.target.value as 'cdek' | 'boxberry')}
+                          className="w-full bg-white rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ff8012] border border-gray-200"
+                        >
+                          <option value="cdek">СДЭК</option>
+                          <option value="boxberry">Boxberry</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>Вес: {totalWeight.toFixed(1)} кг</span>
+                      <span>Доставка: {shippingPrice} ₽</span>
                     </div>
                   </div>
+
+                  <div className="bg-[#ff8012]/5 rounded-xl p-4 border border-[#ff8012]/20">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Итого:</span>
+                      <span className="text-2xl font-black text-[#ff8012]">{totalWithShipping} ₽</span>
+                    </div>
+                    <button
+                      onClick={handlePayment}
+                      className="w-full bg-[#ff8012] hover:bg-[#e06a00] text-white font-bold py-3 rounded-xl mt-3 transition text-sm disabled:opacity-50"
+                      disabled={cart.length === 0}
+                    >
+                      <CreditCard size={18} className="inline mr-2" /> Оплатить заказ
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'orders' && (
+            <div className="mt-4 space-y-3">
+              {orders.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package size={48} className="text-gray-300 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-gray-500">Нет заказов</p>
                 </div>
-              ))
-            )}
-          </div>
-        )}
+              ) : (
+                orders.map((order) => (
+                  <div key={order.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-sm text-gray-800">Заказ #{order.id.substring(0, 8)}</p>
+                        <p className="text-xs text-gray-400">{new Date(Number(order.createdAt)).toLocaleString('ru-RU')}</p>
+                        <p className="text-xs text-gray-400">{order.items?.length || 0} товаров · {order.deliveryMethod}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-[#ff8012]">{order.totalAmount} ₽</span>
+                        <p className={`text-xs font-semibold flex items-center gap-1 justify-end ${order.status === 'APPROVED' ? 'text-green-600' : 'text-yellow-600'}`}>
+                          {order.status === 'APPROVED' ? <><CheckCircle size={14} /> Оплачен</> : <><Clock size={14} /> В обработке</>}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

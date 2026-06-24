@@ -8,7 +8,7 @@ import { generateToken, verifyToken } from './src/utils/jwt';
 
 console.log('🔄 Загрузка сервера...');
 
-// Контекст для передачи данных пользователя в резолверы (из JWT)
+// ==================== CONTEXT ====================
 const createContext = async ({ req }: any) => {
   const authHeader = req.headers.authorization;
   let user = null;
@@ -19,7 +19,7 @@ const createContext = async ({ req }: any) => {
   return { user, prisma };
 };
 
-// GraphQL-схема
+// ==================== TYPEDEFS ====================
 const typeDefs = `#graphql
   type Subcategory { id: ID!, name: String!, categoryId: String! }
   type Category { id: ID!, name: String!, subcategories: [Subcategory!] }
@@ -48,13 +48,15 @@ const typeDefs = `#graphql
     user: User
   }
   type CartItem { id: ID!, userId: String!, productId: String!, quantity: Int!, product: Product! }
-  type User { 
-    id: ID! 
-    email: String! 
-    role: String! 
-    createdAt: String!
-    _count: UserCount
-  }
+type User {
+  id: ID!
+  email: String!
+  role: String!
+  createdAt: String!
+  isBlocked: Boolean 
+  blockReason: String
+  _count: UserCount
+}
   type UserCount { products: Int! orders: Int! }
   type AuthResponse { token: String!, user: User! }
   type PaymentResponse { paymentUrl: String!, orderId: String! }
@@ -105,7 +107,7 @@ const typeDefs = `#graphql
     pendingProducts: [Product]
     reviews(productId: ID!): [Review!]!
     
-    # Админские запросы для панели управления
+    # Админские запросы
     users: [User!]!
     productsAll: [Product!]!
     ordersAll: [Order!]!
@@ -118,20 +120,20 @@ const typeDefs = `#graphql
   }
 
   type Mutation {
-    # Аутентификация
+    # ---------- Аутентификация ----------
     register(email: String!, password: String!, role: String!): AuthResponse!
     login(email: String!, password: String!): AuthResponse!
 
-    # Корзина
+    # ---------- Корзина ----------
     addToCart(userId: String!, productId: String!, quantity: Int!): CartItem!
     deleteFromCart(id: ID!): Boolean!
 
-    # Заказы и оплата
+    # ---------- Заказы и оплата ----------
     createOrder(deliveryMethod: String!): Order!
     initiatePayment(orderId: String!, method: String!): PaymentResponse!
     approveOrder(orderId: String!): Order!
 
-    # Управление товарами
+    # ---------- Товары ----------
     createProduct(
       title: String!
       description: String
@@ -154,25 +156,27 @@ const typeDefs = `#graphql
     approveProduct(id: ID!): Boolean!
     rejectProduct(id: ID!, reason: String!): Boolean!
 
-    # Категории
+    # ---------- Категории и подкатегории ----------
     createCategory(name: String!): Category!
     createSubcategory(name: String!, categoryId: String!): Subcategory!
 
-    # Отзывы
+    # ---------- Отзывы ----------
     createReview(productId: ID!, userName: String!, rating: Int!, comment: String!): Review!
 
-    # Админские мутации (только для администраторов)
+    # ---------- Админские мутации ----------
     updateUserRole(userId: ID!, role: String!): User!
     updateOrderStatus(orderId: ID!, status: String!): Order!
     deleteReview(id: ID!): Boolean!
     deleteCategory(id: ID!): Boolean!
+    blockUser(userId: ID!, reason: String!): User!
+    unblockUser(userId: ID!): User!
   }
 `;
 
-// Резолверы для всех запросов и мутаций
+// ==================== RESOLVERS ====================
 const resolvers = {
   Query: {
-    // Публичные запросы для каталога и корзины
+    // ---------- Публичные запросы ----------
     categories: async () => {
       try {
         return await prisma.category.findMany({ include: { subcategories: true } });
@@ -266,7 +270,7 @@ const resolvers = {
       } catch (e) { return []; }
     },
 
-    // Админские запросы для статистики и управления
+    // ---------- Админские запросы ----------
     users: async () => {
       return await prisma.user.findMany({
         include: { _count: { select: { products: true, orders: true } } }
@@ -312,7 +316,7 @@ const resolvers = {
   },
 
   Mutation: {
-    // Регистрация нового пользователя (роль ADMIN запрещена через API)
+    // ==================== АУТЕНТИФИКАЦИЯ ====================
     register: async (_: any, { email, password, role }: any) => {
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) throw new Error('Пользователь с таким email уже зарегистрирован');
@@ -326,15 +330,16 @@ const resolvers = {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          role: finalRole,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+    const user = await prisma.user.create({
+  data: {
+    email,
+    password: hashedPassword,
+    role: finalRole,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    // isBlocked и blockReason не передаём – будут значения по умолчанию из схемы
+  }
+});
 
       const token = generateToken({
         userId: user.id,
@@ -348,11 +353,15 @@ const resolvers = {
       };
     },
 
-    // Вход в аккаунт
     login: async (_: any, { email, password }: any) => {
       const user = await prisma.user.findFirst({ where: { email } });
       if (!user) {
         throw new Error('Неверный адрес электронной почты или пароль');
+      }
+
+      // Проверка блокировки
+      if (user.isBlocked) {
+        throw new Error(`Ваш аккаунт заблокирован. Причина: ${user.blockReason || 'Не указана'}`);
       }
 
       let isPasswordValid = false;
@@ -378,7 +387,7 @@ const resolvers = {
       };
     },
 
-    // Добавление товара в корзину
+    // ==================== КОРЗИНА ====================
     addToCart: async (_: any, { userId, productId, quantity }: any, context: any) => {
       if (!context.user || context.user.userId !== userId) {
         throw new Error('Не авторизован для изменения этой корзины');
@@ -397,7 +406,6 @@ const resolvers = {
       });
     },
 
-    // Удаление элемента из корзины
     deleteFromCart: async (_: any, { id }: { id: string }, context: any) => {
       const cartItem = await prisma.cartItem.findUnique({
         where: { id },
@@ -413,7 +421,7 @@ const resolvers = {
       } catch (e) { return false; }
     },
 
-    // Создание заказа из текущей корзины
+    // ==================== ЗАКАЗЫ И ОПЛАТА ====================
     createOrder: async (_: any, { deliveryMethod }: any, context: any) => {
       if (!context.user) {
         throw new Error('Не авторизован');
@@ -452,7 +460,6 @@ const resolvers = {
       return order;
     },
 
-    // Инициация платежа (возвращает ссылку на страницу оплаты)
     initiatePayment: async (_: any, { orderId, method }: any, context: any) => {
       if (!context.user) {
         throw new Error('Не авторизован');
@@ -469,7 +476,6 @@ const resolvers = {
       };
     },
 
-    // Подтверждение оплаты заказа (меняет статус)
     approveOrder: async (_: any, { orderId }: { orderId: string }, context: any) => {
       if (!context.user) throw new Error('Не авторизован');
       const order = await prisma.order.findUnique({ where: { id: orderId } });
@@ -481,7 +487,7 @@ const resolvers = {
       });
     },
 
-    // Создание товара (только для продавцов и админов)
+    // ==================== ТОВАРЫ ====================
     createProduct: async (_: any, args: any, context: any) => {
       if (!context.user) {
         throw new Error('Необходимо авторизоваться');
@@ -524,7 +530,6 @@ const resolvers = {
       });
     },
 
-    // Одобрение товара (только для админов)
     approveProduct: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.user) throw new Error('Не авторизован');
       if (context.user.role !== 'ADMIN') throw new Error('Только администратор может одобрять товары');
@@ -534,7 +539,6 @@ const resolvers = {
       } catch (e) { return false; }
     },
 
-    // Отклонение товара с указанием причины
     rejectProduct: async (_: any, { id, reason }: { id: string, reason: string }, context: any) => {
       if (!context.user) throw new Error('Не авторизован');
       if (context.user.role !== 'ADMIN') throw new Error('Только администратор может отклонять товары');
@@ -549,7 +553,7 @@ const resolvers = {
       }
     },
 
-    // Создание категории
+    // ==================== КАТЕГОРИИ ====================
     createCategory: async (_: any, { name }: { name: string }) => {
       try {
         return await prisma.category.create({ data: { name } });
@@ -558,7 +562,6 @@ const resolvers = {
       }
     },
 
-    // Создание подкатегории
     createSubcategory: async (_: any, { name, categoryId }: { name: string, categoryId: string }) => {
       try {
         const category = await prisma.category.findUnique({ where: { id: categoryId } });
@@ -569,7 +572,7 @@ const resolvers = {
       }
     },
 
-    // Добавление отзыва
+    // ==================== ОТЗЫВЫ ====================
     createReview: async (_: any, { productId, userName, rating, comment }: any, context: any) => {
       if (!context.user) {
         throw new Error('Необходимо авторизоваться для оставления отзыва');
@@ -587,7 +590,7 @@ const resolvers = {
       });
     },
 
-    // Изменение роли пользователя (только админ)
+    // ==================== АДМИНСКИЕ МУТАЦИИ ====================
     updateUserRole: async (_: any, { userId, role }: { userId: string, role: string }, context: any) => {
       if (!context.user || context.user.role !== 'ADMIN') {
         throw new Error('Доступ запрещен. Только для администраторов.');
@@ -598,7 +601,6 @@ const resolvers = {
       });
     },
 
-    // Изменение статуса заказа (только админ)
     updateOrderStatus: async (_: any, { orderId, status }: { orderId: string, status: string }, context: any) => {
       if (!context.user || context.user.role !== 'ADMIN') {
         throw new Error('Доступ запрещен. Только для администраторов.');
@@ -609,7 +611,6 @@ const resolvers = {
       });
     },
 
-    // Удаление отзыва (только админ)
     deleteReview: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.user || context.user.role !== 'ADMIN') {
         throw new Error('Доступ запрещен. Только для администраторов.');
@@ -618,18 +619,37 @@ const resolvers = {
       return true;
     },
 
-    // Удаление категории (только админ)
     deleteCategory: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.user || context.user.role !== 'ADMIN') {
         throw new Error('Доступ запрещен. Только для администраторов.');
       }
       await prisma.category.delete({ where: { id } });
       return true;
+    },
+
+    blockUser: async (_: any, { userId, reason }: { userId: string, reason: string }, context: any) => {
+      if (!context.user || context.user.role !== 'ADMIN') {
+        throw new Error('Доступ запрещен. Только для администраторов.');
+      }
+      return await prisma.user.update({
+        where: { id: userId },
+        data: { isBlocked: true, blockReason: reason }
+      });
+    },
+
+    unblockUser: async (_: any, { userId }: { userId: string }, context: any) => {
+      if (!context.user || context.user.role !== 'ADMIN') {
+        throw new Error('Доступ запрещен. Только для администраторов.');
+      }
+      return await prisma.user.update({
+        where: { id: userId },
+        data: { isBlocked: false, blockReason: null }
+      });
     }
   }
 };
 
-// Инициализация сервера Apollo
+// ==================== SERVER ====================
 const server = new ApolloServer({ typeDefs, resolvers });
 
 async function startServer() {
