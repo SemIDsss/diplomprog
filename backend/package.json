@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "npx tsx src/index.ts",
-    "build": "prisma generate --schema=./prisma/schema.prisma && tsc",
-    "start": "node dist/index.js",
+  "start": "npx tsx src/index.ts",
+  "build": "prisma generate --schema=./prisma/schema.prisma",
     "seed:categories": "tsx seed-categories.ts",
     "seed:products": "tsx seed.ts"
   },
