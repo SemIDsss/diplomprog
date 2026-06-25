@@ -33,7 +33,7 @@ router.get('/status/:paymentId', authenticate, async (req, res) => {
   }
 });
 
-router.post('/confirm/:paymentId', authenticate, async (req, res) => {
+router.post('/confirm/:paymentId', async (req, res) => {
   try {
     const { paymentId } = req.params;
     const result = await PaymentService.confirmPayment(paymentId);

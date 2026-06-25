@@ -107,7 +107,7 @@ export default function BuyerPage() {
     const calculateDelivery = async () => {
       setDeliveryLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/api/delivery/calculate`, {
+        const res = await fetch(`${API_BASE}/delivery/calculate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -235,7 +235,7 @@ export default function BuyerPage() {
       if (orderJson.errors) throw new Error(orderJson.errors[0].message);
       const order = orderJson.data.createOrder;
 
-      const payRes = await fetch(`${API_BASE}/api/payment/create`, {
+      const payRes = await fetch(`${API_BASE}/payment/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

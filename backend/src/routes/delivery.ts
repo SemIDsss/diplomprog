@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/calculate', authenticate, async (req: any, res) => {
+router.post('/calculate',  async (req: any, res) => {
   try {
     const { city, weight, dimensions, service } = req.body;
     if (!city || !weight || !service) {
