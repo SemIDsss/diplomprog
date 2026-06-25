@@ -1,8 +1,9 @@
 // backend/src/index.ts
 import 'dotenv/config';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
@@ -14,38 +15,43 @@ import { verifyToken } from './utils/jwt';
 import paymentRoutes from './routes/payment';
 import deliveryRoutes from './routes/delivery';
 import webhookRoutes from './routes/webhook';
-
-// Импорт rate limiter
 import { generalLimiter, strictLimiter } from './middleware/rateLimit';
+
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [nodeProfilingIntegration()],
+    tracesSampleRate: 1.0,
+    profilesSampleRate: 1.0,
+    environment: process.env.NODE_ENV || 'development',
+  });
+  console.log('✅ Sentry инициализирован (бэкенд)');
+} else {
+  console.warn('⚠️ SENTRY_DSN не задан, Sentry отключён');
+}
 
 console.log('🔄 Загрузка сервера...');
 
 const app = express();
 
-// 1. Helmet – защитные заголовки
+// Middleware
 app.use(helmet());
-
-// 2. CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-
-// 3. Cookie парсер
 app.use(cookieParser());
-
-// 4. Ограничение размера JSON (защита от больших запросов)
 app.use(express.json({ limit: '1mb' }));
 
-// 5. Rate limiting для всех запросов
+// Rate limiting
 app.use('/api', generalLimiter);
-// Строгий лимит для чувствительных операций
 app.use('/api/payment', strictLimiter);
 app.use('/api/auth', strictLimiter);
 
-// 6. REST-роуты
+// REST-роуты
 app.use('/api/payment', paymentRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/webhook', webhookRoutes);
@@ -83,6 +89,7 @@ async function startServer() {
       console.log(`✅ REST API /api/payment, /api/delivery, /api/webhook доступны`);
     });
   } catch (error) {
+    Sentry.captureException(error); // отправляем ошибку в Sentry
     console.error('❌ Ошибка при запуске сервера:', error);
     process.exit(1);
   }
