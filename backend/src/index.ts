@@ -1,9 +1,6 @@
 // backend/src/index.ts
 import 'dotenv/config';
-import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import express from 'express';
-import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { ApolloServer } from '@apollo/server';
@@ -16,43 +13,23 @@ import { verifyToken } from './utils/jwt';
 import paymentRoutes from './routes/payment';
 import deliveryRoutes from './routes/delivery';
 import webhookRoutes from './routes/webhook';
-import { generalLimiter, strictLimiter } from './middleware/rateLimit';
-
-
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    integrations: [nodeProfilingIntegration()],
-    tracesSampleRate: 1.0,
-    profilesSampleRate: 1.0,
-    environment: process.env.NODE_ENV || 'development',
-  });
-  console.log('✅ Sentry инициализирован (бэкенд)');
-} else {
-  console.warn('⚠️ SENTRY_DSN не задан, Sentry отключён');
-}
 
 console.log('🔄 Загрузка сервера...');
 
 const app = express();
 
-// Middleware
-app.use(helmet());
+// ⭐ ГЛАВНОЕ: НАСТРОЙКА CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'https://diplomprog.vercel.app', // или '*' для теста
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 
-// Rate limiting
-app.use('/api', generalLimiter);
-app.use('/api/payment', strictLimiter);
-app.use('/api/auth', strictLimiter);
-
-// REST-роуты
+// Подключаем REST-роуты
 app.use('/api/payment', paymentRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/webhook', webhookRoutes);
@@ -90,7 +67,6 @@ async function startServer() {
       console.log(`✅ REST API /api/payment, /api/delivery, /api/webhook доступны`);
     });
   } catch (error) {
-    Sentry.captureException(error); // отправляем ошибку в Sentry
     console.error('❌ Ошибка при запуске сервера:', error);
     process.exit(1);
   }
