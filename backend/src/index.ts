@@ -19,7 +19,7 @@ console.log('🔄 Загрузка сервера...');
 
 const app = express();
 
-// ⭐ ГЛАВНОЕ: НАСТРОЙКА CORS
+// ⭐ CORS
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -31,10 +31,16 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// ✅ Логирование всех запросов (добавлено)
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 
-// Подключаем REST-роуты
+// REST-роуты
 app.use('/api/payment', paymentRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/webhook', webhookRoutes);
