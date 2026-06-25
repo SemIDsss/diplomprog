@@ -200,6 +200,7 @@ export default function BuyerPage() {
 
   const calculateTotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  // ==================== ИСПРАВЛЕННЫЙ handlePayment ====================
   const handlePayment = async () => {
     if (cart.length === 0) {
       alert('Корзина пуста');
@@ -208,7 +209,7 @@ export default function BuyerPage() {
     setPaymentLoading(true);
 
     try {
-      // 1. Создаём заказ через GraphQL
+      // 1. Создаём заказ
       const createOrderQuery = `mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
         createOrder(deliveryMethod: $deliveryMethod, items: $items) {
           id
@@ -236,44 +237,30 @@ export default function BuyerPage() {
       if (orderJson.errors) throw new Error(orderJson.errors[0].message);
       const order = orderJson.data.createOrder;
 
-      // Проверка ID заказа
       console.log('🆔 ID заказа:', order.id);
       if (!order.id) {
         throw new Error('Не удалось получить ID заказа');
       }
 
-      // 2. Инициируем платёж через GraphQL-мутацию initiatePayment
-      const initiatePaymentQuery = `
-        mutation InitiatePayment($orderId: String!, $method: String!) {
-          initiatePayment(orderId: $orderId, method: $method) {
-            paymentUrl
-            orderId
-          }
-        }
-      `;
-      const paymentVariables = {
-        orderId: order.id,
-        method: paymentMethod === 'bank_card' ? 'YUKASSA' : 'SBP'
-      };
-
-      const paymentRes = await fetch(API_URL, {
+      // 2. Создаём платёж через REST (с относительным returnUrl)
+      const payRes = await fetch(`${API_BASE}/payment/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ query: initiatePaymentQuery, variables: paymentVariables })
+        body: JSON.stringify({
+          amount: order.totalAmount,
+          description: `Оплата заказа ${order.id}`,
+          orderId: order.id,
+          paymentMethod: paymentMethod,
+          returnUrl: `/payment-success?orderId=${order.id}`, // ✅ относительный путь
+        })
       });
-      const paymentJson = await paymentRes.json();
-      if (paymentJson.errors) {
-        throw new Error(paymentJson.errors[0].message);
-      }
-      const paymentData = paymentJson.data.initiatePayment;
-      console.log('🔗 paymentUrl:', paymentData.paymentUrl);
-      if (!paymentData.paymentUrl) {
-        throw new Error('Не удалось получить ссылку на оплату');
-      }
+      const payment = await payRes.json();
+      console.log('🔗 confirmationUrl:', payment.confirmationUrl);
+      if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
 
-      // 3. Редирект на страницу оплаты
-      window.location.href = paymentData.paymentUrl;
+      // 3. Редирект
+      window.location.href = payment.confirmationUrl;
     } catch (e: any) {
       console.error('❌ Ошибка оплаты:', e);
       alert('❌ Ошибка оплаты: ' + e.message);
