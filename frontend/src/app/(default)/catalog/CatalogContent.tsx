@@ -8,7 +8,7 @@ import { Search, X, Package, Filter } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
 import CategoryFilter from '@/components/CategoryFilter';
-import { API_URL, API_BASE } from '@/utils/api'; // ✅ импорт
+import { API_URL, API_BASE } from '@/lib/api'; 
 
 interface Product {
   id: string;
@@ -51,7 +51,7 @@ export default function CatalogContent() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(API_URL, { // ✅ заменено
+        const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -82,7 +82,7 @@ export default function CatalogContent() {
     setLoading(true);
     try {
       const skip = reset ? 0 : products.length;
-      const res = await fetch(API_URL, { // ✅ заменено
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

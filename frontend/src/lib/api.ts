@@ -1,4 +1,4 @@
-// src/lib/api.ts
+// frontend/src/lib/api.ts
 // Временно захардкожен URL вашего бэкенда на Render
 const API_URL = 'https://diplomprog-1.onrender.com/graphql';
 const API_BASE = 'https://diplomprog-1.onrender.com';
