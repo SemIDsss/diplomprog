@@ -52,17 +52,27 @@ app.use('/api/webhook', webhookRoutes);
 
 // Контекст для Apollo
 const context = async ({ req, res }: any) => {
+  console.log('🍪 Cookies:', req.cookies);
   let token = req.cookies.token;
+  console.log('🔑 Token from cookie:', token);
+
+  // Если токена нет в куках, пробуем из заголовка (для обратной совместимости)
   if (!token) {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
+      console.log('🔑 Token from Authorization header:', token);
     }
   }
+
   let user = null;
   if (token) {
     user = verifyToken(token);
+    console.log('👤 User from token:', user);
+  } else {
+    console.warn('⚠️ Токен отсутствует');
   }
+
   return { req, res, user, prisma };
 };
 
