@@ -8,6 +8,7 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent, identifyUser, setUserGroup } from '@/lib/amplitude';
 import { setUser } from '@/lib/auth';
+import { API_URL, API_BASE } from '@/utils/api'; // ✅ импорт
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,8 +56,7 @@ export default function LoginPage() {
         ? { email, password }
         : { email, password, role };
 
-      // ✅ Прямой URL
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, { // ✅ заменено
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

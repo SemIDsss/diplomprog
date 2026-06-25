@@ -1,4 +1,3 @@
-// app/(default)/catalog/CatalogContent.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,6 +8,7 @@ import { Search, X, Package, Filter } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
 import CategoryFilter from '@/components/CategoryFilter';
+import { API_URL, API_BASE } from '@/utils/api'; // ✅ импорт
 
 interface Product {
   id: string;
@@ -48,11 +48,10 @@ export default function CatalogContent() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastProductRef = useRef<HTMLDivElement | null>(null);
 
-  // Загрузка категорий
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://localhost:5000/graphql', {
+        const res = await fetch(API_URL, { // ✅ заменено
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -66,18 +65,15 @@ export default function CatalogContent() {
     fetchCategories();
   }, []);
 
-  // Бесконечный скролл
   useEffect(() => {
     if (loading) return;
     if (!lastProductRef.current) return;
-
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && hasMore && !loading) {
         loadMore();
       }
     }, { root: null, rootMargin: '0px', threshold: 0.1 });
-
     if (lastProductRef.current) observerRef.current.observe(lastProductRef.current);
     return () => observerRef.current?.disconnect();
   }, [loading, hasMore, products.length]);
@@ -86,7 +82,7 @@ export default function CatalogContent() {
     setLoading(true);
     try {
       const skip = reset ? 0 : products.length;
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, { // ✅ заменено
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +142,6 @@ export default function CatalogContent() {
   return (
     <div className="min-h-screen bg-gray-100 pb-20 lg:pb-8">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Шапка каталога */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h1 className="text-2xl font-black text-gray-900">Каталог</h1>
           <form onSubmit={handleSearch} className="relative w-full sm:w-80">
