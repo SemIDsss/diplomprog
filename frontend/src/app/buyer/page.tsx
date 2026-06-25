@@ -201,73 +201,73 @@ export default function BuyerPage() {
   const calculateTotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handlePayment = async () => {
-  if (cart.length === 0) {
-    alert('Корзина пуста');
-    return;
-  }
-  setPaymentLoading(true);
-
-  try {
-    // 1. Создаём заказ
-    const createOrderQuery = `mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
-      createOrder(deliveryMethod: $deliveryMethod, items: $items) {
-        id
-        totalAmount
-        status
-        deliveryPrice
-        createdAt
-      }
-    }`;
-    const createOrderVariables = {
-      deliveryMethod,
-      items: cart.map(item => ({
-        productId: item.id,
-        quantity: item.quantity
-      }))
-    };
-
-    const orderRes = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ query: createOrderQuery, variables: createOrderVariables })
-    });
-    const orderJson = await orderRes.json();
-    if (orderJson.errors) throw new Error(orderJson.errors[0].message);
-    const order = orderJson.data.createOrder;
-
-    // ✅ Проверка ID
-    console.log('🆔 ID заказа:', order.id);
-    if (!order.id) {
-      throw new Error('Не удалось получить ID заказа');
+    if (cart.length === 0) {
+      alert('Корзина пуста');
+      return;
     }
+    setPaymentLoading(true);
 
-    // 2. Создаём платёж с относительным returnUrl
-    const payRes = await fetch(`${API_BASE}/payment/create`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        amount: order.totalAmount,
-        description: `Оплата заказа ${order.id}`,
-        orderId: order.id,
-        paymentMethod: paymentMethod,
-        returnUrl: `/payment-success?orderId=${order.id}`, // ✅ относительный путь
-      })
-    });
-    const payment = await payRes.json();
-    console.log('🔗 confirmationUrl:', payment.confirmationUrl);
-    if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
+    try {
+      // 1. Создаём заказ
+      const createOrderQuery = `mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
+        createOrder(deliveryMethod: $deliveryMethod, items: $items) {
+          id
+          totalAmount
+          status
+          deliveryPrice
+          createdAt
+        }
+      }`;
+      const createOrderVariables = {
+        deliveryMethod,
+        items: cart.map(item => ({
+          productId: item.id,
+          quantity: item.quantity
+        }))
+      };
 
-    // 3. Редирект
-    window.location.href = payment.confirmationUrl;
-  } catch (e: any) {
-    console.error('❌ Ошибка оплаты:', e);
-    alert('❌ Ошибка оплаты: ' + e.message);
-  } finally {
-    setPaymentLoading(false);
-  }
-};
+      const orderRes = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ query: createOrderQuery, variables: createOrderVariables })
+      });
+      const orderJson = await orderRes.json();
+      if (orderJson.errors) throw new Error(orderJson.errors[0].message);
+      const order = orderJson.data.createOrder;
+
+      console.log('🆔 ID заказа:', order.id);
+      if (!order.id) {
+        throw new Error('Не удалось получить ID заказа');
+      }
+
+      // 2. Создаём платёж
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const payRes = await fetch(`${API_BASE}/payment/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          amount: order.totalAmount,
+          description: `Оплата заказа ${order.id}`,
+          orderId: order.id,
+          paymentMethod: paymentMethod,
+          returnUrl: `${appUrl}/payment-success?orderId=${order.id}`,
+        })
+      });
+      const payment = await payRes.json();
+      console.log('🔗 confirmationUrl:', payment.confirmationUrl);
+      if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
+
+      // 3. Редирект
+      window.location.href = payment.confirmationUrl;
+    } catch (e: any) {
+      console.error('❌ Ошибка оплаты:', e);
+      alert('❌ Ошибка оплаты: ' + e.message);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     clearAuth();

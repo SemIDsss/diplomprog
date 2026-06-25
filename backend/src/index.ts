@@ -11,27 +11,21 @@ import { verifyToken } from './utils/jwt';
 
 import paymentRoutes from './routes/payment';
 import deliveryRoutes from './routes/delivery';
-console.log('✅ paymentRoutes загружен:', paymentRoutes);
-console.log('✅ deliveryRoutes загружен:', deliveryRoutes);
 import webhookRoutes from './routes/webhook';
 
 console.log('🔄 Загрузка сервера...');
 
 const app = express();
 
-
 const allowedOrigins = [
-  /^https?:\/\/localhost:\d+$/,                    // локальные порты
-  /^https:\/\/.*\.vercel\.app$/,                   // все поддомены Vercel
-  /^https:\/\/diplomprog-.*\.onrender\.com$/,      // ваш Render домен (опционально)
+  /^https?:\/\/localhost:\d+$/,
+  /^https:\/\/.*\.vercel\.app$/,
+  /^https:\/\/diplomprog-.*\.onrender\.com$/,
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    
     if (!origin) return callback(null, true);
-    
-    
     const isAllowed = allowedOrigins.some(pattern => pattern.test(origin));
     if (isAllowed) {
       callback(null, true);
@@ -50,7 +44,6 @@ app.use(express.json({ limit: '1mb' }));
 // REST-роуты
 app.use('/api/payment', paymentRoutes);
 app.use('/api/delivery', deliveryRoutes);
-console.log('✅ Роуты /api/payment и /api/delivery подключены');
 app.use('/api/webhook', webhookRoutes);
 
 // Контекст для Apollo
@@ -59,7 +52,6 @@ const context = async ({ req, res }: any) => {
   let token = req.cookies.token;
   console.log('🔑 Token from cookie:', token);
 
-  // Если токена нет в куках, пробуем из заголовка (для обратной совместимости)
   if (!token) {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -82,7 +74,7 @@ const context = async ({ req, res }: any) => {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  csrfPrevention: false, // Временно отключаем для отладки
+  csrfPrevention: false,
 });
 
 async function startServer() {
@@ -90,13 +82,9 @@ async function startServer() {
     console.log('🔄 Инициализация Apollo Server...');
     await server.start();
 
-    // 2. GraphQL с отдельной настройкой CORS
     app.use(
       '/graphql',
-      expressMiddleware(server, {
-        context,
-      }),
-      // Добавляем промежуточное ПО для принудительной установки CORS-заголовков
+      expressMiddleware(server, { context }),
       (req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
         res.setHeader('Access-Control-Allow-Credentials', 'true');

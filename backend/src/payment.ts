@@ -1,4 +1,3 @@
-// backend/src/payment.ts
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
@@ -58,22 +57,22 @@ export class PaymentService {
     }
   }
 
- private static async createMockPayment(params: any) {
-  const mockId = `mock_${uuidv4().slice(0, 8)}`;
-  const confirmationUrl = params.returnUrl 
-    ? params.returnUrl.includes('?') 
-      ? `${params.returnUrl}&mock=true` 
-      : `${params.returnUrl}?mock=true`
-    : `http://localhost:3000/payment-success?orderId=${params.orderId}&mock=true`;
-  return {
-    id: mockId,
-    status: 'pending',
-    confirmationUrl,
-    amount: params.amount,
-    currency: 'RUB',
-    createdAt: new Date().toISOString(),
-  };
-}
+  private static async createMockPayment(params: any) {
+    console.log('📌 createMockPayment params:', params);
+    const mockId = `mock_${uuidv4().slice(0, 8)}`;
+    const confirmationUrl = params.returnUrl 
+      ? params.returnUrl 
+      : `/payment-success?orderId=${params.orderId}&mock=true`;
+    console.log('📌 Mock confirmationUrl:', confirmationUrl);
+    return {
+      id: mockId,
+      status: 'pending',
+      confirmationUrl,
+      amount: params.amount,
+      currency: 'RUB',
+      createdAt: new Date().toISOString(),
+    };
+  }
 
   static async getPaymentStatus(paymentId: string) {
     if (paymentId.startsWith('mock_')) {
