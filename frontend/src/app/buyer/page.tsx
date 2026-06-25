@@ -247,7 +247,7 @@ export default function BuyerPage() {
         description: `Оплата заказа ${order.id}`,
         orderId: order.id,
         paymentMethod: paymentMethod,
-        returnUrl: `/payment-success?orderId=${order.id}`, 
+        returnUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment-success?orderId=${order.id}`, 
       })
     });
     const payment = await payRes.json();
