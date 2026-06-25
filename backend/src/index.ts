@@ -64,6 +64,7 @@ const context = async ({ req, res }: any) => {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  csrfPrevention: false,
 });
 
 async function startServer() {
