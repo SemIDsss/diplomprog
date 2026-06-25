@@ -13,6 +13,7 @@ import {
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
 import { getUser, clearAuth } from '@/lib/auth';
+import { API_URL, API_BASE } from '@/lib/api';
 
 interface CartItem {
   id: string | number;
@@ -31,15 +32,12 @@ export default function BuyerPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
 
-  // Параметры доставки
   const [city, setCity] = useState('Москва');
   const [deliveryMethod, setDeliveryMethod] = useState<'cdek' | 'boxberry'>('cdek');
   const [shippingPrice, setShippingPrice] = useState(0);
   const [shippingDays, setShippingDays] = useState(0);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
-
-  // Состояние для выбора метода оплаты
   const [paymentMethod, setPaymentMethod] = useState<'bank_card' | 'sbp'>('bank_card');
 
   const loadCart = () => {
@@ -109,7 +107,7 @@ export default function BuyerPage() {
     const calculateDelivery = async () => {
       setDeliveryLoading(true);
       try {
-        const res = await fetch('http://localhost:5000/api/delivery/calculate', {
+        const res = await fetch(`${API_BASE}/api/delivery/calculate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -124,7 +122,6 @@ export default function BuyerPage() {
           setShippingPrice(data.price);
           setShippingDays(data.days);
         } else {
-          // fallback
           let price = (deliveryMethod === 'cdek' ? 350 : 400) * (city === 'Москва' || city === 'Санкт-Петербург' ? 1 : 1.5);
           if (totalWeight > 5) price *= 1.5;
           const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -172,7 +169,7 @@ export default function BuyerPage() {
       }`;
       const variables = { userId };
 
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -203,7 +200,6 @@ export default function BuyerPage() {
 
   const calculateTotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // ==================== ОБНОВЛЁННЫЙ ОБРАБОТЧИК ОПЛАТЫ ====================
   const handlePayment = async () => {
     if (cart.length === 0) {
       alert('Корзина пуста');
@@ -212,7 +208,6 @@ export default function BuyerPage() {
     setPaymentLoading(true);
 
     try {
-      // 1. Создаём заказ через GraphQL
       const createOrderQuery = `mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
         createOrder(deliveryMethod: $deliveryMethod, items: $items) {
           id
@@ -230,7 +225,7 @@ export default function BuyerPage() {
         }))
       };
 
-      const orderRes = await fetch('http://localhost:5000/graphql', {
+      const orderRes = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -240,8 +235,7 @@ export default function BuyerPage() {
       if (orderJson.errors) throw new Error(orderJson.errors[0].message);
       const order = orderJson.data.createOrder;
 
-      // 2. Создаём платёж в ЮKassa с передачей orderId в returnUrl
-      const payRes = await fetch('http://localhost:5000/api/payment/create', {
+      const payRes = await fetch(`${API_BASE}/api/payment/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -250,17 +244,13 @@ export default function BuyerPage() {
           description: `Оплата заказа ${order.id}`,
           orderId: order.id,
           paymentMethod: paymentMethod,
-          returnUrl: `http://localhost:3000/payment-success?orderId=${order.id}`, // ✅
+          returnUrl: `http://localhost:3000/payment-success?orderId=${order.id}`,
         })
       });
       const payment = await payRes.json();
-console.log('🔍 Payment response:', payment); // 👈 добавьте
-if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
+      if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
 
-      // 3. Перенаправляем пользователя на страницу ЮKassa
       window.location.href = payment.confirmationUrl;
-
-      // 4. Корзина будет очищена после возврата с оплаты (на странице success)
     } catch (e: any) {
       console.error('❌ Ошибка оплаты:', e);
       alert('❌ Ошибка оплаты: ' + e.message);
@@ -270,11 +260,11 @@ if (!payment.confirmationUrl) throw new Error('Не удалось получи�
   };
 
   const handleLogout = () => {
-  clearAuth();
-  localStorage.removeItem('cart');
-  window.dispatchEvent(new Event('userUpdated')); 
-  router.push('/login');
-};
+    clearAuth();
+    localStorage.removeItem('cart');
+    window.dispatchEvent(new Event('userUpdated'));
+    router.push('/login');
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -395,7 +385,6 @@ if (!payment.confirmationUrl) throw new Error('Не удалось получи�
                     </div>
                   </div>
 
-                  {/* БЛОК ВЫБОРА СПОСОБА ОПЛАТЫ */}
                   <div className="border rounded-xl p-4">
                     <h3 className="font-bold text-gray-800 text-sm mb-3">Способ оплаты</h3>
                     <div className="space-y-2">
@@ -419,7 +408,7 @@ if (!payment.confirmationUrl) throw new Error('Не удалось получи�
                           onChange={() => setPaymentMethod('sbp')}
                           className="w-4 h-4 text-blue-600"
                         />
-                        <label className="text-sm font-medium text-gray-700">📱 СБП (Система быстрых платежей)</label>
+                        <label className="text-sm font-medium text-gray-700">📱 СБП</label>
                       </div>
                     </div>
                   </div>

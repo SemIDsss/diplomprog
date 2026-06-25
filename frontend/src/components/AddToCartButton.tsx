@@ -5,6 +5,7 @@ import { ShoppingCart, Check } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
 import { getUser } from '@/lib/auth';
+import { API_URL, API_BASE } from '@/lib/api';
 
 interface AddToCartButtonProps {
   productId: string;
@@ -33,8 +34,7 @@ export function AddToCartButton({
       }
       const userId = user.id;
 
-      // ✅ Прямой URL
-      const response = await fetch('http://localhost:5000/graphql', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

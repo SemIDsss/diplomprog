@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Star, User, Calendar, ShoppingBag } from 'lucide-react';
 import { AddToCartButton } from '@/components/AddToCartButton';
 import { getUser } from '@/lib/auth';
+import { API_URL, API_BASE } from '@/lib/api';
 
 interface Product {
   id: string;
@@ -59,7 +60,7 @@ export default function ProductPage() {
 
   const fetchProduct = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -102,7 +103,7 @@ export default function ProductPage() {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -137,7 +138,7 @@ export default function ProductPage() {
         return;
       }
 
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -194,7 +195,6 @@ export default function ProductPage() {
                 productImage={product.image}
               />
 
-              {/* ✅ Блок характеристик */}
               <div className="mt-4 border-t border-gray-200 pt-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Характеристики</h3>
                 <div className="grid grid-cols-2 gap-1 text-sm text-gray-600">

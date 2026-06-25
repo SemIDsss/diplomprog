@@ -10,6 +10,7 @@ import {
   MapPin, Palette, Layers, Sparkles, Star, ChevronUp
 } from 'lucide-react';
 import { getUser, clearAuth } from '@/lib/auth';
+import { API_URL, API_BASE } from '@/lib/api';
 
 interface ProductForm {
   title: string;
@@ -80,7 +81,7 @@ export default function SellerPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -97,7 +98,7 @@ export default function SellerPage() {
       const user = getUser();
       if (!user) return;
       const userId = user.id;
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -134,7 +135,7 @@ export default function SellerPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -201,7 +202,7 @@ export default function SellerPage() {
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5]">
       <div className="text-center">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
         <p className="text-gray-400 mt-3 text-sm">Загрузка...</p>
       </div>
     </div>
@@ -458,7 +459,6 @@ export default function SellerPage() {
               </div>
             </div>
 
-            {/* ✅ Поле "Количество на складе" */}
             <div className="border-t pt-4 mt-2">
               <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                 <Package size={16} /> Склад

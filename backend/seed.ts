@@ -1,26 +1,89 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Начинаем заполнение базы данных...');
 
-  const categories = await prisma.category.findMany({
-    include: { subcategories: true }
+  // ============================================
+  // 1. СОЗДАЁМ КАТЕГОРИИ И ПОДКАТЕГОРИИ (ЕСЛИ ИХ НЕТ)
+  // ============================================
+  const categoriesData = [
+    {
+      name: 'Книги',
+      subcategories: ['Классика', 'Фантастика', 'Детективы']
+    },
+    {
+      name: 'Мебель',
+      subcategories: ['Стулья', 'Столы', 'Шкафы']
+    },
+    {
+      name: 'Игрушки',
+      subcategories: ['Мягкие игрушки', 'Конструкторы', 'Настольные игры']
+    }
+  ];
+
+  for (const catData of categoriesData) {
+    // Ищем категорию по имени
+    let category = await prisma.category.findUnique({
+      where: { name: catData.name },
+      include: { subcategories: true }
+    });
+
+    if (!category) {
+      category = await prisma.category.create({
+        data: { name: catData.name },
+        include: { subcategories: true }
+      });
+      console.log(`✅ Создана категория: "${catData.name}"`);
+    }
+
+    // Для каждой подкатегории проверяем, существует ли она
+    for (const subName of catData.subcategories) {
+      const existingSub = category.subcategories.find(s => s.name === subName);
+      if (!existingSub) {
+        await prisma.subcategory.create({
+          data: {
+            name: subName,
+            categoryId: category.id
+          }
+        });
+        console.log(`  ✅ Добавлена подкатегория: "${subName}" → "${catData.name}"`);
+      }
+    }
+  }
+
+  // ============================================
+  // 2. СОЗДАЁМ ТЕСТОВОГО ПРОДАВЦА (ЕСЛИ ЕГО НЕТ)
+  // ============================================
+  const sellerEmail = 'seller@test.com';
+  let seller = await prisma.user.findUnique({
+    where: { email: sellerEmail }
   });
 
-  if (categories.length === 0) {
-    console.log('❌ Нет категорий! Сначала создайте категории.');
-    return;
+  if (!seller) {
+    const hashedPassword = await bcrypt.hash('password123', 10);
+    seller = await prisma.user.create({
+      data: {
+        email: sellerEmail,
+        password: hashedPassword,
+        role: 'SELLER',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    });
+    console.log(`✅ Создан тестовый продавец: ${sellerEmail} (пароль: password123)`);
+  } else {
+    console.log(`ℹ️ Продавец ${sellerEmail} уже существует`);
   }
 
-  const firstUser = await prisma.user.findFirst();
-  if (!firstUser) {
-    console.log('❌ Нет пользователей! Сначала зарегистрируйтесь.');
-    return;
-  }
+  // ============================================
+  // 3. ЗАГРУЖАЕМ ТОВАРЫ
+  // ============================================
+  // Получаем все подкатегории для поиска по имени
+  const allSubcategories = await prisma.subcategory.findMany();
 
-  //  В КАЖДОМ ТОВАРЕ УКАЗАНА ПОДКАТЕГОРИЯ
   const productsData = [
     { title: '1984', description: 'Культовый роман Джорджа Оруэлла', price: 450, subcategoryName: 'Фантастика', image: '/images/1984.jpg' },
     { title: 'Преступление и наказание', description: 'Великий роман Федора Достоевского', price: 350, subcategoryName: 'Классика', image: '/images/crime.jpg' },
@@ -40,11 +103,7 @@ async function main() {
   let skipped = 0;
 
   for (const product of productsData) {
-    // Находим подкатегорию по имени
-    const subcategory = categories
-      .flatMap(c => c.subcategories)
-      .find(s => s.name === product.subcategoryName);
-
+    const subcategory = allSubcategories.find(s => s.name === product.subcategoryName);
     if (!subcategory) {
       console.log(`⚠️ Подкатегория "${product.subcategoryName}" не найдена, пропускаем`);
       skipped++;
@@ -69,7 +128,7 @@ async function main() {
         status: 'APPROVED',
         stock: 999,
         subcategoryId: subcategory.id,
-        userId: firstUser.id,
+        userId: seller.id,
         image: product.image,
         images: [product.image],
         createdAt: new Date(),

@@ -11,6 +11,7 @@ import {
   LogOut, PlusCircle, FolderPlus
 } from 'lucide-react';
 import { getUser, clearAuth } from '@/lib/auth';
+import { API_URL, API_BASE } from '@/lib/api';
 
 // ---------- Типы ----------
 interface User {
@@ -167,7 +168,7 @@ export default function AdminPage() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -199,7 +200,7 @@ export default function AdminPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -227,7 +228,7 @@ export default function AdminPage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -257,7 +258,7 @@ export default function AdminPage() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -281,7 +282,7 @@ export default function AdminPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -297,7 +298,7 @@ export default function AdminPage() {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -320,7 +321,7 @@ export default function AdminPage() {
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -344,7 +345,7 @@ export default function AdminPage() {
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -369,7 +370,7 @@ export default function AdminPage() {
   const deleteReview = async (reviewId: string) => {
     if (!confirm('Удалить отзыв?')) return;
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -394,7 +395,7 @@ export default function AdminPage() {
   const deleteCategory = async (categoryId: string) => {
     if (!confirm('Удалить категорию и все подкатегории?')) return;
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -418,7 +419,7 @@ export default function AdminPage() {
 
   const createCategory = async (name: string) => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -442,7 +443,7 @@ export default function AdminPage() {
 
   const createSubcategory = async (categoryId: string, name: string) => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -466,7 +467,7 @@ export default function AdminPage() {
 
   const handleApprove = async (productId: string) => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -492,7 +493,7 @@ export default function AdminPage() {
   const submitReject = async (reason: string) => {
     if (!modal.productId) return;
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -522,7 +523,7 @@ export default function AdminPage() {
 
   const blockUser = async (userId: string, reason: string) => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -551,7 +552,7 @@ export default function AdminPage() {
 
   const unblockUser = async (userId: string) => {
     try {
-      const res = await fetch('http://localhost:5000/graphql', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -578,12 +579,12 @@ export default function AdminPage() {
     }
   };
 
- const handleLogout = () => {
-  clearAuth();
-  localStorage.removeItem('cart');
-  window.dispatchEvent(new Event('userUpdated')); 
-  router.push('/login');
-};
+  const handleLogout = () => {
+    clearAuth();
+    localStorage.removeItem('cart');
+    window.dispatchEvent(new Event('userUpdated'));
+    router.push('/login');
+  };
 
   if (loading) {
     return (

@@ -1,11 +1,11 @@
-// app/payment/PaymentContent.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getUser } from '@/lib/auth';
+import { API_URL, API_BASE } from '@/lib/api';
 
-export default function PaymentContent() {
+export default function PaymentPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -31,9 +31,11 @@ export default function PaymentContent() {
         }
         const userId = user.id;
 
-        const response = await fetch('http://localhost:5000/graphql', {
+        const response = await fetch(API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+          },
           credentials: 'include',
           body: JSON.stringify({
             query: `
@@ -86,9 +88,11 @@ export default function PaymentContent() {
     try {
       const orderId = searchParams.get('orderId');
 
-      const response = await fetch('http://localhost:5000/graphql', {
+      const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         credentials: 'include',
         body: JSON.stringify({
           query: `

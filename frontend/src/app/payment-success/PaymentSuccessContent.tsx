@@ -1,11 +1,11 @@
-// app/payment-success/PaymentSuccessContent.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import { API_URL, API_BASE } from '@/lib/api';
 
-export default function PaymentSuccessContent() {
+export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'pending' | 'error'>('loading');
@@ -36,7 +36,7 @@ export default function PaymentSuccessContent() {
     const checkPaymentStatus = async () => {
       attempts++;
       try {
-        const res = await fetch(`http://localhost:5000/api/payment/order/${orderId}/status`, {
+        const res = await fetch(`${API_BASE}/api/payment/order/${orderId}/status`, {
           credentials: 'include',
         });
         if (!res.ok) {

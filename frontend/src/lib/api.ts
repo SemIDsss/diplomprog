@@ -1,4 +1,9 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/graphql';
+// src/lib/api.ts
+// Временно захардкожен URL вашего бэкенда на Render
+const API_URL = 'https://diplomprog-1.onrender.com/graphql';
+const API_BASE = 'https://diplomprog-1.onrender.com';
+
+export { API_URL, API_BASE };
 
 export const graphqlRequest = async (query: string, variables?: any) => {
   const response = await fetch(API_URL, {
@@ -6,13 +11,12 @@ export const graphqlRequest = async (query: string, variables?: any) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include', // <-- теперь куки отправляются автоматически
+    credentials: 'include',
     body: JSON.stringify({ query, variables }),
   });
 
   if (!response.ok) {
     if (response.status === 401) {
-      // Очищаем только пользовательские данные (если храним user в localStorage)
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
