@@ -201,63 +201,67 @@ export default function BuyerPage() {
   const calculateTotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handlePayment = async () => {
-    if (cart.length === 0) {
-      alert('Корзина пуста');
-      return;
-    }
-    setPaymentLoading(true);
+  if (cart.length === 0) {
+    alert('Корзина пуста');
+    return;
+  }
+  setPaymentLoading(true);
 
-    try {
-      const createOrderQuery = `mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
-        createOrder(deliveryMethod: $deliveryMethod, items: $items) {
-          id
-          totalAmount
-          status
-          deliveryPrice
-          createdAt
-        }
-      }`;
-      const createOrderVariables = {
-        deliveryMethod,
-        items: cart.map(item => ({
-          productId: item.id,
-          quantity: item.quantity
-        }))
-      };
+  try {
+    // 1. Создаём заказ
+    const createOrderQuery = `mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
+      createOrder(deliveryMethod: $deliveryMethod, items: $items) {
+        id
+        totalAmount
+        status
+        deliveryPrice
+        createdAt
+      }
+    }`;
+    const createOrderVariables = {
+      deliveryMethod,
+      items: cart.map(item => ({
+        productId: item.id,
+        quantity: item.quantity
+      }))
+    };
 
-      const orderRes = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ query: createOrderQuery, variables: createOrderVariables })
-      });
-      const orderJson = await orderRes.json();
-      if (orderJson.errors) throw new Error(orderJson.errors[0].message);
-      const order = orderJson.data.createOrder;
+    const orderRes = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ query: createOrderQuery, variables: createOrderVariables })
+    });
+    const orderJson = await orderRes.json();
+    if (orderJson.errors) throw new Error(orderJson.errors[0].message);
+    const order = orderJson.data.createOrder;
+    console.log('✅ Заказ создан:', order);
 
-      const payRes = await fetch(`${API_BASE}/payment/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          amount: order.totalAmount,
-          description: `Оплата заказа ${order.id}`,
-          orderId: order.id,
-          paymentMethod: paymentMethod,
-          returnUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment-success?orderId=${order.id}`,
-        })
-      });
-      const payment = await payRes.json();
-      if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
+    // 2. Создаём платёж с правильным returnUrl
+    const payRes = await fetch(`${API_BASE}/payment/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        amount: order.totalAmount,
+        description: `Оплата заказа ${order.id}`,
+        orderId: order.id,
+        paymentMethod: paymentMethod,
+        returnUrl: `/payment-success?orderId=${order.id}`, 
+      })
+    });
+    const payment = await payRes.json();
+    if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
 
-      window.location.href = payment.confirmationUrl;
-    } catch (e: any) {
-      console.error('❌ Ошибка оплаты:', e);
-      alert('❌ Ошибка оплаты: ' + e.message);
-    } finally {
-      setPaymentLoading(false);
-    }
-  };
+    // 3. Редирект на ЮKassa
+    window.location.href = payment.confirmationUrl;
+  } catch (e: any) {
+    console.error('❌ Ошибка оплаты:', e);
+    alert('❌ Ошибка оплаты: ' + e.message);
+  } finally {
+    setPaymentLoading(false);
+  }
+};
 
   const handleLogout = () => {
     clearAuth();
