@@ -365,44 +365,63 @@ export const resolvers = {
     },
 
     login: async (_: any, { email, password }: any, context: any) => {
-      const user = await prisma.user.findFirst({ where: { email } });
-      if (!user) {
-        throw new Error('Неверный адрес электронной почты или пароль');
-      }
+  console.log('🔐 Login attempt for:', email);
 
-      if (user.isBlocked) {
-        throw new Error(`Ваш аккаунт заблокирован. Причина: ${user.blockReason || 'Не указана'}`);
-      }
+  // 1. Поиск пользователя
+  const user = await prisma.user.findFirst({ where: { email } });
+  if (!user) {
+    console.warn('❌ User not found:', email);
+    throw new Error('Неверный адрес электронной почты или пароль');
+  }
 
-      let isPasswordValid = false;
-      if (user.password.startsWith('$2')) {
-        isPasswordValid = await bcrypt.compare(password, user.password);
-      } else {
-        isPasswordValid = (password === user.password);
-      }
+  // 2. Проверка блокировки
+  if (user.isBlocked) {
+    console.warn('🚫 User blocked:', email, 'Reason:', user.blockReason);
+    throw new Error(`Ваш аккаунт заблокирован. Причина: ${user.blockReason || 'Не указана'}`);
+  }
 
-      if (!isPasswordValid) {
-        throw new Error('Неверный адрес электронной почты или пароль');
-      }
+  // 3. Проверка пароля
+  let isPasswordValid = false;
+  if (user.password.startsWith('$2')) {
+    isPasswordValid = await bcrypt.compare(password, user.password);
+  } else {
+    isPasswordValid = (password === user.password);
+  }
+  if (!isPasswordValid) {
+    console.warn('❌ Invalid password for:', email);
+    throw new Error('Неверный адрес электронной почты или пароль');
+  }
 
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        role: String(user.role)
-      });
+  // 4. Генерация токена
+  const token = generateToken({
+    userId: user.id,
+    email: user.email,
+    role: String(user.role),
+  });
+  console.log('🔑 Token generated for', email, ':', token.substring(0, 20) + '...');
 
-      context.res.cookie('token', token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // true на Render, false локально
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: '/',
-});
+  // 5. Установка куки
+  context.res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // true на Render
+    sameSite: 'none', // для кросс-домена (Vercel → Render)
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+  console.log('✅ Cookie set with options:', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+  console.log('📤 Response headers after cookie:', context.res.getHeaders());
 
-      return {
-        user: { id: user.id, email: user.email, role: String(user.role) }
-      };
-    },
+  // 6. Возврат данных
+  return {
+    user: { id: user.id, email: user.email, role: String(user.role) }
+  };
+},
 
     logout: async (_: any, __: any, context: any) => {
       context.res.clearCookie('token', { path: '/' });
