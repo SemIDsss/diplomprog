@@ -20,7 +20,7 @@ const app = express();
 
 // ⭐ ГЛАВНОЕ: НАСТРОЙКА CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'https://diplomprog.vercel.app', // или '*' для теста
+  origin: process.env.FRONTEND_URL || 'https://diplomprog.vercel.app',
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
