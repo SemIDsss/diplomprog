@@ -1,104 +1,70 @@
+// frontend/src/lib/amplitude.ts
 import * as amplitude from '@amplitude/analytics-browser';
 
-const AMPLITUDE_API_KEY = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '';
+const API_KEY = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY;
 
-// Проверка, что ключ задан
-const isAmplitudeEnabled = () => {
-  if (!AMPLITUDE_API_KEY) {
-    console.warn('⚠️ Amplitude API key не задан. События не будут отправляться.');
-    return false;
-  }
-  return true;
-};
 
-// Инициализация Amplitude
+const IS_ANALYTICS_ENABLED = process.env.NODE_ENV === 'production' && !!API_KEY;
+
 export const initAmplitude = () => {
-  if (!isAmplitudeEnabled()) return;
+  
+  if (!IS_ANALYTICS_ENABLED) {
+    console.log('🔇 Amplitude отключен (не production или нет ключа)');
+    return;
+  }
 
   try {
-    amplitude.init(AMPLITUDE_API_KEY, undefined, {
-      defaultTracking: {
-        sessions: true,
-        pageViews: true,
-        formInteractions: true,
-        fileDownloads: true,
-        attribution: true,
-      },
+    amplitude.init(API_KEY, undefined, {
+      defaultTracking: true,
+    
     });
-    // ✅ Убираем setDeviceId(undefined) — это не обязательно
-    console.log('✅ Amplitude инициализирован');
+    console.log(' Amplitude инициализирован');
   } catch (error) {
-    console.error('❌ Ошибка инициализации Amplitude:', error);
+    
+    console.warn(' Ошибка инициализации Amplitude:', error);
   }
 };
 
-// Отправка события
 export const trackEvent = (eventName: string, eventProperties?: Record<string, any>) => {
-  if (!isAmplitudeEnabled()) return;
+  // Если аналитика выключена — просто выходим
+  if (!IS_ANALYTICS_ENABLED) return;
+
+  // Проверяем, есть ли интернет
+  if (!navigator.onLine) {
+    console.warn('📡 Нет интернета, событие не отправлено:', eventName);
+    return;
+  }
 
   try {
     amplitude.track(eventName, eventProperties);
-    console.log(`📊 Amplitude: ${eventName}`, eventProperties || '');
   } catch (error) {
-    console.error(`❌ Ошибка отправки события ${eventName}:`, error);
+    // Логируем ошибку тихо, чтобы не засорять консоль
+    // или можно записать в массив для повторной отправки
+    console.debug('📊 Ошибка отправки события Amplitude:', eventName, error);
   }
 };
 
-// Идентификация пользователя (после логина/регистрации)
 export const identifyUser = (userId: string, userProperties?: Record<string, any>) => {
-  if (!isAmplitudeEnabled()) return;
-
+  if (!IS_ANALYTICS_ENABLED || !userId) return;
   try {
     amplitude.setUserId(userId);
     if (userProperties) {
-      const identifyObj = new amplitude.Identify();
+      const identify = new amplitude.Identify();
       Object.entries(userProperties).forEach(([key, value]) => {
-        identifyObj.set(key, value);
+        identify.set(key, value);
       });
-      amplitude.identify(identifyObj);
+      amplitude.identify(identify);
     }
-    console.log(`👤 Amplitude: идентифицирован пользователь ${userId}`, userProperties || '');
   } catch (error) {
-    console.error('❌ Ошибка идентификации пользователя:', error);
+    console.debug('📊 Ошибка идентификации пользователя:', error);
   }
 };
 
-// Установка группы пользователя (например, по роли)
 export const setUserGroup = (groupType: string, groupName: string) => {
-  if (!isAmplitudeEnabled()) return;
-
+  if (!IS_ANALYTICS_ENABLED) return;
   try {
     amplitude.setGroup(groupType, groupName);
-    console.log(`📂 Amplitude: группа ${groupType} = ${groupName}`);
   } catch (error) {
-    console.error('❌ Ошибка установки группы:', error);
-  }
-};
-
-// Сброс пользователя (при выходе из аккаунта)
-export const resetUser = () => {
-  if (!isAmplitudeEnabled()) return;
-
-  try {
-    amplitude.reset();
-    console.log('👋 Amplitude: пользователь сброшен');
-  } catch (error) {
-    console.error('❌ Ошибка сброса пользователя:', error);
-  }
-};
-
-// Обновление свойств пользователя (например, после изменения профиля)
-export const updateUserProperties = (properties: Record<string, any>) => {
-  if (!isAmplitudeEnabled()) return;
-
-  try {
-    const identifyObj = new amplitude.Identify();
-    Object.entries(properties).forEach(([key, value]) => {
-      identifyObj.set(key, value);
-    });
-    amplitude.identify(identifyObj);
-    console.log('🔄 Amplitude: свойства пользователя обновлены', properties);
-  } catch (error) {
-    console.error('❌ Ошибка обновления свойств:', error);
+    console.debug('📊 Ошибка установки группы:', error);
   }
 };
