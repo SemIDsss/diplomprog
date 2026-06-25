@@ -351,10 +351,10 @@ export const resolvers = {
         role: String(user.role)
       });
 
-      context.res.cookie('token', token, {
+   context.res.cookie('token', token, {
   httpOnly: true,
-  secure: true,                          // для HTTPS (Vercel/Render)
-  sameSite: 'none',                      // для кросс-доменных запросов
+  secure: process.env.NODE_ENV === 'production', // true на Render, false локально
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: '/',
 });
@@ -392,12 +392,12 @@ export const resolvers = {
       });
 
       context.res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: '/',
-      });
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', // true на Render, false локально
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: '/',
+});
 
       return {
         user: { id: user.id, email: user.email, role: String(user.role) }

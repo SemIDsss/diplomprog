@@ -1,25 +1,25 @@
 // frontend/next.config.js
-const { withSentryConfig } = require('@sentry/nextjs');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // ГЛАВНОЕ: серверный режим без статического экспорта
+  // Для Vercel (опционально, но полезно)
+  output: 'standalone',
 
-  // Прокси для API-запросов в режиме разработки
+  // Прокси для продакшена: все запросы к /api/* и /graphql
+  // перенаправляются на ваш бэкенд на Render
   async rewrites() {
     return [
       {
-        source: '/api/graphql',
-        destination: 'http://localhost:5000/graphql',
+        source: '/api/:path*',
+        destination: 'https://diplomprog-1.onrender.com/api/:path*',
       },
       {
-        source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
+        source: '/graphql',
+        destination: 'https://diplomprog-1.onrender.com/graphql',
       },
     ];
   },
 
-  // Настройка внешних источников изображений
+  // Настройки изображений (оставьте свои)
   images: {
     remotePatterns: [
       {
@@ -40,25 +40,17 @@ const nextConfig = {
     ],
   },
 
+  // Остальное (TypeScript, ESLint, минификация)
   typescript: {
     ignoreBuildErrors: false,
   },
-
   eslint: {
     ignoreDuringBuilds: false,
   },
-
   swcMinify: true,
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
 };
 
-
-module.exports = withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG || 'diplom-market',
-  project: process.env.SENTRY_PROJECT || 'diplom-market',
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: true,
-  hideSourcemaps: true,
-});
+module.exports = nextConfig;

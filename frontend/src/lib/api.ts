@@ -1,17 +1,29 @@
 // frontend/src/lib/api.ts
-// Используем переменную окружения, если она задана, иначе локальный хост
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/graphql';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/graphql', '') || 'http://localhost:5000';
+// =============================================================
+// Универсальный клиент для GraphQL и REST запросов
+// В продакшене (Vercel) используем относительные пути (через прокси)
+// В разработке (localhost) — прямые URL к локальному бэкенду
+// =============================================================
 
-export { API_URL, API_BASE };
+const isProduction = process.env.NODE_ENV === 'production';
 
+// Константы для GraphQL и REST
+export const API_URL = isProduction
+  ? '/graphql'  // на Vercel запросы идут через прокси
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/graphql');
+
+export const API_BASE = isProduction
+  ? '/api'      // на Vercel REST-запросы через прокси
+  : (process.env.NEXT_PUBLIC_API_URL?.replace('/graphql', '') || 'http://localhost:5000');
+
+// Основная функция для GraphQL-запросов
 export const graphqlRequest = async (query: string, variables?: any) => {
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
+    credentials: 'include', // отправляем куки (для аутентификации)
     body: JSON.stringify({ query, variables }),
   });
 
