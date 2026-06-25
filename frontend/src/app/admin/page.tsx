@@ -578,11 +578,12 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogout = () => {
-    clearAuth();
-    localStorage.removeItem('cart');
-    router.push('/login');
-  };
+ const handleLogout = () => {
+  clearAuth();
+  localStorage.removeItem('cart');
+  window.dispatchEvent(new Event('userUpdated')); 
+  router.push('/login');
+};
 
   if (loading) {
     return (

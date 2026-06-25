@@ -1,71 +1,59 @@
 'use client';
 
-import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
-const YANDEX_METRICA_ID = process.env.NEXT_PUBLIC_YANDEX_METRICA_ID || '';
+declare global {
+  interface Window {
+    ym: (id: number, action: string, ...args: any[]) => void;
+  }
+}
 
-// Компонент для загрузки скрипта Метрики
-export function YandexMetricaProviderWrapper({ children }: { children: React.ReactNode }) {
+export function YandexMetrica() {
+  const metricaId = process.env.NEXT_PUBLIC_YANDEX_METRICA_ID;
+
   useEffect(() => {
-    if (!YANDEX_METRICA_ID) return;
+    if (!metricaId) {
+      console.warn('⚠️ NEXT_PUBLIC_YANDEX_METRICA_ID не задан');
+      return;
+    }
 
     // Загружаем скрипт Метрики
     const script = document.createElement('script');
-    script.innerHTML = `
-      (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-      m[i].l=1*new Date();
-      for (var j = 0; j < document.scripts.length; j++) {
-        if (document.scripts[j].src === r) { return; }
-      }
-      k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-      (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-
-      ym(${YANDEX_METRICA_ID}, "init", {
-        defer: true,
-        clickmap: true,
-        trackLinks: true,
-        accurateTrackBounce: true,
-        webvisor: true
-      });
-    `;
+    script.async = true;
+    script.src = `https://mc.yandex.ru/metrika/tag.js`;
     document.head.appendChild(script);
 
-    return () => {
-      // Очистка при размонтировании (опционально)
-      const scripts = document.querySelectorAll('script');
-      scripts.forEach(s => {
-        if (s.innerHTML.includes('metrika/tag.js')) {
-          s.remove();
-        }
-      });
+    // Инициализируем счётчик
+    window.ym = window.ym || function () {
+      (window.ym as any).a = (window.ym as any).a || [];
+      (window.ym as any).a.push(arguments);
     };
-  }, []);
 
-  return <>{children}</>;
+    window.ym(Number(metricaId), 'init', {
+      clickmap: true,
+      trackLinks: true,
+      accurateTrackBounce: true,
+      webvisor: true,
+    });
+
+    return () => {
+      // Удаляем скрипт при размонтировании (опционально)
+      // document.head.removeChild(script);
+    };
+  }, [metricaId]);
+
+  return null; // компонент не рендерит UI
 }
 
-// Автоматическое отслеживание просмотров страниц
-export function YandexMetricaPageView() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).ym && YANDEX_METRICA_ID) {
-      const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
-      (window as any).ym(YANDEX_METRICA_ID, 'hit', url, { title: document.title });
-    }
-  }, [pathname, searchParams]);
-
-  return null;
-}
-
-// Хелпер для отправки произвольных событий (целей)
+// Функция для отправки событий (используется в других компонентах)
 export const sendMetricaEvent = (eventName: string, params?: Record<string, any>) => {
-  if (typeof window !== 'undefined' && (window as any).ym) {
-    const ymId = YANDEX_METRICA_ID;
-    if (ymId) {
-      (window as any).ym(ymId, 'reachGoal', eventName, params);
+  if (typeof window !== 'undefined' && window.ym) {
+    try {
+      window.ym(Number(process.env.NEXT_PUBLIC_YANDEX_METRICA_ID), 'reachGoal', eventName, params);
+    } catch (e) {
+      console.error('Ошибка отправки события в Яндекс.Метрику:', e);
     }
+  } else {
+    console.warn('⚠️ Яндекс.Метрика не загружена');
   }
 };

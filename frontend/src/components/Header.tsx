@@ -2,21 +2,50 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { menuItems } from '@/constants/navigation';
 
 export default function Header() {
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  useEffect(() => {
+  const loadUser = () => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
         setUser(JSON.parse(userStr));
-      } catch (e) {}
+      } catch (e) {
+        setUser(null);
+      }
+    } else {
+      setUser(null);
     }
+  };
+
+  useEffect(() => {
+    loadUser();
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'user') {
+        loadUser();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    const handleUserUpdated = () => {
+      loadUser();
+    };
+    window.addEventListener('userUpdated', handleUserUpdated);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userUpdated', handleUserUpdated);
+    };
   }, []);
+
+  useEffect(() => {
+    loadUser();
+  }, [pathname]);
 
   return (
     <>

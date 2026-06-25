@@ -2,15 +2,14 @@
   "name": "shop-frontend",
   "version": "1.0.0",
   "private": true,
- "scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start"
-  
-},
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.42.4",
-    "@sentry/nextjs": "^10.59.0",
+    "@sentry/nextjs": "^10.60.0",
     "@sentry/react": "^10.59.0",
     "autoprefixer": "^10.5.0",
     "js-cookie": "^3.0.7",

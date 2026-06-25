@@ -13,6 +13,21 @@ interface Product {
   price: number;
   image?: string;
   status: string;
+  sku?: string;
+  brand?: string;
+  material?: string;
+  color?: string;
+  weight?: number;
+  width?: number;
+  height?: number;
+  depth?: number;
+  year?: number;
+  country?: string;
+  season?: string;
+  collection?: string;
+  images?: string[];
+  rejectReason?: string;
+  user?: { email: string };
 }
 
 interface Review {
@@ -51,7 +66,29 @@ export default function ProductPage() {
           query: `
             query GetProduct($id: ID!) {
               product(id: $id) {
-                id title description price image status
+                id
+                title
+                description
+                price
+                image
+                status
+                sku
+                brand
+                material
+                color
+                weight
+                width
+                height
+                depth
+                year
+                country
+                season
+                collection
+                images
+                rejectReason
+                user {
+                  email
+                }
               }
             }
           `,
@@ -156,6 +193,25 @@ export default function ProductPage() {
                 productPrice={product.price}
                 productImage={product.image}
               />
+
+              {/* ✅ Блок характеристик */}
+              <div className="mt-4 border-t border-gray-200 pt-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Характеристики</h3>
+                <div className="grid grid-cols-2 gap-1 text-sm text-gray-600">
+                  {product.sku && <div><span className="font-medium">Артикул:</span> {product.sku}</div>}
+                  {product.brand && <div><span className="font-medium">Бренд:</span> {product.brand}</div>}
+                  {product.material && <div><span className="font-medium">Материал:</span> {product.material}</div>}
+                  {product.color && <div><span className="font-medium">Цвет:</span> {product.color}</div>}
+                  {product.weight && <div><span className="font-medium">Вес:</span> {product.weight} кг</div>}
+                  {product.width && <div><span className="font-medium">Ширина:</span> {product.width} см</div>}
+                  {product.height && <div><span className="font-medium">Высота:</span> {product.height} см</div>}
+                  {product.depth && <div><span className="font-medium">Глубина:</span> {product.depth} см</div>}
+                  {product.year && <div><span className="font-medium">Год выпуска:</span> {product.year}</div>}
+                  {product.country && <div><span className="font-medium">Страна:</span> {product.country}</div>}
+                  {product.season && <div><span className="font-medium">Сезон:</span> {product.season}</div>}
+                  {product.collection && <div><span className="font-medium">Коллекция:</span> {product.collection}</div>}
+                </div>
+              </div>
             </div>
           </div>
         </div>

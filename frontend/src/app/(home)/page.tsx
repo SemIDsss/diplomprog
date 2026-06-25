@@ -8,18 +8,38 @@ import { Menu, X } from 'lucide-react';
 import { menuItems } from '@/constants/navigation';
 
 const images = {
-  // Десктопные
   group32: '/images/group-3-2.png',
   group12112: '/images/group-1-2-1-1-2.png',
-  // Мобильные
   group31: '/images/group-3-1.png',
   group12111: '/images/group-1-2-1-1-1.png',
   group41: '/images/group-4-1.png',
   image2: '/images/image-2.png',
 };
 
-// Конфигурации для десктопа (1024, 1280, 1366, 1440, 1920, 2560, 3840) – БЕЗ topRightBlock
-const configs = {
+// Интерфейс для блока с контактами
+interface BottomBlock {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  content: string;
+}
+
+// Интерфейс для конфигурации экрана
+interface Config {
+  width: number;
+  height: number;
+  decorativeImages: { src: string; top: number; left: number; width: number; height: number; }[];
+  bottomBlock?: BottomBlock; // необязательное поле
+  buttonLeft: number;
+  buttonWidth: number;
+  buttonHeight: number;
+  buttonGap: number;
+  buttonStartTop: number;
+  fontSize: string;
+}
+
+const configs: Record<string, Config> = {
   '3840': {
     width: 3840,
     height: 2160,
@@ -48,7 +68,13 @@ const configs = {
       { src: images.group32, top: 80, left: 857, width: 935, height: 1042 },
       { src: images.group12112, top: 409, left: 1612, width: 948, height: 1031 },
     ],
-    bottomBlock: { top: 1173, left: 857, width: 935, height: 227 },
+    bottomBlock: {
+      top: 1173,
+      left: 857,
+      width: 935,
+      height: 227,
+      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+    },
     buttonLeft: 73,
     buttonWidth: 637,
     buttonHeight: 112,
@@ -63,7 +89,13 @@ const configs = {
       { src: images.group32, top: 68, left: 693, width: 667, height: 743 },
       { src: images.group12112, top: 345, left: 1244, width: 676, height: 735 },
     ],
-    bottomBlock: { top: 850, left: 693, width: 667, height: 160 },
+    bottomBlock: {
+      top: 850,
+      left: 693,
+      width: 667,
+      height: 160,
+      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+    },
     buttonLeft: 68,
     buttonWidth: 461,
     buttonHeight: 79,
@@ -78,7 +110,13 @@ const configs = {
       { src: images.group32, top: 57, left: 436, width: 654, height: 729 },
       { src: images.group12112, top: 507, left: 964, width: 476, height: 517 },
     ],
-    bottomBlock: { top: 830, left: 436, width: 654, height: 150 },
+    bottomBlock: {
+      top: 830,
+      left: 436,
+      width: 654,
+      height: 150,
+      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+    },
     buttonLeft: 35,
     buttonWidth: 359,
     buttonHeight: 79,
@@ -93,7 +131,13 @@ const configs = {
       { src: images.group32, top: 62, left: 470, width: 493, height: 550 },
       { src: images.group12112, top: 227, left: 850, width: 516, height: 541 },
     ],
-    bottomBlock: { top: 640, left: 470, width: 493, height: 110 },
+    bottomBlock: {
+      top: 640,
+      left: 470,
+      width: 493,
+      height: 110,
+      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+    },
     buttonLeft: 41,
     buttonWidth: 349,
     buttonHeight: 64,
@@ -108,8 +152,7 @@ const configs = {
       { src: images.group32, top: 44, left: 436, width: 454, height: 506 },
       { src: images.group12112, top: 215, left: 810, width: 470, height: 505 },
     ],
-    rightBlock: { top: 50, left: 970, width: 270, height: 270 },
-    bottomButton: { top: 570, left: 436, width: 454, height: 120 },
+    // bottomBlock отсутствует
     buttonLeft: 32,
     buttonWidth: 328,
     buttonHeight: 56,
@@ -124,7 +167,13 @@ const configs = {
       { src: images.group32, top: 40, left: 339, width: 441, height: 492 },
       { src: images.group12112, top: 404, left: 670, width: 353, height: 364 },
     ],
-    bottomBlock: { top: 596, left: 339, width: 441, height: 139 },
+    bottomBlock: {
+      top: 596,
+      left: 339,
+      width: 441,
+      height: 139,
+      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+    },
     buttonLeft: 21,
     buttonWidth: 269,
     buttonHeight: 65,
@@ -143,7 +192,6 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null);
   const [desktopScale, setDesktopScale] = useState(1);
 
-  // Получение информации о пользователе
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -153,7 +201,6 @@ export default function HomePage() {
     }
   }, []);
 
-  // Закрытие меню при клике вне
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -164,7 +211,6 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Обновление размеров окна
   useEffect(() => {
     const updateSize = () => {
       setWindowWidth(window.innerWidth);
@@ -175,7 +221,6 @@ export default function HomePage() {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Обновление масштаба для десктопа
   useEffect(() => {
     if (windowWidth >= 1024 && windowWidth > 0 && windowHeight > 0) {
       let cfg;
@@ -197,8 +242,7 @@ export default function HomePage() {
     }
   }, [windowWidth, windowHeight]);
 
-  // Выбираем конфигурацию по ширине для рендеринга
-  let config;
+  let config: Config | undefined;
   if (windowWidth >= 3840) config = configs['3840'];
   else if (windowWidth >= 2560) config = configs['2560'];
   else if (windowWidth >= 1920) config = configs['1920'];
@@ -244,7 +288,6 @@ export default function HomePage() {
 
     return (
       <div className="min-h-screen bg-[#1a1a2e] flex flex-col overflow-hidden">
-        {/* Шапка */}
         <header className="fixed top-0 left-0 w-full z-50 bg-[#1a1a2e] text-white flex items-center justify-between px-4 py-3 border-b border-gray-700 shadow-md h-16">
           <Link href="/" className="text-2xl font-black text-[#ff8012] tracking-tight">
             DIPLOM
@@ -266,8 +309,6 @@ export default function HomePage() {
             </button>
           </div>
         </header>
-
-        {/* Дропдаун-меню */}
         {isMenuOpen && (
           <div
             ref={menuRef}
@@ -285,8 +326,6 @@ export default function HomePage() {
             ))}
           </div>
         )}
-
-        {/* Основной макет */}
         <div className="flex-1 flex items-end justify-start pl-4">
           <div className="relative w-full aspect-[402/874] bg-[#1a1a2e] overflow-hidden shadow-2xl">
             {imageLayers.map((layer, idx) => (
@@ -318,7 +357,7 @@ export default function HomePage() {
     width,
     height,
     decorativeImages,
-    bottomBlock,
+    bottomBlock = null, // теперь тип BottomBlock | null
     buttonLeft,
     buttonWidth,
     buttonHeight,
@@ -340,7 +379,6 @@ export default function HomePage() {
           transformOrigin: 'center center',
         }}
       >
-        {/* Шапка (с кнопкой логина или именем пользователя) */}
         <header className="absolute top-0 left-0 w-full z-40 bg-[#1a1a2e] text-white flex items-center justify-between px-8 py-3 border-b border-gray-700 h-16">
           <Link href="/" className="text-2xl font-black tracking-tight hover:text-[#ff8012] transition">
             DIPLOM
@@ -356,7 +394,6 @@ export default function HomePage() {
           </div>
         </header>
 
-        {/* Встроенный сайдбар (навигация) */}
         <nav aria-label="Primary navigation" className="absolute inset-0">
           <ul className="m-0 p-0 list-none relative w-full h-full">
             {menuItems.map((item, index) => {
@@ -379,7 +416,6 @@ export default function HomePage() {
           </ul>
         </nav>
 
-        {/* Декоративные изображения */}
         {decorativeImages.map((img, idx) => (
           <img
             key={idx}
@@ -396,7 +432,6 @@ export default function HomePage() {
           />
         ))}
 
-        {/* Нижний оранжевый блок с контактами (если есть) */}
         {bottomBlock && (
           <div
             className="absolute bg-[#ff8012] rounded-[30px] pointer-events-none select-none flex items-center justify-center text-white text-sm font-medium whitespace-pre-line text-center"
@@ -408,7 +443,7 @@ export default function HomePage() {
             }}
             aria-hidden="true"
           >
-            {bottomBlock.content || ''}
+            {bottomBlock.content}
           </div>
         )}
       </div>

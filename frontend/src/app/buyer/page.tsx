@@ -270,10 +270,11 @@ if (!payment.confirmationUrl) throw new Error('Не удалось получи�
   };
 
   const handleLogout = () => {
-    clearAuth();
-    localStorage.removeItem('cart');
-    router.push('/login');
-  };
+  clearAuth();
+  localStorage.removeItem('cart');
+  window.dispatchEvent(new Event('userUpdated')); 
+  router.push('/login');
+};
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

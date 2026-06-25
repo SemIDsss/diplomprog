@@ -18,8 +18,7 @@ diplomprog-qg52jt3fv-sem-id-s-projects.vercel.app
 
 
 
-docker exec -it postgres_db psql -U admin -d dev_db
-UPDATE products SET image = '/images/1984.jpg' WHERE title = '1984';   /// пуш картник
+
 
 
 docker ps                    	Показать запущенные контейнеры

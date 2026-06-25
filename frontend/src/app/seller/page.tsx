@@ -17,6 +17,7 @@ interface ProductForm {
   price: string;
   subcategoryId: string;
   sku: string;
+  stock: string;
   brand: string;
   material: string;
   color: string;
@@ -40,6 +41,7 @@ export default function SellerPage() {
   const [form, setForm] = useState<ProductForm>({
     title: '',
     description: '',
+    stock: '',
     price: '',
     subcategoryId: '',
     sku: '',
@@ -102,7 +104,7 @@ export default function SellerPage() {
         body: JSON.stringify({
           query: `query GetProducts($userId: String!) {
             products(subcategoryId: null, search: null) {
-              id title price status sku brand material color weight images
+              id title price status sku brand material color weight images stock
             }
           }`,
           variables: { userId }
@@ -143,14 +145,14 @@ export default function SellerPage() {
               $sku: String, $brand: String, $material: String, $color: String
               $weight: Float, $width: Float, $height: Float, $depth: Float
               $year: Int, $country: String, $season: String, $collection: String
-              $images: [String!]
+              $images: [String!], $stock: Int!
             ) {
               createProduct(
                 title: $title, description: $description, price: $price, subcategoryId: $subcategoryId
                 sku: $sku, brand: $brand, material: $material, color: $color
                 weight: $weight, width: $width, height: $height, depth: $depth
                 year: $year, country: $country, season: $season, collection: $collection
-                images: $images
+                images: $images, stock: $stock
               ) { id title }
             }
           `,
@@ -162,6 +164,7 @@ export default function SellerPage() {
             height: form.height ? parseFloat(form.height) : null,
             depth: form.depth ? parseFloat(form.depth) : null,
             year: form.year ? parseInt(form.year) : null,
+            stock: form.stock ? parseInt(form.stock) : 0,
           }
         })
       });
@@ -173,7 +176,8 @@ export default function SellerPage() {
         sku: '', brand: '', material: '', color: '',
         weight: '', width: '', height: '', depth: '',
         year: '', country: '', season: '', collection: '',
-        images: []
+        images: [],
+        stock: '',
       });
       fetchSellerProducts();
     } catch (e: any) {
@@ -186,6 +190,7 @@ export default function SellerPage() {
   const handleLogout = () => {
     clearAuth();
     localStorage.removeItem('cart');
+    window.dispatchEvent(new Event('userUpdated'));
     router.push('/login');
   };
 
@@ -453,6 +458,27 @@ export default function SellerPage() {
               </div>
             </div>
 
+            {/* ✅ Поле "Количество на складе" */}
+            <div className="border-t pt-4 mt-2">
+              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <Package size={16} /> Склад
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Количество на складе</label>
+                  <input
+                    type="number"
+                    name="stock"
+                    value={form.stock}
+                    onChange={handleChange}
+                    className="w-full bg-gray-50 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100"
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="border-t pt-4 mt-2">
               <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                 <ImageIcon size={16} /> Изображения
@@ -522,7 +548,7 @@ export default function SellerPage() {
                     <div>
                       <p className="font-medium text-sm text-gray-800">{p.title}</p>
                       <p className="text-xs text-gray-400">
-                        {p.price} ₽ · {p.sku || 'без артикула'}
+                        {p.price} ₽ · {p.sku || 'без артикула'} · {p.stock !== undefined ? `в наличии: ${p.stock}` : 'склад не указан'}
                       </p>
                       {p.material && <p className="text-xs text-gray-400">Материал: {p.material}</p>}
                     </div>
