@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { prisma } from './db';
+import helmet from 'helmet';
 import { typeDefs, resolvers } from './graphql';
 import { verifyToken } from './utils/jwt';
 
