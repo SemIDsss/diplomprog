@@ -547,7 +547,7 @@ export const resolvers = {
         }
         return newOrder;
       });
-
+console.log('✅ Order created, ID:', order.id);
       return order;
     },
 

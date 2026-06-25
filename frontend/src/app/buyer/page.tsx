@@ -252,7 +252,7 @@ export default function BuyerPage() {
           description: `Оплата заказа ${order.id}`,
           orderId: order.id,
           paymentMethod: paymentMethod,
-          returnUrl: `${appUrl}/payment-success?orderId=${order.id}`,
+          returnUrl: `/payment-success?orderId=${order.id}`,
         })
       });
       const payment = await payRes.json();
