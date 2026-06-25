@@ -11,6 +11,8 @@ import { verifyToken } from './utils/jwt';
 
 import paymentRoutes from './routes/payment';
 import deliveryRoutes from './routes/delivery';
+console.log('✅ paymentRoutes загружен:', paymentRoutes);
+console.log('✅ deliveryRoutes загружен:', deliveryRoutes);
 import webhookRoutes from './routes/webhook';
 
 console.log('🔄 Загрузка сервера...');
@@ -48,6 +50,7 @@ app.use(express.json({ limit: '1mb' }));
 // REST-роуты
 app.use('/api/payment', paymentRoutes);
 app.use('/api/delivery', deliveryRoutes);
+console.log('✅ Роуты /api/payment и /api/delivery подключены');
 app.use('/api/webhook', webhookRoutes);
 
 // Контекст для Apollo
