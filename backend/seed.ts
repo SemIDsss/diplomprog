@@ -67,6 +67,7 @@ async function main() {
         description: product.description,
         price: product.price,
         status: 'APPROVED',
+        stock: 999,
         subcategoryId: subcategory.id,
         userId: firstUser.id,
         image: product.image,

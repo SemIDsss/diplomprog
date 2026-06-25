@@ -1,5 +1,5 @@
 import 'dotenv/config'; 
-import { prisma } from '../db'; 
+import { prisma } from '../src/db';
 
 async function main() {
   console.log('⏳ Очистка старых данных перед заполнением...');

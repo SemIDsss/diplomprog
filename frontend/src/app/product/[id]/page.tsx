@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Star, User, Calendar, ShoppingBag } from 'lucide-react';
 import { AddToCartButton } from '@/components/AddToCartButton';
+import { getUser } from '@/lib/auth';
 
 interface Product {
   id: string;
@@ -35,8 +36,8 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (!id) return;
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
+    const user = getUser();
+    setIsLoggedIn(!!user);
     fetchProduct();
     fetchReviews();
   }, [id]);
@@ -92,16 +93,17 @@ export default function ProductPage() {
     }
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
-      if (!token || !userStr) {
+      const user = getUser();
+      if (!user) {
         alert('Войдите в аккаунт');
+        setSubmitting(false);
         return;
       }
-      const user = JSON.parse(userStr);
+
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation CreateReview($productId: ID!, $userName: String!, $rating: Int!, $comment: String!) {
@@ -135,7 +137,6 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="container-mobile py-4">
-        {/* Информация о товаре */}
         <div className="bg-white rounded-2xl shadow-sm border p-4 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
@@ -159,7 +160,6 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Отзывы */}
         <div className="bg-white rounded-2xl shadow-sm border p-4">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Отзывы покупателей</h2>
           {reviews.length === 0 ? (
@@ -187,7 +187,6 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* Форма добавления отзыва */}
           {isLoggedIn ? (
             <form onSubmit={submitReview} className="mt-6 border-t pt-4">
               <h3 className="font-bold text-gray-800 mb-2">Оставить отзыв</h3>

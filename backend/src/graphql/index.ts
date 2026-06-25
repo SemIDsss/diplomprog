@@ -1,26 +1,11 @@
-import 'dotenv/config';
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
-import { prisma } from './db';
-import { Role } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import { generateToken, verifyToken } from './src/utils/jwt';
-
-console.log('🔄 Загрузка сервера...');
-
-// ==================== CONTEXT ====================
-const createContext = async ({ req }: any) => {
-  const authHeader = req.headers.authorization;
-  let user = null;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    user = verifyToken(token);
-  }
-  return { user, prisma };
-};
-
+// src/graphql/index.ts
+import { prisma } from '../db';
+import { Role, OrderStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import { generateToken, verifyToken } from '../utils/jwt';
+import { z } from 'zod';
 // ==================== TYPEDEFS ====================
-const typeDefs = `#graphql
+export const typeDefs = `#graphql
   type Subcategory { id: ID!, name: String!, categoryId: String! }
   type Category { id: ID!, name: String!, subcategories: [Subcategory!] }
   type Product {
@@ -48,17 +33,22 @@ const typeDefs = `#graphql
     user: User
   }
   type CartItem { id: ID!, userId: String!, productId: String!, quantity: Int!, product: Product! }
-type User {
-  id: ID!
-  email: String!
-  role: String!
-  createdAt: String!
-  isBlocked: Boolean 
-  blockReason: String
-  _count: UserCount
-}
+  type User {
+    id: ID!
+    email: String!
+    role: String!
+    createdAt: String!
+    isBlocked: Boolean 
+    blockReason: String
+    _count: UserCount
+  }
   type UserCount { products: Int! orders: Int! }
-  type AuthResponse { token: String!, user: User! }
+
+  # ✨ Убираем поле token, так как теперь используем httpOnly куку
+  type AuthResponse {
+    user: User!
+  }
+
   type PaymentResponse { paymentUrl: String!, orderId: String! }
 
   type OrderItem {
@@ -97,6 +87,12 @@ type User {
     hasMore: Boolean!
   }
 
+  # ✅ Входной тип для товаров при создании заказа
+  input OrderItemInput {
+    productId: String!
+    quantity: Int!
+  }
+
   type Query {
     categories: [Category]
     products(subcategoryId: String, search: String, skip: Int, take: Int): ProductsConnection!
@@ -123,15 +119,17 @@ type User {
     # ---------- Аутентификация ----------
     register(email: String!, password: String!, role: String!): AuthResponse!
     login(email: String!, password: String!): AuthResponse!
+    logout: Boolean!
 
     # ---------- Корзина ----------
     addToCart(userId: String!, productId: String!, quantity: Int!): CartItem!
     deleteFromCart(id: ID!): Boolean!
 
     # ---------- Заказы и оплата ----------
-    createOrder(deliveryMethod: String!): Order!
     initiatePayment(orderId: String!, method: String!): PaymentResponse!
     approveOrder(orderId: String!): Order!
+    # ✅ Добавлен параметр items
+    createOrder(deliveryMethod: String!, items: [OrderItemInput!]): Order!
 
     # ---------- Товары ----------
     createProduct(
@@ -174,7 +172,7 @@ type User {
 `;
 
 // ==================== RESOLVERS ====================
-const resolvers = {
+export const resolvers = {
   Query: {
     // ---------- Публичные запросы ----------
     categories: async () => {
@@ -317,49 +315,60 @@ const resolvers = {
 
   Mutation: {
     // ==================== АУТЕНТИФИКАЦИЯ ====================
-    register: async (_: any, { email, password, role }: any) => {
-      const existing = await prisma.user.findUnique({ where: { email } });
-      if (existing) throw new Error('Пользователь с таким email уже зарегистрирован');
+    register: async (_: any, { email, password, role }: any, context: any) => {
+  // ✅ Валидация email и пароля
+  const emailSchema = z.string().email('Некорректный email');
+  const passwordSchema = z.string().min(6, 'Пароль должен быть не менее 6 символов');
+  emailSchema.parse(email);
+  passwordSchema.parse(password);
 
-      let finalRole: Role = Role.USER;
-      if (role === 'SELLER') finalRole = Role.SELLER;
-      if (role === 'ADMIN') {
-        throw new Error('Регистрация администратора запрещена.');
-      }
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) throw new Error('Пользователь с таким email уже зарегистрирован');
 
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-    const user = await prisma.user.create({
-  data: {
-    email,
-    password: hashedPassword,
-    role: finalRole,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    // isBlocked и blockReason не передаём – будут значения по умолчанию из схемы
+  let finalRole: Role = Role.USER;
+  if (role === 'SELLER') finalRole = Role.SELLER;
+  if (role === 'ADMIN') {
+    throw new Error('Регистрация администратора запрещена.');
   }
-});
 
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        role: String(user.role)
-      });
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
-      return {
-        token,
-        user: { id: user.id, email: user.email, role: String(user.role) }
-      };
-    },
+  const user = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      role: finalRole,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+  });
 
-    login: async (_: any, { email, password }: any) => {
+  const token = generateToken({
+    userId: user.id,
+    email: user.email,
+    role: String(user.role)
+  });
+
+  context.res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+
+  return {
+    user: { id: user.id, email: user.email, role: String(user.role) }
+  };
+},
+
+    login: async (_: any, { email, password }: any, context: any) => {
       const user = await prisma.user.findFirst({ where: { email } });
       if (!user) {
         throw new Error('Неверный адрес электронной почты или пароль');
       }
 
-      // Проверка блокировки
       if (user.isBlocked) {
         throw new Error(`Ваш аккаунт заблокирован. Причина: ${user.blockReason || 'Не указана'}`);
       }
@@ -381,30 +390,54 @@ const resolvers = {
         role: String(user.role)
       });
 
+      context.res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+
       return {
-        token,
         user: { id: user.id, email: user.email, role: String(user.role) }
       };
     },
 
+    logout: async (_: any, __: any, context: any) => {
+      context.res.clearCookie('token', { path: '/' });
+      return true;
+    },
+
     // ==================== КОРЗИНА ====================
     addToCart: async (_: any, { userId, productId, quantity }: any, context: any) => {
-      if (!context.user || context.user.userId !== userId) {
-        throw new Error('Не авторизован для изменения этой корзины');
-      }
-      const existingItem = await prisma.cartItem.findFirst({ where: { userId, productId } });
-      if (existingItem) {
-        return await prisma.cartItem.update({
-          where: { id: existingItem.id },
-          data: { quantity: existingItem.quantity + quantity },
-          include: { product: true }
-        });
-      }
-      return await prisma.cartItem.create({
-        data: { userId, productId, quantity },
-        include: { product: true }
-      });
-    },
+  if (!context.user || context.user.userId !== userId) {
+    throw new Error('Не авторизован для изменения этой корзины');
+  }
+  
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product || product.status !== 'APPROVED') {
+    throw new Error('Товар не найден или недоступен');
+  }
+  
+  if (quantity <= 0) throw new Error('Количество должно быть положительным');
+
+  const existingItem = await prisma.cartItem.findFirst({
+    where: { userId, productId }
+  });
+
+  if (existingItem) {
+    return await prisma.cartItem.update({
+      where: { id: existingItem.id },
+      data: { quantity: existingItem.quantity + quantity },
+      include: { product: true }
+    });
+  } else {
+    return await prisma.cartItem.create({
+      data: { userId, productId, quantity },
+      include: { product: true }
+    });
+  }
+},
 
     deleteFromCart: async (_: any, { id }: { id: string }, context: any) => {
       const cartItem = await prisma.cartItem.findUnique({
@@ -422,43 +455,83 @@ const resolvers = {
     },
 
     // ==================== ЗАКАЗЫ И ОПЛАТА ====================
-    createOrder: async (_: any, { deliveryMethod }: any, context: any) => {
-      if (!context.user) {
-        throw new Error('Не авторизован');
-      }
-      const userId = context.user.userId;
-      const cartItems = await prisma.cartItem.findMany({
-        where: { userId },
-        include: { product: true }
-      });
-      if (cartItems.length === 0) {
-        throw new Error('Корзина пуста');
-      }
-      const totalAmount = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    createOrder: async (_: any, { deliveryMethod, items }: any, context: any) => {
+  if (!context.user) {
+    throw new Error('Не авторизован');
+  }
+  const userId = context.user.userId;
 
-      const order = await prisma.$transaction(async (prisma) => {
-        const newOrder = await prisma.order.create({
-          data: {
-            userId,
-            deliveryMethod,
-            totalAmount,
-            status: 'PENDING',
-            deliveryPrice: 0,
-            items: {
-              create: cartItems.map(item => ({
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.product.price
-              }))
-            }
-          },
-          include: { items: { include: { product: true } } }
-        });
-        await prisma.cartItem.deleteMany({ where: { userId } });
-        return newOrder;
+  let cartItems = items;
+  if (!cartItems || cartItems.length === 0) {
+    const dbCart = await prisma.cartItem.findMany({
+      where: { userId },
+      include: { product: true }
+    });
+    if (dbCart.length === 0) {
+      throw new Error('Корзина пуста');
+    }
+    cartItems = dbCart.map((item: any) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.product.price,
+    }));
+  }
+
+  
+  for (const item of cartItems) {
+    const product = await prisma.product.findUnique({ where: { id: item.productId } });
+    if (!product) throw new Error(`Товар ${item.productId} не найден`);
+    if (product.stock < item.quantity) {
+      throw new Error(`Недостаточно товара ${product.title} на складе`);
+    }
+  }
+
+  let totalAmount = 0;
+  const orderItemsData = [];
+  for (const item of cartItems) {
+    const product = await prisma.product.findUnique({
+      where: { id: item.productId }
+    });
+    if (!product) throw new Error(`Товар ${item.productId} не найден`);
+    const price = product.price;
+    totalAmount += price * item.quantity;
+    orderItemsData.push({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: price,
+    });
+  }
+
+  
+  const order = await prisma.$transaction(async (prisma) => {
+    const newOrder = await prisma.order.create({
+      data: {
+        userId,
+        deliveryMethod,
+        totalAmount,
+        status: 'PENDING',
+        deliveryPrice: 0,
+        items: {
+          create: orderItemsData
+        }
+      },
+      include: { items: { include: { product: true } } }
+    });
+    
+    for (const item of orderItemsData) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } },
       });
-      return order;
-    },
+    }
+    if (!items) {
+      await prisma.cartItem.deleteMany({ where: { userId } });
+    }
+    return newOrder;
+  });
+
+  return order;
+},
 
     initiatePayment: async (_: any, { orderId, method }: any, context: any) => {
       if (!context.user) {
@@ -602,14 +675,14 @@ const resolvers = {
     },
 
     updateOrderStatus: async (_: any, { orderId, status }: { orderId: string, status: string }, context: any) => {
-      if (!context.user || context.user.role !== 'ADMIN') {
-        throw new Error('Доступ запрещен. Только для администраторов.');
-      }
-      return await prisma.order.update({
-        where: { id: orderId },
-        data: { status }
-      });
-    },
+  if (!context.user || context.user.role !== 'ADMIN') {
+    throw new Error('Доступ запрещен. Только для администраторов.');
+  }
+  return await prisma.order.update({
+    where: { id: orderId },
+    data: { status: status as OrderStatus }  // <-- приведение к enum
+  });
+},
 
     deleteReview: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.user || context.user.role !== 'ADMIN') {
@@ -648,30 +721,3 @@ const resolvers = {
     }
   }
 };
-
-// ==================== SERVER ====================
-const server = new ApolloServer({ typeDefs, resolvers });
-
-async function startServer() {
-  try {
-    console.log('🔄 Инициализация сервера...');
-    const { url } = await startStandaloneServer(server, {
-      listen: { port: 5000 },
-      context: createContext,
-      cors: {
-        origin: 'http://localhost:3000',
-        credentials: true,
-        methods: ['POST', 'GET', 'OPTIONS']
-      }
-    });
-    console.log(`✅ Сервер GraphQL успешно запущен: ${url}`);
-  } catch (error) {
-    console.error('❌ Ошибка при запуске сервера:', error);
-    throw error;
-  }
-}
-
-startServer().catch((err) => {
-  console.error('❌ Критическая ошибка:', err);
-  process.exit(1);
-});

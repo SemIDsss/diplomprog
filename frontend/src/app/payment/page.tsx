@@ -1,9 +1,8 @@
 'use client';
 
-
-
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { getUser } from '@/lib/auth';
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
@@ -25,15 +24,18 @@ export default function PaymentPage() {
 
     const fetchOrderData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const userId = localStorage.getItem('userId');
+        const user = getUser();
+        if (!user) {
+          throw new Error('Не авторизован');
+        }
+        const userId = user.id;
 
         const response = await fetch('http://localhost:5000/graphql', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
           },
+          credentials: 'include',
           body: JSON.stringify({
             query: `
               query GetOrder($userId: String!) {
@@ -83,15 +85,14 @@ export default function PaymentPage() {
 
   const handlePayment = async () => {
     try {
-      const token = localStorage.getItem('token');
       const orderId = searchParams.get('orderId');
 
       const response = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation ApproveOrder($orderId: String!) {

@@ -5,13 +5,14 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  ShoppingCart, Truck, CreditCard, History, LogOut, 
-  Plus, Minus, Trash2, User, Package, CheckCircle, 
-  Clock, ShoppingBag, MapPin, Home 
+import {
+  ShoppingCart, Truck, CreditCard, History, LogOut,
+  Plus, Minus, Trash2, User, Package, CheckCircle,
+  Clock, MapPin, Home
 } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
+import { getUser, clearAuth } from '@/lib/auth';
 
 interface CartItem {
   id: string | number;
@@ -30,71 +31,166 @@ export default function BuyerPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
 
+  // Параметры доставки
   const [city, setCity] = useState('Москва');
   const [deliveryMethod, setDeliveryMethod] = useState<'cdek' | 'boxberry'>('cdek');
   const [shippingPrice, setShippingPrice] = useState(0);
-  const [totalWeight, setTotalWeight] = useState(0);
+  const [shippingDays, setShippingDays] = useState(0);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
+  // Состояние для выбора метода оплаты
+  const [paymentMethod, setPaymentMethod] = useState<'bank_card' | 'sbp'>('bank_card');
+
+  const loadCart = () => {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      try {
+        const parsed = JSON.parse(savedCart);
+        setCart(parsed);
+      } catch (e) {
+        setCart([]);
+      }
+    } else {
+      setCart([]);
+    }
+  };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    if (!token || !userStr) {
+    const userData = getUser();
+    if (!userData) {
       router.push('/login');
       return;
     }
-    try {
-      const userData = JSON.parse(userStr);
-      setUser(userData);
-    } catch (e) {
-      router.push('/login');
-    }
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) setCart(JSON.parse(savedCart));
+    setUser(userData);
+    loadCart();
     fetchOrders();
     setLoading(false);
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'cart') {
+      loadCart();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      loadCart();
+    };
+    window.addEventListener('cartUpdated', handleCartUpdate);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadCart();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (cart.length === 0) {
       setShippingPrice(0);
-      setTotalWeight(0);
+      setShippingDays(0);
       return;
     }
-    const weight = cart.reduce((sum, item) => sum + ((item.weightGrams || 400) * item.quantity), 0) / 1000;
-    setTotalWeight(weight);
-    let price = (deliveryMethod === 'cdek' ? 350 : 400) * (city === 'Москва' || city === 'Санкт-Петербург' ? 1 : 1.5);
-    if (weight > 5) price *= 1.5;
-    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    if (total > 5000) price = 0;
-    setShippingPrice(Math.round(price));
+
+    const totalWeight = cart.reduce((sum, item) => sum + ((item.weightGrams || 400) * item.quantity), 0) / 1000;
+
+    const calculateDelivery = async () => {
+      setDeliveryLoading(true);
+      try {
+        const res = await fetch('http://localhost:5000/api/delivery/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            city,
+            weight: totalWeight,
+            service: deliveryMethod,
+          }),
+        });
+        const data = await res.json();
+        if (data.price !== undefined) {
+          setShippingPrice(data.price);
+          setShippingDays(data.days);
+        } else {
+          // fallback
+          let price = (deliveryMethod === 'cdek' ? 350 : 400) * (city === 'Москва' || city === 'Санкт-Петербург' ? 1 : 1.5);
+          if (totalWeight > 5) price *= 1.5;
+          const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+          if (total > 5000) price = 0;
+          setShippingPrice(Math.round(price));
+          setShippingDays(3);
+        }
+      } catch (error) {
+        console.error('Ошибка расчёта доставки:', error);
+        let price = (deliveryMethod === 'cdek' ? 350 : 400) * (city === 'Москва' || city === 'Санкт-Петербург' ? 1 : 1.5);
+        if (totalWeight > 5) price *= 1.5;
+        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        if (total > 5000) price = 0;
+        setShippingPrice(Math.round(price));
+        setShippingDays(3);
+      } finally {
+        setDeliveryLoading(false);
+      }
+    };
+
+    const timer = setTimeout(calculateDelivery, 500);
+    return () => clearTimeout(timer);
   }, [city, deliveryMethod, cart]);
 
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
+      const userId = user?.id || localStorage.getItem('userId');
+      if (!userId) return;
+
+      const query = `query GetOrders($userId: String!) {
+        orders(userId: $userId) {
+          id
+          deliveryMethod
+          deliveryPrice
+          totalAmount
+          status
+          createdAt
+          items {
+            id
+            quantity
+            price
+            product { title }
+          }
+        }
+      }`;
+      const variables = { userId };
+
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          query: `query GetOrders($userId: String!) {
-            orders(userId: $userId) {
-              id deliveryMethod deliveryPrice totalAmount status createdAt
-              items { id quantity price product { title } }
-            }
-          }`,
-          variables: { userId }
-        })
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ query, variables })
       });
+
       const json = await res.json();
       if (json.data?.orders) setOrders(json.data.orders);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error('❌ Ошибка fetchOrders:', e);
+    }
   };
 
   const removeFromCart = (id: string | number) => {
     const newCart = cart.filter(item => item.id !== id);
     setCart(newCart);
     localStorage.setItem('cart', JSON.stringify(newCart));
+    window.dispatchEvent(new Event('cartUpdated'));
   };
 
   const updateQuantity = (id: string | number, quantity: number) => {
@@ -102,68 +198,80 @@ export default function BuyerPage() {
     const newCart = cart.map(item => item.id === id ? { ...item, quantity } : item);
     setCart(newCart);
     localStorage.setItem('cart', JSON.stringify(newCart));
+    window.dispatchEvent(new Event('cartUpdated'));
   };
 
   const calculateTotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  // ==================== ОБНОВЛЁННЫЙ ОБРАБОТЧИК ОПЛАТЫ ====================
   const handlePayment = async () => {
-    if (cart.length === 0) return alert('Корзина пуста');
+    if (cart.length === 0) {
+      alert('Корзина пуста');
+      return;
+    }
+    setPaymentLoading(true);
+
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/graphql', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          query: `mutation CreateOrder($deliveryMethod: String!) {
-            createOrder(deliveryMethod: $deliveryMethod) { id totalAmount status deliveryPrice createdAt }
-          }`,
-          variables: { deliveryMethod }
-        })
-      });
-      const json = await res.json();
-      if (json.errors) throw new Error(json.errors[0].message);
-      const order = json.data.createOrder;
-
-      sendMetricaEvent('create_order', {
-        orderId: order.id,
-        totalAmount: order.totalAmount,
-        itemsCount: cart.length,
-        deliveryMethod
-      });
-      trackEvent('order_created', {
-        orderId: order.id,
-        totalAmount: order.totalAmount,
-        itemsCount: cart.length,
+      // 1. Создаём заказ через GraphQL
+      const createOrderQuery = `mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
+        createOrder(deliveryMethod: $deliveryMethod, items: $items) {
+          id
+          totalAmount
+          status
+          deliveryPrice
+          createdAt
+        }
+      }`;
+      const createOrderVariables = {
         deliveryMethod,
-        userId: localStorage.getItem('userId')
-      });
+        items: cart.map(item => ({
+          productId: item.id,
+          quantity: item.quantity
+        }))
+      };
 
-      const payRes = await fetch('http://localhost:5000/graphql', {
+      const orderRes = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ query: createOrderQuery, variables: createOrderVariables })
+      });
+      const orderJson = await orderRes.json();
+      if (orderJson.errors) throw new Error(orderJson.errors[0].message);
+      const order = orderJson.data.createOrder;
+
+      // 2. Создаём платёж в ЮKassa с передачей orderId в returnUrl
+      const payRes = await fetch('http://localhost:5000/api/payment/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
-          query: `mutation InitiatePayment($orderId: String!, $method: String!) {
-            initiatePayment(orderId: $orderId, method: $method) { paymentUrl orderId }
-          }`,
-          variables: { orderId: order.id, method: 'YUKASSA' }
+          amount: order.totalAmount,
+          description: `Оплата заказа ${order.id}`,
+          orderId: order.id,
+          paymentMethod: paymentMethod,
+          returnUrl: `http://localhost:3000/payment-success?orderId=${order.id}`, // ✅
         })
       });
-      const payJson = await payRes.json();
-      if (payJson.errors) throw new Error(payJson.errors[0].message);
-      const payment = payJson.data.initiatePayment;
+      const payment = await payRes.json();
+console.log('🔍 Payment response:', payment); // 👈 добавьте
+if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
 
-      setCart([]);
-      localStorage.removeItem('cart');
-      if (payment.paymentUrl) {
-        window.location.href = payment.paymentUrl;
-      }
+      // 3. Перенаправляем пользователя на страницу ЮKassa
+      window.location.href = payment.confirmationUrl;
+
+      // 4. Корзина будет очищена после возврата с оплаты (на странице success)
     } catch (e: any) {
-      alert('Ошибка: ' + e.message);
+      console.error('❌ Ошибка оплаты:', e);
+      alert('❌ Ошибка оплаты: ' + e.message);
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
   const handleLogout = () => {
-    ['token', 'user', 'userId', 'cart'].forEach(key => localStorage.removeItem(key));
+    clearAuth();
+    localStorage.removeItem('cart');
     router.push('/login');
   };
 
@@ -282,8 +390,36 @@ export default function BuyerPage() {
                       </div>
                     </div>
                     <div className="flex justify-between text-xs text-gray-400">
-                      <span>Вес: {totalWeight.toFixed(1)} кг</span>
-                      <span>Доставка: {shippingPrice} ₽</span>
+                      <span>{deliveryLoading ? 'Расчёт...' : `Доставка: ${shippingPrice} ₽, срок: ${shippingDays} дня`}</span>
+                    </div>
+                  </div>
+
+                  {/* БЛОК ВЫБОРА СПОСОБА ОПЛАТЫ */}
+                  <div className="border rounded-xl p-4">
+                    <h3 className="font-bold text-gray-800 text-sm mb-3">Способ оплаты</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="bank_card"
+                          checked={paymentMethod === 'bank_card'}
+                          onChange={() => setPaymentMethod('bank_card')}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <label className="text-sm font-medium text-gray-700">💳 Банковская карта</label>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="sbp"
+                          checked={paymentMethod === 'sbp'}
+                          onChange={() => setPaymentMethod('sbp')}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <label className="text-sm font-medium text-gray-700">📱 СБП (Система быстрых платежей)</label>
+                      </div>
                     </div>
                   </div>
 
@@ -294,10 +430,14 @@ export default function BuyerPage() {
                     </div>
                     <button
                       onClick={handlePayment}
-                      className="w-full bg-[#ff8012] hover:bg-[#e06a00] text-white font-bold py-3 rounded-xl mt-3 transition text-sm disabled:opacity-50"
-                      disabled={cart.length === 0}
+                      disabled={paymentLoading || cart.length === 0 || deliveryLoading}
+                      className="w-full bg-[#ff8012] hover:bg-[#e06a00] text-white font-bold py-3 rounded-xl mt-3 transition text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      <CreditCard size={18} className="inline mr-2" /> Оплатить заказ
+                      {paymentLoading ? (
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <><CreditCard size={18} /> Оплатить заказ</>
+                      )}
                     </button>
                   </div>
                 </>

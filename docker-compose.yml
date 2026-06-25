@@ -1,36 +1,25 @@
 version: '3.8'
-
 services:
-  postgres_server:
-    image: postgres:15-alpine
-    container_name: postgres_db
-    restart: always
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+      - "5555:5555"
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: dev_db
+      - DATABASE_URL=postgresql://admin:rootpassword@db:5432/dev_db
+    depends_on:
+      - db
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=rootpassword
+      - POSTGRES_DB=dev_db
     ports:
       - "5433:5432"
     volumes:
-      - pgdata3:/var/lib/postgresql/data
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    restart: always
-    ports:
-      - "3001:3000"  # Grafana будет доступна на порту 3001
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources
-    depends_on:
-      - postgres_server
-
+      - postgres_data:/var/lib/postgresql/data
 volumes:
-  pgdata3:
-  grafana_data:
+  postgres_data:

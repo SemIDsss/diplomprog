@@ -4,12 +4,13 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Users, Package, ShoppingBag, Star, 
+import {
+  Users, Package, ShoppingBag, Star,
   Plus, Trash2, XCircle,
-  Clock, DollarSign, 
+  Clock, DollarSign,
   LogOut, PlusCircle, FolderPlus
 } from 'lucide-react';
+import { getUser, clearAuth } from '@/lib/auth';
 
 // ---------- Типы ----------
 interface User {
@@ -30,7 +31,7 @@ interface Product {
   image?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   subcategoryId: string;
-  user?: { email: string }; // опционально, может быть null
+  user?: { email: string };
   rejectReason?: string;
 }
 
@@ -139,23 +140,16 @@ export default function AdminPage() {
   const [modal, setModal] = useState<{ open: boolean; type: string; productId?: string; reason?: string; data?: any }>({ open: false, type: '' });
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    if (!token || !userStr) {
+    const userData = getUser();
+    if (!userData) {
       router.push('/login');
       return;
     }
-    try {
-      const userData = JSON.parse(userStr);
-      if (userData.role !== 'ADMIN') {
-        router.push('/buyer');
-        return;
-      }
-      setUser(userData);
-    } catch (error) {
-      router.push('/login');
+    if (userData.role !== 'ADMIN') {
+      router.push('/buyer');
       return;
     }
+    setUser(userData);
     fetchAllData();
     setLoading(false);
   }, [router]);
@@ -171,44 +165,44 @@ export default function AdminPage() {
     ]);
   };
 
- const fetchStats = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    const res = await fetch('http://localhost:5000/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        query: `
-          query GetStats {
-            userCount
-            productCount
-            orderCount
-            totalRevenue
-            pendingProducts: productsCount(status: "PENDING")
-          }
-        `
-      }),
-      cache: 'no-store'
-    });
-    const json = await res.json();
-    if (json.data) {
-      setStats({
-        totalUsers: json.data.userCount || 0,
-        totalProducts: json.data.productCount || 0,
-        totalOrders: json.data.orderCount || 0,
-        totalRevenue: json.data.totalRevenue || 0,
-        pendingProducts: json.data.pendingProducts || 0
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          query: `
+            query GetStats {
+              userCount
+              productCount
+              orderCount
+              totalRevenue
+              pendingProducts: productsCount(status: "PENDING")
+            }
+          `
+        }),
+        cache: 'no-store'
       });
-    }
-  } catch (e) { console.error(e); }
-};
+      const json = await res.json();
+      if (json.data) {
+        setStats({
+          totalUsers: json.data.userCount || 0,
+          totalProducts: json.data.productCount || 0,
+          totalOrders: json.data.orderCount || 0,
+          totalRevenue: json.data.totalRevenue || 0,
+          pendingProducts: json.data.pendingProducts || 0
+        });
+      }
+    } catch (e) { console.error(e); }
+  };
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             query GetUsers {
@@ -231,42 +225,42 @@ export default function AdminPage() {
     } catch (e) { console.error(e); }
   };
 
-const fetchProducts = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    const res = await fetch('http://localhost:5000/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        query: `
-          query GetProducts {
-            productsAll {
-              id
-              title
-              description
-              price
-              image
-              status
-              subcategoryId
-              rejectReason
-              user { email }
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          query: `
+            query GetProducts {
+              productsAll {
+                id
+                title
+                description
+                price
+                image
+                status
+                subcategoryId
+                rejectReason
+                user { email }
+              }
             }
-          }
-        `
-      }),
-      cache: 'no-store'
-    });
-    const json = await res.json();
-    if (json.data?.productsAll) setProducts(json.data.productsAll);
-  } catch (e) { console.error(e); }
-};
+          `
+        }),
+        cache: 'no-store'
+      });
+      const json = await res.json();
+      if (json.data?.productsAll) setProducts(json.data.productsAll);
+    } catch (e) { console.error(e); }
+  };
 
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             query GetOrders {
@@ -290,6 +284,7 @@ const fetchProducts = async () => {
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `query { categories { id name subcategories { id name } } }`
         }),
@@ -302,10 +297,10 @@ const fetchProducts = async () => {
 
   const fetchReviews = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             query GetReviews {
@@ -325,10 +320,10 @@ const fetchProducts = async () => {
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation UpdateUserRole($userId: ID!, $role: String!) {
@@ -349,10 +344,10 @@ const fetchProducts = async () => {
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation UpdateOrderStatus($orderId: ID!, $status: String!) {
@@ -374,10 +369,10 @@ const fetchProducts = async () => {
   const deleteReview = async (reviewId: string) => {
     if (!confirm('Удалить отзыв?')) return;
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation DeleteReview($id: ID!) {
@@ -399,10 +394,10 @@ const fetchProducts = async () => {
   const deleteCategory = async (categoryId: string) => {
     if (!confirm('Удалить категорию и все подкатегории?')) return;
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation DeleteCategory($id: ID!) {
@@ -423,10 +418,10 @@ const fetchProducts = async () => {
 
   const createCategory = async (name: string) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation CreateCategory($name: String!) {
@@ -447,10 +442,10 @@ const fetchProducts = async () => {
 
   const createSubcategory = async (categoryId: string, name: string) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation CreateSubcategory($name: String!, $categoryId: String!) {
@@ -471,10 +466,10 @@ const fetchProducts = async () => {
 
   const handleApprove = async (productId: string) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `mutation ApproveProduct($id: ID!) { approveProduct(id: $id) }`,
           variables: { id: productId }
@@ -497,10 +492,10 @@ const fetchProducts = async () => {
   const submitReject = async (reason: string) => {
     if (!modal.productId) return;
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `mutation RejectProduct($id: ID!, $reason: String!) { rejectProduct(id: $id, reason: $reason) }`,
           variables: { id: modal.productId, reason }
@@ -527,10 +522,10 @@ const fetchProducts = async () => {
 
   const blockUser = async (userId: string, reason: string) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation BlockUser($userId: ID!, $reason: String!) {
@@ -556,10 +551,10 @@ const fetchProducts = async () => {
 
   const unblockUser = async (userId: string) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation UnblockUser($userId: ID!) {
@@ -584,7 +579,8 @@ const fetchProducts = async () => {
   };
 
   const handleLogout = () => {
-    ['token', 'user', 'userId', 'cart'].forEach(key => localStorage.removeItem(key));
+    clearAuth();
+    localStorage.removeItem('cart');
     router.push('/login');
   };
 
@@ -602,7 +598,6 @@ const fetchProducts = async () => {
   return (
     <div className="min-h-screen bg-gray-100 pb-20 lg:pb-8">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Шапка */}
         <div className="bg-white rounded-3xl shadow-2xl p-4 md:p-6 border border-gray-100 mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
@@ -623,7 +618,6 @@ const fetchProducts = async () => {
           </div>
         </div>
 
-        {/* Вкладки */}
         <div className="flex flex-wrap gap-2 mb-6">
           {TABS.map((tab) => (
             <button
@@ -640,10 +634,8 @@ const fetchProducts = async () => {
           ))}
         </div>
 
-        {/* Статистика */}
         {activeTab === 'stats' && <StatsCards stats={stats} />}
 
-        {/* Заказы */}
         {activeTab === 'orders' && (
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold text-gray-800 mb-4">📦 Все заказы</h2>
@@ -706,7 +698,6 @@ const fetchProducts = async () => {
           </div>
         )}
 
-        {/* Категории */}
         {activeTab === 'categories' && (
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
@@ -757,7 +748,6 @@ const fetchProducts = async () => {
           </div>
         )}
 
-        {/* Отзывы */}
         {activeTab === 'reviews' && (
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold text-gray-800 mb-4">⭐ Отзывы</h2>
@@ -793,7 +783,6 @@ const fetchProducts = async () => {
           </div>
         )}
 
-        {/* Пользователи */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold text-gray-800 mb-4">👤 Пользователи</h2>
@@ -881,7 +870,6 @@ const fetchProducts = async () => {
           </div>
         )}
 
-        {/* Модерация */}
         {activeTab === 'moderation' && (
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold text-gray-800 mb-4">📋 Заявки на модерацию</h2>
@@ -922,7 +910,6 @@ const fetchProducts = async () => {
         )}
       </div>
 
-      {/* Модалки */}
       <Modal isOpen={modal.open && modal.type === 'category'} onClose={() => setModal({ open: false, type: '' })} title="Создать категорию">
         <form onSubmit={async (e) => {
           e.preventDefault();

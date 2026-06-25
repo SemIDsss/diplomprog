@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent, identifyUser, setUserGroup } from '@/lib/amplitude';
+import { setUser } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,17 +20,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          if (user.role === 'ADMIN') router.push('/admin');
-          else if (user.role === 'SELLER') router.push('/seller');
-          else router.push('/buyer');
-        } catch (e) {}
-      }
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role === 'ADMIN') router.push('/admin');
+        else if (user.role === 'SELLER') router.push('/seller');
+        else router.push('/buyer');
+      } catch (e) {}
     }
   }, [router]);
 
@@ -42,14 +40,12 @@ export default function LoginPage() {
       const query = isLogin ? `
         mutation Login($email: String!, $password: String!) {
           login(email: $email, password: $password) {
-            token
             user { id email role }
           }
         }
       ` : `
         mutation Register($email: String!, $password: String!, $role: String!) {
           register(email: $email, password: $password, role: $role) {
-            token
             user { id email role }
           }
         }
@@ -59,9 +55,11 @@ export default function LoginPage() {
         ? { email, password }
         : { email, password, role };
 
+      // ✅ Прямой URL
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ query, variables })
       });
 
@@ -69,7 +67,10 @@ export default function LoginPage() {
       if (json.errors) throw new Error(json.errors[0].message);
 
       const data = json.data[isLogin ? 'login' : 'register'];
-      if (!data?.token) throw new Error('Ошибка');
+      if (!data?.user) throw new Error('Ошибка получения пользователя');
+
+      setUser(data.user);
+      localStorage.setItem('userId', data.user.id);
 
       if (isLogin) {
         sendMetricaEvent('login', { email: data.user.email });
@@ -86,10 +87,6 @@ export default function LoginPage() {
       }
       identifyUser(data.user.id, { email: data.user.email, role: data.user.role });
       setUserGroup('role', data.user.role);
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('userId', data.user.id);
 
       const userRole = data.user.role;
       if (userRole === 'ADMIN') router.push('/admin');

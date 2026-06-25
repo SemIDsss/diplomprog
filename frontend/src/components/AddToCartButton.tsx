@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ShoppingCart, Check } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
+import { getUser } from '@/lib/auth';
 
 interface AddToCartButtonProps {
   productId: string;
@@ -24,25 +25,27 @@ export function AddToCartButton({
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('token');
-
-      if (!userId || !token) {
+      const user = getUser();
+      if (!user) {
         alert('Войдите в аккаунт');
+        setLoading(false);
         return;
       }
+      const userId = user.id;
 
+      // ✅ Прямой URL
       const response = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation AddToCart($userId: String!, $productId: String!, $quantity: Int!) {
               addToCart(userId: $userId, productId: $productId, quantity: $quantity) {
-                id quantity
+                id
+                quantity
               }
             }
           `,
@@ -53,20 +56,18 @@ export function AddToCartButton({
       const result = await response.json();
       if (result.errors) throw new Error(result.errors[0].message);
 
-      // ✅ СОБЫТИЯ
-      sendMetricaEvent('add_to_cart', { 
-        productId, 
-        productName, 
-        price: productPrice 
+      sendMetricaEvent('add_to_cart', {
+        productId,
+        productName,
+        price: productPrice
       });
-      trackEvent('add_to_cart', { 
-        productId, 
-        productName, 
+      trackEvent('add_to_cart', {
+        productId,
+        productName,
         price: productPrice,
         userId
       });
 
-      // ... остальная логика (сохранение в localStorage)
       const savedCart = localStorage.getItem('cart');
       let cart = savedCart ? JSON.parse(savedCart) : [];
 
@@ -92,6 +93,7 @@ export function AddToCartButton({
       setTimeout(() => setIsAdded(false), 1500);
       window.dispatchEvent(new Event('cartUpdated'));
     } catch (error: any) {
+      console.error('❌ Ошибка в catch:', error);
       alert('Ошибка: ' + error.message);
     } finally {
       setLoading(false);

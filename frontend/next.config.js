@@ -1,28 +1,57 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', //  ГЛАВНОЕ: серверный режим без статического экспорта
-  
+  output: 'standalone', // ГЛАВНОЕ: серверный режим без статического экспорта
+
+  // Прокси для API-запросов в режиме разработки
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/:path*',
-      },
-    ];
-  },
-  
+  return [
+    {
+      source: '/api/graphql',
+      destination: 'http://localhost:5000/graphql',
+    },
+    // если у вас есть REST-эндпоинты:
+    {
+      source: '/api/:path*',
+      destination: 'http://localhost:5000/api/:path*',
+    },
+  ];
+},
+
+  // Настройка внешних источников изображений (замена устаревшего domains)
   images: {
-    domains: ['localhost', 'via.placeholder.com', 'unsplash.com'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'unsplash.com',
+        pathname: '/**',
+      },
+      // При необходимости можно добавить другие домены:
+      // {
+      //   protocol: 'https',
+      //   hostname: 'cdn.yourdomain.com',
+      //   pathname: '/**',
+      // },
+    ],
   },
-  
+
   typescript: {
     ignoreBuildErrors: false,
   },
-  
+
   eslint: {
     ignoreDuringBuilds: false,
   },
-  
+
   swcMinify: true,
   reactStrictMode: true,
   poweredByHeader: false,

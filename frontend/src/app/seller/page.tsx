@@ -4,11 +4,12 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Plus, Trash2, Package, Upload, X, User, LogOut, 
-  Image as ImageIcon, Tag, Calendar, Ruler, Scale, 
-  MapPin, Palette, Layers, Sparkles, Star, ChevronUp 
+import {
+  Plus, Trash2, Package, Upload, X, User, LogOut,
+  Image as ImageIcon, Tag, Calendar, Ruler, Scale,
+  MapPin, Palette, Layers, Sparkles, Star, ChevronUp
 } from 'lucide-react';
+import { getUser, clearAuth } from '@/lib/auth';
 
 interface ProductForm {
   title: string;
@@ -60,22 +61,16 @@ export default function SellerPage() {
   const pageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    if (!token || !userStr) {
+    const userData = getUser();
+    if (!userData) {
       router.push('/login');
       return;
     }
-    try {
-      const userData = JSON.parse(userStr);
-      if (userData.role !== 'SELLER' && userData.role !== 'ADMIN') {
-        router.push('/buyer');
-        return;
-      }
-      setUser(userData);
-    } catch (e) {
-      router.push('/login');
+    if (userData.role !== 'SELLER' && userData.role !== 'ADMIN') {
+      router.push('/buyer');
+      return;
     }
+    setUser(userData);
     fetchCategories();
     fetchSellerProducts();
     setLoading(false);
@@ -97,11 +92,13 @@ export default function SellerPage() {
 
   const fetchSellerProducts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
+      const user = getUser();
+      if (!user) return;
+      const userId = user.id;
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `query GetProducts($userId: String!) {
             products(subcategoryId: null, search: null) {
@@ -135,10 +132,10 @@ export default function SellerPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           query: `
             mutation CreateProduct(
@@ -187,7 +184,8 @@ export default function SellerPage() {
   };
 
   const handleLogout = () => {
-    ['token', 'user', 'userId', 'cart'].forEach(key => localStorage.removeItem(key));
+    clearAuth();
+    localStorage.removeItem('cart');
     router.push('/login');
   };
 
@@ -206,7 +204,6 @@ export default function SellerPage() {
 
   return (
     <div ref={pageRef} className="min-h-screen bg-[#f5f5f5] pb-28">
-      {/* Шапка продавца */}
       <div className="bg-white sticky top-0 z-10 shadow-sm">
         <div className="container-mobile py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -228,7 +225,6 @@ export default function SellerPage() {
       </div>
 
       <div className="container-mobile py-4 space-y-6 pb-8">
-        {/* Форма создания товара */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border">
           <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Plus size={20} className="text-blue-600" /> Новый товар
@@ -292,7 +288,6 @@ export default function SellerPage() {
               </select>
             </div>
 
-            {/* Характеристики */}
             <div className="border-t pt-4 mt-2">
               <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                 <Tag size={16} /> Характеристики
@@ -367,7 +362,6 @@ export default function SellerPage() {
               </div>
             </div>
 
-            {/* Вес и габариты */}
             <div className="border-t pt-4 mt-2">
               <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                 <Scale size={16} /> Габариты и вес
@@ -424,7 +418,6 @@ export default function SellerPage() {
               </div>
             </div>
 
-            {/* Дополнительные параметры */}
             <div className="border-t pt-4 mt-2">
               <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                 <Sparkles size={16} /> Дополнительно
@@ -460,7 +453,6 @@ export default function SellerPage() {
               </div>
             </div>
 
-            {/* Изображения */}
             <div className="border-t pt-4 mt-2">
               <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                 <ImageIcon size={16} /> Изображения
@@ -509,7 +501,6 @@ export default function SellerPage() {
           </form>
         </div>
 
-        {/* Список товаров продавца */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border">
           <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Package size={20} className="text-blue-600" /> Мои товары
@@ -549,7 +540,6 @@ export default function SellerPage() {
           )}
         </div>
 
-        {/* Кнопка прокрутки вверх */}
         <button
           onClick={scrollToTop}
           className="fixed bottom-24 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition active:scale-95 z-50"
