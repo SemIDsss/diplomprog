@@ -58,23 +58,22 @@ export class PaymentService {
     }
   }
 
-  private static async createMockPayment(params: {
-    amount: number;
-    description: string;
-    orderId: string;
-    paymentMethod?: 'bank_card' | 'sbp';
-    returnUrl?: string;
-  }) {
-    const mockId = `mock_${uuidv4().slice(0, 8)}`;
-    return {
-      id: mockId,
-      status: 'pending',
-      confirmationUrl: `http://localhost:3000/payment-success?orderId=${params.orderId}&mock=true`,
-      amount: params.amount,
-      currency: 'RUB',
-      createdAt: new Date().toISOString(),
-    };
-  }
+ private static async createMockPayment(params: any) {
+  const mockId = `mock_${uuidv4().slice(0, 8)}`;
+  const confirmationUrl = params.returnUrl 
+    ? params.returnUrl.includes('?') 
+      ? `${params.returnUrl}&mock=true` 
+      : `${params.returnUrl}?mock=true`
+    : `http://localhost:3000/payment-success?orderId=${params.orderId}&mock=true`;
+  return {
+    id: mockId,
+    status: 'pending',
+    confirmationUrl,
+    amount: params.amount,
+    currency: 'RUB',
+    createdAt: new Date().toISOString(),
+  };
+}
 
   static async getPaymentStatus(paymentId: string) {
     if (paymentId.startsWith('mock_')) {

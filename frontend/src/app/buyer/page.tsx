@@ -235,12 +235,14 @@ export default function BuyerPage() {
     const orderJson = await orderRes.json();
     if (orderJson.errors) throw new Error(orderJson.errors[0].message);
     const order = orderJson.data.createOrder;
-console.log('🆔 ID заказа:', order.id);
-if (!order.id) {
-  throw new Error('Не удалось получить ID заказа');
-}
 
-    // 2. Создаём платёж с правильным returnUrl
+    // ✅ Проверка ID
+    console.log('🆔 ID заказа:', order.id);
+    if (!order.id) {
+      throw new Error('Не удалось получить ID заказа');
+    }
+
+    // 2. Создаём платёж с относительным returnUrl
     const payRes = await fetch(`${API_BASE}/payment/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -250,13 +252,14 @@ if (!order.id) {
         description: `Оплата заказа ${order.id}`,
         orderId: order.id,
         paymentMethod: paymentMethod,
-        returnUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment-success?orderId=${order.id}`, 
+        returnUrl: `/payment-success?orderId=${order.id}`, // ✅ относительный путь
       })
     });
     const payment = await payRes.json();
+    console.log('🔗 confirmationUrl:', payment.confirmationUrl);
     if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
 
-    // 3. Редирект на ЮKassa
+    // 3. Редирект
     window.location.href = payment.confirmationUrl;
   } catch (e: any) {
     console.error('❌ Ошибка оплаты:', e);
