@@ -235,7 +235,10 @@ export default function BuyerPage() {
     const orderJson = await orderRes.json();
     if (orderJson.errors) throw new Error(orderJson.errors[0].message);
     const order = orderJson.data.createOrder;
-    console.log('✅ Заказ создан:', order);
+console.log('🆔 ID заказа:', order.id);
+if (!order.id) {
+  throw new Error('Не удалось получить ID заказа');
+}
 
     // 2. Создаём платёж с правильным returnUrl
     const payRes = await fetch(`${API_BASE}/payment/create`, {
