@@ -3,13 +3,43 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
-import { API_BASE } from '@/lib/api';
+import { API_BASE, API_URL } from '@/lib/api';
+import { setUser, getUser } from '@/lib/auth';
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'pending' | 'error'>('loading');
   const [message, setMessage] = useState('');
+
+  // Функция для обновления пользователя
+  const refreshUser = async () => {
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          query: `
+            query Me {
+              me {
+                id
+                email
+                role
+              }
+            }
+          `
+        })
+      });
+      const json = await res.json();
+      if (json.data?.me) {
+        setUser(json.data.me);
+        console.log('👤 Пользователь обновлён:', json.data.me);
+      }
+    } catch (e) {
+      console.warn('Не удалось обновить пользователя:', e);
+    }
+  };
 
   useEffect(() => {
     const orderId = searchParams.get('orderId');
@@ -26,6 +56,7 @@ export default function PaymentSuccessPage() {
       setMessage('✅ Тестовый платёж (эмуляция) успешно завершён!');
       localStorage.removeItem('cart');
       window.dispatchEvent(new Event('cartUpdated'));
+      refreshUser(); // обновляем пользователя после эмуляции
       return;
     }
 
@@ -36,7 +67,6 @@ export default function PaymentSuccessPage() {
     const checkPaymentStatus = async () => {
       attempts++;
       try {
-        // ✅ Запрос к новому роуту /api/payment/order/:orderId/status
         const res = await fetch(`${API_BASE}/payment/order/${orderId}/status`, {
           credentials: 'include',
         });
@@ -52,6 +82,7 @@ export default function PaymentSuccessPage() {
           setMessage('✅ Оплата прошла успешно! Заказ оплачен.');
           localStorage.removeItem('cart');
           window.dispatchEvent(new Event('cartUpdated'));
+          await refreshUser(); // обновляем пользователя после успешной оплаты
           return;
         } else if (data.status === 'pending') {
           if (attempts < maxAttempts) {

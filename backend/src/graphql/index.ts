@@ -1,10 +1,11 @@
-// src/graphql/index.ts
+// backend/src/graphql/index.ts
 import { prisma } from '../db';
 import { Role, OrderStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { generateToken, verifyToken } from '../utils/jwt';
 import { z } from 'zod';
-import { PaymentService } from '../payment';
+import { PaymentService } from '../payment'; // если нужен для initiatePayment
+
 // ==================== TYPEDEFS ====================
 export const typeDefs = `#graphql
   type Subcategory { id: ID!, name: String!, categoryId: String! }
@@ -46,7 +47,6 @@ export const typeDefs = `#graphql
   }
   type UserCount { products: Int! orders: Int! }
 
-  # 
   type AuthResponse {
     user: User!
   }
@@ -89,7 +89,6 @@ export const typeDefs = `#graphql
     hasMore: Boolean!
   }
 
- 
   input OrderItemInput {
     productId: String!
     quantity: Int!
@@ -105,6 +104,9 @@ export const typeDefs = `#graphql
     pendingProducts: [Product]
     reviews(productId: ID!): [Review!]!
     
+    # ✅ НОВЫЙ ЗАПРОС: получить текущего пользователя
+    me: User
+
     # Админские запросы
     users: [User!]!
     productsAll: [Product!]!
@@ -252,6 +254,25 @@ export const resolvers = {
       } catch (e) { return null; }
     },
 
+    // ✅ НОВЫЙ РЕЗОЛВЕР: получение текущего пользователя
+    me: async (_: any, __: any, context: any) => {
+      if (!context.user) return null;
+      const user = await prisma.user.findUnique({
+        where: { id: context.user.userId },
+        include: { _count: { select: { products: true, orders: true } } }
+      });
+      if (!user) return null;
+      return {
+        id: user.id,
+        email: user.email,
+        role: String(user.role),
+        createdAt: String(user.createdAt),
+        isBlocked: user.isBlocked,
+        blockReason: user.blockReason,
+        _count: user._count,
+      };
+    },
+
     pendingProducts: async (_: any, __: any, context: any) => {
       if (!context.user || context.user.role !== 'ADMIN') {
         throw new Error('Доступ запрещен. Только для администраторов.');
@@ -351,13 +372,13 @@ export const resolvers = {
         role: String(user.role)
       });
 
-   context.res.cookie('token', token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // true на Render, false локально
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: '/',
-});
+      context.res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
 
       return {
         user: { id: user.id, email: user.email, role: String(user.role) }
@@ -365,63 +386,51 @@ export const resolvers = {
     },
 
     login: async (_: any, { email, password }: any, context: any) => {
-  console.log('🔐 Login attempt for:', email);
-
-  // 1. Поиск пользователя
-  const user = await prisma.user.findFirst({ where: { email } });
-  if (!user) {
-    console.warn('❌ User not found:', email);
-    throw new Error('Неверный адрес электронной почты или пароль');
-  }
-
-  // 2. Проверка блокировки
-  if (user.isBlocked) {
-    console.warn('🚫 User blocked:', email, 'Reason:', user.blockReason);
-    throw new Error(`Ваш аккаунт заблокирован. Причина: ${user.blockReason || 'Не указана'}`);
-  }
-
-  // 3. Проверка пароля
-  let isPasswordValid = false;
-  if (user.password.startsWith('$2')) {
-    isPasswordValid = await bcrypt.compare(password, user.password);
-  } else {
-    isPasswordValid = (password === user.password);
-  }
-  if (!isPasswordValid) {
-    console.warn('❌ Invalid password for:', email);
-    throw new Error('Неверный адрес электронной почты или пароль');
-  }
-
-  // 4. Генерация токена
-  const token = generateToken({
-    userId: user.id,
-    email: user.email,
-    role: String(user.role),
-  });
-  console.log('🔑 Token generated for', email, ':', token.substring(0, 20) + '...');
-
-  // 5. Установка куки
-  context.res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // true на Render
-    sameSite: 'none', // для кросс-домена (Vercel → Render)
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/',
-  });
-  console.log('✅ Cookie set with options:', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'none',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/',
-  });
-  console.log('📤 Response headers after cookie:', context.res.getHeaders());
-
-  // 6. Возврат данных
-  return {
-    user: { id: user.id, email: user.email, role: String(user.role) }
-  };
-},
+      console.log('🔐 Login attempt for:', email);
+      const user = await prisma.user.findFirst({ where: { email } });
+      if (!user) {
+        console.warn('❌ User not found:', email);
+        throw new Error('Неверный адрес электронной почты или пароль');
+      }
+      if (user.isBlocked) {
+        console.warn('🚫 User blocked:', email, 'Reason:', user.blockReason);
+        throw new Error(`Ваш аккаунт заблокирован. Причина: ${user.blockReason || 'Не указана'}`);
+      }
+      let isPasswordValid = false;
+      if (user.password.startsWith('$2')) {
+        isPasswordValid = await bcrypt.compare(password, user.password);
+      } else {
+        isPasswordValid = (password === user.password);
+      }
+      if (!isPasswordValid) {
+        console.warn('❌ Invalid password for:', email);
+        throw new Error('Неверный адрес электронной почты или пароль');
+      }
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: String(user.role),
+      });
+      console.log('🔑 Token generated for', email, ':', token.substring(0, 20) + '...');
+      context.res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+      console.log('✅ Cookie set with options:', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+      console.log('📤 Response headers after cookie:', context.res.getHeaders());
+      return {
+        user: { id: user.id, email: user.email, role: String(user.role) }
+      };
+    },
 
     logout: async (_: any, __: any, context: any) => {
       context.res.clearCookie('token', { path: '/' });
@@ -433,18 +442,14 @@ export const resolvers = {
       if (!context.user || context.user.userId !== userId) {
         throw new Error('Не авторизован для изменения этой корзины');
       }
-      
       const product = await prisma.product.findUnique({ where: { id: productId } });
       if (!product || product.status !== 'APPROVED') {
         throw new Error('Товар не найден или недоступен');
       }
-      
       if (quantity <= 0) throw new Error('Количество должно быть положительным');
-
       const existingItem = await prisma.cartItem.findFirst({
         where: { userId, productId }
       });
-
       if (existingItem) {
         return await prisma.cartItem.update({
           where: { id: existingItem.id },
@@ -480,7 +485,6 @@ export const resolvers = {
         throw new Error('Не авторизован');
       }
       const userId = context.user.userId;
-
       let cartItems = items;
       if (!cartItems || cartItems.length === 0) {
         const dbCart = await prisma.cartItem.findMany({
@@ -496,7 +500,6 @@ export const resolvers = {
           price: item.product.price,
         }));
       }
-
       for (const item of cartItems) {
         const product = await prisma.product.findUnique({ where: { id: item.productId } });
         if (!product) throw new Error(`Товар ${item.productId} не найден`);
@@ -504,7 +507,6 @@ export const resolvers = {
           throw new Error(`Недостаточно товара ${product.title} на складе`);
         }
       }
-
       let totalAmount = 0;
       const orderItemsData = [];
       for (const item of cartItems) {
@@ -520,7 +522,6 @@ export const resolvers = {
           price: price,
         });
       }
-
       const order = await prisma.$transaction(async (prisma) => {
         const newOrder = await prisma.order.create({
           data: {
@@ -535,7 +536,6 @@ export const resolvers = {
           },
           include: { items: { include: { product: true } } }
         });
-        
         for (const item of orderItemsData) {
           await prisma.product.update({
             where: { id: item.productId },
@@ -547,36 +547,30 @@ export const resolvers = {
         }
         return newOrder;
       });
-console.log('✅ Order created, ID:', order.id);
       return order;
     },
 
     initiatePayment: async (_: any, { orderId, method, returnUrl }: any, context: any) => {
-  if (!context.user) {
-    throw new Error('Не авторизован');
-  }
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new Error('Заказ не найден');
-  if (order.userId !== context.user.userId) throw new Error('Нет доступа к этому заказу');
-  if (order.status !== 'PENDING') throw new Error('Заказ уже оплачен или отменен');
-
-  // Определяем метод оплаты для ЮKassa
-  const paymentMethod = method === 'SBP' ? 'sbp' : 'bank_card';
-
-  // Создаём платёж через PaymentService (эмуляция или реальный API)
-  const payment = await PaymentService.createPayment({
-    amount: order.totalAmount,
-    description: `Оплата заказа ${order.id}`,
-    orderId: order.id,
-    paymentMethod: paymentMethod,
-    returnUrl: returnUrl || `${process.env.FRONTEND_URL}/payment-success?orderId=${order.id}`,
-  });
-
-  return {
-    paymentUrl: payment.confirmationUrl,
-    orderId: order.id,
-  };
-},
+      if (!context.user) {
+        throw new Error('Не авторизован');
+      }
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (!order) throw new Error('Заказ не найден');
+      if (order.userId !== context.user.userId) throw new Error('Нет доступа к этому заказу');
+      if (order.status !== 'PENDING') throw new Error('Заказ уже оплачен или отменен');
+      const paymentMethod = method === 'SBP' ? 'sbp' : 'bank_card';
+      const payment = await PaymentService.createPayment({
+        amount: order.totalAmount,
+        description: `Оплата заказа ${order.id}`,
+        orderId: order.id,
+        paymentMethod: paymentMethod,
+        returnUrl: returnUrl || `${process.env.FRONTEND_URL}/payment-success?orderId=${order.id}`,
+      });
+      return {
+        paymentUrl: payment.confirmationUrl,
+        orderId: order.id,
+      };
+    },
 
     approveOrder: async (_: any, { orderId }: { orderId: string }, context: any) => {
       if (!context.user) throw new Error('Не авторизован');
@@ -597,14 +591,12 @@ console.log('✅ Order created, ID:', order.id);
       if (context.user.role !== 'SELLER' && context.user.role !== 'ADMIN') {
         throw new Error('Только продавцы могут создавать товары');
       }
-
       const {
         title, description, price, subcategoryId,
         sku, brand, material, color, weight, width, height, depth,
         year, country, season, collection, images,
         stock   
       } = args;
-
       return await prisma.product.create({
         data: {
           title,
