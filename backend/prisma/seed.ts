@@ -478,7 +478,10 @@ async function main() {
 
   console.log('🎉 Заполнение базы данных завершено!');
 }
-
+const updateStock = await prisma.product.updateMany({
+  data: { stock: 10000 },
+});
+console.log(`✅ Обновлён остаток у ${updateStock.count} товаров до 100`);
 main()
   .catch((e) => {
     console.error('❌ Ошибка:', e);
