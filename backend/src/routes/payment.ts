@@ -56,10 +56,10 @@ router.get('/order/:orderId/status', authenticate, async (req: any, res) => {
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
-    // Проверяем, что заказ принадлежит текущему пользователю
-    if (order.userId !== req.user.userId) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
+    // Временно отключаем проверку владельца (для отладки)
+    // if (order.userId !== req.user.userId) {
+    //   return res.status(403).json({ error: 'Access denied' });
+    // }
     if (!order.paymentId) {
       // Если paymentId нет (эмуляция) – возвращаем успех
       return res.json({ status: 'succeeded' });
@@ -69,17 +69,6 @@ router.get('/order/:orderId/status', authenticate, async (req: any, res) => {
   } catch (error) {
     console.error('Error getting payment status by order:', error);
     res.status(500).json({ error: 'Failed to get payment status' });
-  }
-});
-
-// Подтверждение (эмуляция)
-router.post('/confirm/:paymentId', authenticate, async (req, res) => {
-  try {
-    const { paymentId } = req.params;
-    const result = await PaymentService.confirmPayment(paymentId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Confirmation failed' });
   }
 });
 
