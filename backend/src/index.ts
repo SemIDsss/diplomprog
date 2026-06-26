@@ -17,10 +17,21 @@ dotenv.config();
   const app = express();
   const httpServer = createServer(app);
 
-  // ---------- CORS ----------
+  // ---------- CORS (с белым списком) ----------
+  const allowedOrigins = process.env.CLIENT_URL
+    ? [process.env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:3001']
+    : ['http://localhost:3000', 'http://localhost:3001'];
+
   app.use(
     cors({
-      origin: true,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization'],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -59,7 +70,7 @@ dotenv.config();
   app.use(authMiddleware);
 
   // ---------- REST: статус платежа ----------
- app.get('/payment/order/:orderId/status', async (req, res) => {
+  app.get('/payment/order/:orderId/status', async (req, res) => {
     try {
       const { orderId } = req.params;
       const prisma = req.app.get('prisma') as PrismaClient;
@@ -67,12 +78,10 @@ dotenv.config();
       const order = await prisma.order.findUnique({ where: { id: orderId } });
       if (!order) return res.status(404).json({ error: 'Заказ не найден' });
 
-      // Если уже APPROVED – возвращаем succeeded
       if (order.status === 'APPROVED') {
         return res.json({ status: 'succeeded', orderId });
       }
 
-      // Если есть paymentId – проверяем в ЮKassa
       if (order.paymentId) {
         try {
           const paymentStatus = await PaymentService.getPaymentStatus(order.paymentId);
@@ -83,17 +92,14 @@ dotenv.config();
             });
             return res.json({ status: 'succeeded', orderId });
           }
-          // Если ещё не оплачен – возвращаем pending
           return res.json({ status: 'pending', orderId });
         } catch (err) {
           console.error('Ошибка запроса к ЮKassa:', err);
-          // Если ошибка – возвращаем текущий статус (но приводим к формату)
           const mappedStatus = order.status === 'APPROVED' ? 'succeeded' : 'pending';
           return res.json({ status: mappedStatus, orderId });
         }
       }
 
-      // Если paymentId нет – возвращаем статус в формате
       const mappedStatus = order.status === 'APPROVED' ? 'succeeded' : 'pending';
       res.json({ status: mappedStatus, orderId });
     } catch (error) {
@@ -111,6 +117,7 @@ dotenv.config();
     resolvers,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
     introspection: true,
+    csrfPrevention: false, // ← ОТКЛЮЧАЕМ CSRF-ЗАЩИТУ (для локальной разработки)
   });
 
   await server.start();

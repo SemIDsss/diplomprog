@@ -1,4 +1,5 @@
-npm run dev /монорепозит в главной папке
+npm run dev во фронтэнде
+обязательно запустить докер он будет backend
 
 
 git add .
@@ -26,7 +27,7 @@ docker ps -a                     	Показать все контейнеры
 docker-compose up -d              Запустить контейнеры в фоне
 docker-compose down                Остановить контейнеры
 docker logs postgres_db           Показать логи контейнера с БД
-
+docker-compose up --build -d       Полное обновление
 
 
 npm install 1232131 --legacy-peer-deps     Установить пакет с игнорированием конфликтов

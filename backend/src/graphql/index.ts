@@ -367,15 +367,14 @@ export const resolvers = {
       });
 
       // Установка куки с учётом окружения (для кросс-доменной работы на Render)
-      const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-      context.res.cookie('token', token, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: '/',
-        domain: isProduction ? '.onrender.com' : undefined, // для кросс-доменности на Render
-      });
+   const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+context.res.cookie('token', token, {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: '/',
+});
 
       return {
         user: { id: user.id, email: user.email, role: String(user.role) }
@@ -410,15 +409,14 @@ export const resolvers = {
       });
       console.log('🔑 Token generated for', email, ':', token.substring(0, 20) + '...');
 
-      const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-      context.res.cookie('token', token, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: '/',
-        domain: isProduction ? '.onrender.com' : undefined,
-      });
+     const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+context.res.cookie('token', token, {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: '/',
+});
 
       console.log('✅ Cookie set with options:', {
         httpOnly: true,
