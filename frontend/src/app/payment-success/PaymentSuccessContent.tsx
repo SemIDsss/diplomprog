@@ -36,6 +36,7 @@ export default function PaymentSuccessPage() {
     const checkPaymentStatus = async () => {
       attempts++;
       try {
+        // ✅ Запрос к новому роуту /api/payment/order/:orderId/status
         const res = await fetch(`${API_BASE}/payment/order/${orderId}/status`, {
           credentials: 'include',
         });
