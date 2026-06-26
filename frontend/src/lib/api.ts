@@ -1,20 +1,16 @@
 // frontend/src/lib/api.ts
 // =============================================================
 // Универсальный клиент для GraphQL и REST запросов
-// В продакшене (Vercel) используем относительные пути (через прокси)
-// В разработке (localhost) — прямые URL к локальному бэкенду
+// Все запросы идут напрямую к бэкенду (без прокси)
+// Адрес бэкенда задаётся через переменную окружения NEXT_PUBLIC_API_URL
 // =============================================================
 
-const isProduction = process.env.NODE_ENV === 'production';
+// Базовый URL бэкенда (локально или на Render)
+// На Vercel эту переменную нужно задать в Environment Variables
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-// Константы для GraphQL и REST
-export const API_URL = isProduction
-  ? '/graphql'  // на Vercel запросы идут через прокси
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/graphql');
-
-export const API_BASE = isProduction
-  ? '/api'      // на Vercel REST-запросы через прокси
-  : (process.env.NEXT_PUBLIC_API_URL?.replace('/graphql', '') || 'http://localhost:5000');
+// GraphQL эндпоинт
+export const API_URL = `${API_BASE}/graphql`;
 
 // Основная функция для GraphQL-запросов
 export const graphqlRequest = async (query: string, variables?: any) => {
