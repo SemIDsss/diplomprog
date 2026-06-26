@@ -1,9 +1,11 @@
 import express from 'express';
 import { PaymentService } from '../payment';
 import { authenticate } from '../middleware/auth';
+import { prisma } from '../db';
 
 const router = express.Router();
 
+// Создание платежа
 router.post('/create', authenticate, async (req: any, res) => {
   try {
     const { amount, description, orderId, paymentMethod, returnUrl } = req.body;
@@ -14,8 +16,17 @@ router.post('/create', authenticate, async (req: any, res) => {
     const payment = await PaymentService.createPayment({
       amount,
       description: description || `Оплата заказа ${orderId}`,
-      metadata: { orderId, paymentMethod, returnUrl },
+      orderId,
+      paymentMethod: paymentMethod || 'bank_card',
+      returnUrl,
     });
+
+    // Сохраняем paymentId в заказе (для проверки статуса в будущем)
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { paymentId: payment.id },
+    });
+
     res.json(payment);
   } catch (error) {
     console.error('Payment creation error:', error);
@@ -23,6 +34,7 @@ router.post('/create', authenticate, async (req: any, res) => {
   }
 });
 
+// Проверка статуса по paymentId (старый метод)
 router.get('/status/:paymentId', authenticate, async (req, res) => {
   try {
     const { paymentId } = req.params;
@@ -33,7 +45,34 @@ router.get('/status/:paymentId', authenticate, async (req, res) => {
   }
 });
 
-router.post('/confirm/:paymentId', async (req, res) => {
+// ✅ НОВЫЙ РОУТ: проверка статуса по orderId
+router.get('/order/:orderId/status', authenticate, async (req: any, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { paymentId: true, userId: true },
+    });
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    if (order.userId !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    if (!order.paymentId) {
+      // Если paymentId нет (эмуляция) – возвращаем успех
+      return res.json({ status: 'succeeded' });
+    }
+    const status = await PaymentService.getPaymentStatus(order.paymentId);
+    res.json(status);
+  } catch (error) {
+    console.error('Error getting payment status by order:', error);
+    res.status(500).json({ error: 'Failed to get payment status' });
+  }
+});
+
+// Подтверждение (эмуляция)
+router.post('/confirm/:paymentId', authenticate, async (req, res) => {
   try {
     const { paymentId } = req.params;
     const result = await PaymentService.confirmPayment(paymentId);
@@ -43,4 +82,4 @@ router.post('/confirm/:paymentId', async (req, res) => {
   }
 });
 
-export default router; 
+export default router;
