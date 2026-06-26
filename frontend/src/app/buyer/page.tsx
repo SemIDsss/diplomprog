@@ -13,7 +13,7 @@ import {
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
 import { getUser, clearAuth } from '@/lib/auth';
-import { API_URL, API_BASE } from '@/lib/api';
+import { API_URL, API_BASE, graphqlRequest } from '@/lib/api';  // <-- здесь добавлен graphqlRequest
 
 interface CartItem {
   id: string | number;
