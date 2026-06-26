@@ -17,7 +17,22 @@ dotenv.config();
   const app = express();
   const httpServer = createServer(app);
 
-  // ---------- CORS (с белым списком) ----------
+  // ---------- РУЧНАЯ ОБРАБОТКА OPTIONS (ПЕРЕД CORS) ----------
+  // Это предотвращает ошибки при preflight-запросах
+  app.options('*', (req, res) => {
+    const origin = req.headers.origin;
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.sendStatus(200);
+  });
+
+  // ---------- CORS (для остальных запросов) ----------
   const allowedOrigins = process.env.CLIENT_URL
     ? [process.env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:3001']
     : ['http://localhost:3000', 'http://localhost:3001'];
@@ -117,7 +132,7 @@ dotenv.config();
     resolvers,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
     introspection: true,
-    csrfPrevention: false, // ← ОТКЛЮЧАЕМ CSRF-ЗАЩИТУ (для локальной разработки)
+    csrfPrevention: false,
   });
 
   await server.start();

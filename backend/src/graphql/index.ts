@@ -409,14 +409,18 @@ context.res.cookie('token', token, {
       });
       console.log('🔑 Token generated for', email, ':', token.substring(0, 20) + '...');
 
-     const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-context.res.cookie('token', token, {
+   const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+const cookieOptions: any = {
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: '/',
-});
+};
+if (isProduction) {
+  cookieOptions.domain = '.onrender.com'; // добавляем domain
+}
+context.res.cookie('token', token, cookieOptions);
 
       console.log('✅ Cookie set with options:', {
         httpOnly: true,
