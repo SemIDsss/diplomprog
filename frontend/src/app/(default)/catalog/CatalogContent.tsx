@@ -118,7 +118,19 @@ export default function CatalogContent() {
   const loadMore = () => {
     if (!loading && hasMore) loadProducts(false, inputValue, subcategoryId);
   };
+const [showScrollTop, setShowScrollTop] = useState(false);
 
+useEffect(() => {
+  const handleScroll = () => {
+    setShowScrollTop(window.scrollY > 400);
+  };
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
@@ -226,6 +238,17 @@ export default function CatalogContent() {
             {!hasMore && products.length > 0 && (
               <p className="text-center text-sm text-gray-400 py-4">Все товары загружены</p>
             )}
+            {showScrollTop && (
+  <button
+    onClick={scrollToTop}
+    className="fixed bottom-8 right-8 bg-[#ff8012] text-white p-3 rounded-full shadow-lg hover:bg-[#e06a00] transition z-50"
+    aria-label="Наверх"
+  >
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+    </svg>
+  </button>
+)}
           </div>
         </div>
       </div>

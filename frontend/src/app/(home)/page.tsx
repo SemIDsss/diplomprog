@@ -52,7 +52,7 @@ const configs: Record<string, Config> = {
       left: 1210,
       width: 1445,
       height: 297,
-      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+      content: '📞 +7 +7 (#########)\n✉️ andr.semidark@yandex.ru\n Нижний Новгород'
     },
     buttonLeft: 96,
     buttonWidth: 984,
@@ -73,7 +73,7 @@ const configs: Record<string, Config> = {
       left: 857,
       width: 935,
       height: 227,
-      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+      content: '📞 +7 (#########)\n✉️ andr.semidark@yandex.ru\n Нижний Новгород'
     },
     buttonLeft: 73,
     buttonWidth: 637,
@@ -94,7 +94,7 @@ const configs: Record<string, Config> = {
       left: 693,
       width: 667,
       height: 160,
-      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+      content: '📞 +7 (#########)\n✉️ andr.semidark@yandex.ru\n Нижний Новгород'
     },
     buttonLeft: 68,
     buttonWidth: 461,
@@ -115,7 +115,7 @@ const configs: Record<string, Config> = {
       left: 436,
       width: 654,
       height: 150,
-      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+      content: '📞 +7 (#########)\n✉️ andr.semidark@yandex.ru\n Нижний Новгород'
     },
     buttonLeft: 35,
     buttonWidth: 359,
@@ -136,7 +136,7 @@ const configs: Record<string, Config> = {
       left: 470,
       width: 493,
       height: 110,
-      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+      content: '📞  +7 (#########)\n✉️ andr.semidark@yandex.ru\n Нижний Новгород'
     },
     buttonLeft: 41,
     buttonWidth: 349,
@@ -172,7 +172,7 @@ const configs: Record<string, Config> = {
       left: 339,
       width: 441,
       height: 139,
-      content: '📞 +7 (999) 123-45-67\n✉️ info@diplom.ru\n📍 Москва, ул. Тверская, 1'
+      content: '📞  +7 (#########)\n✉️ andr.semidark@yandex.ru\n Нижний Новгород'
     },
     buttonLeft: 21,
     buttonWidth: 269,
