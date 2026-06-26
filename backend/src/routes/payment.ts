@@ -34,7 +34,7 @@ router.post('/create', authenticate, async (req: any, res) => {
   }
 });
 
-// Проверка статуса по paymentId (старый метод)
+
 router.get('/order/:orderId/status', authenticate, async (req: any, res) => {
   try {
     const { orderId } = req.params;
@@ -45,10 +45,7 @@ router.get('/order/:orderId/status', authenticate, async (req: any, res) => {
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
-    // ✅ ВРЕМЕННО ОТКЛЮЧАЕМ ПРОВЕРКУ ВЛАДЕЛЬЦА
-    // if (order.userId !== req.user.userId) {
-    //   return res.status(403).json({ error: 'Access denied' });
-    // }
+    
     if (!order.paymentId) {
       return res.json({ status: 'succeeded' });
     }

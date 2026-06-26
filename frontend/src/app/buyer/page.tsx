@@ -170,7 +170,7 @@ export default function BuyerPage() {
     const data = await graphqlRequest(query, { userId });
     if (data?.orders) setOrders(data.orders);
   } catch (e) {
-    console.error('❌ Ошибка fetchOrders:', e);
+    console.error(' Ошибка fetchOrders:', e);
   }
 };
 
@@ -246,8 +246,8 @@ export default function BuyerPage() {
     // 3. Редирект на оплату
     window.location.href = paymentUrl;
   } catch (e: any) {
-    console.error('❌ Ошибка оплаты:', e);
-    alert('❌ Ошибка оплаты: ' + e.message);
+    console.error(' Ошибка оплаты:', e);
+    alert(' Ошибка оплаты: ' + e.message);
   } finally {
     setPaymentLoading(false);
   }
