@@ -147,41 +147,32 @@ export default function BuyerPage() {
   }, [city, deliveryMethod, cart]);
 
   const fetchOrders = async () => {
-    try {
-      const userId = user?.id || localStorage.getItem('userId');
-      if (!userId) return;
+  try {
+    const userId = user?.id || localStorage.getItem('userId');
+    if (!userId) return;
 
-      const query = `query GetOrders($userId: String!) {
-        orders(userId: $userId) {
+    const query = `query GetOrders($userId: String!) {
+      orders(userId: $userId) {
+        id
+        deliveryMethod
+        deliveryPrice
+        totalAmount
+        status
+        createdAt
+        items {
           id
-          deliveryMethod
-          deliveryPrice
-          totalAmount
-          status
-          createdAt
-          items {
-            id
-            quantity
-            price
-            product { title }
-          }
+          quantity
+          price
+          product { title }
         }
-      }`;
-      const variables = { userId };
-
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ query, variables })
-      });
-
-      const json = await res.json();
-      if (json.data?.orders) setOrders(json.data.orders);
-    } catch (e) {
-      console.error('❌ Ошибка fetchOrders:', e);
-    }
-  };
+      }
+    }`;
+    const data = await graphqlRequest(query, { userId });
+    if (data?.orders) setOrders(data.orders);
+  } catch (e) {
+    console.error('❌ Ошибка fetchOrders:', e);
+  }
+};
 
   const removeFromCart = (id: string | number) => {
     const newCart = cart.filter(item => item.id !== id);
@@ -201,15 +192,16 @@ export default function BuyerPage() {
   const calculateTotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handlePayment = async () => {
-    if (cart.length === 0) {
-      alert('Корзина пуста');
-      return;
-    }
-    setPaymentLoading(true);
+  if (cart.length === 0) {
+    alert('Корзина пуста');
+    return;
+  }
+  setPaymentLoading(true);
 
-    try {
-      // 1. Создаём заказ
-      const createOrderQuery = `mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
+  try {
+    // 1. Создаём заказ через graphqlRequest
+    const createOrderQuery = `
+      mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
         createOrder(deliveryMethod: $deliveryMethod, items: $items) {
           id
           totalAmount
@@ -217,72 +209,49 @@ export default function BuyerPage() {
           deliveryPrice
           createdAt
         }
-      }`;
-      const createOrderVariables = {
-        deliveryMethod,
-        items: cart.map(item => ({
-          productId: item.id,
-          quantity: item.quantity
-        }))
-      };
+      }
+    `;
+    const createOrderVars = {
+      deliveryMethod,
+      items: cart.map(item => ({
+        productId: item.id,
+        quantity: item.quantity
+      }))
+    };
 
-      const orderRes = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ query: createOrderQuery, variables: createOrderVariables })
-      });
-      const orderJson = await orderRes.json();
-      if (orderJson.errors) {
-        throw new Error(orderJson.errors[0].message);
-      }
-      const order = orderJson.data.createOrder;
-      if (!order || !order.id) {
-        throw new Error('Не удалось создать заказ или получить его ID');
-      }
-      console.log('🆔 ID заказа:', order.id);
+    const orderData = await graphqlRequest(createOrderQuery, createOrderVars);
+    const order = orderData.createOrder;
+    if (!order?.id) throw new Error('Не удалось создать заказ');
 
-      // 2. Инициируем платёж через GraphQL-мутацию initiatePayment
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin || 'http://localhost:3000';
-      const paymentRes = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          query: `
-            mutation InitiatePayment($orderId: String!, $method: String!, $returnUrl: String!) {
-              initiatePayment(orderId: $orderId, method: $method, returnUrl: $returnUrl) {
-                paymentUrl
-                orderId
-              }
-            }
-          `,
-          variables: {
-            orderId: order.id,
-            method: paymentMethod === 'bank_card' ? 'YUKASSA' : 'SBP',
-            returnUrl: `${appUrl}/payment-success?orderId=${order.id}`,
-          }
-        })
-      });
-      const paymentData = await paymentRes.json();
-      if (paymentData.errors) {
-        throw new Error(paymentData.errors[0].message);
+    // 2. Инициируем платёж через graphqlRequest
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin || 'http://localhost:3000';
+    const paymentQuery = `
+      mutation InitiatePayment($orderId: String!, $method: String!, $returnUrl: String!) {
+        initiatePayment(orderId: $orderId, method: $method, returnUrl: $returnUrl) {
+          paymentUrl
+          orderId
+        }
       }
-      const paymentUrl = paymentData.data.initiatePayment.paymentUrl;
-      console.log('🔗 paymentUrl:', paymentUrl);
-      if (!paymentUrl) {
-        throw new Error('Не удалось получить ссылку на оплату');
-      }
+    `;
+    const paymentVars = {
+      orderId: order.id,
+      method: paymentMethod === 'bank_card' ? 'YUKASSA' : 'SBP',
+      returnUrl: `${appUrl}/payment-success?orderId=${order.id}`,
+    };
 
-      // 3. Редирект на страницу оплаты
-      window.location.href = paymentUrl;
-    } catch (e: any) {
-      console.error('❌ Ошибка оплаты:', e);
-      alert('❌ Ошибка оплаты: ' + e.message);
-    } finally {
-      setPaymentLoading(false);
-    }
-  };
+    const paymentData = await graphqlRequest(paymentQuery, paymentVars);
+    const paymentUrl = paymentData.initiatePayment.paymentUrl;
+    if (!paymentUrl) throw new Error('Не удалось получить ссылку на оплату');
+
+    // 3. Редирект на оплату
+    window.location.href = paymentUrl;
+  } catch (e: any) {
+    console.error('❌ Ошибка оплаты:', e);
+    alert('❌ Ошибка оплаты: ' + e.message);
+  } finally {
+    setPaymentLoading(false);
+  }
+};
 
   const handleLogout = () => {
     clearAuth();
