@@ -10,18 +10,9 @@ async function main() {
   // 1. КАТЕГОРИИ И ПОДКАТЕГОРИИ
   // ============================================
   const categoriesData = [
-    {
-      name: 'Книги',
-      subcategories: ['Классика', 'Фантастика', 'Детективы'],
-    },
-    {
-      name: 'Мебель',
-      subcategories: ['Стулья', 'Столы', 'Шкафы'],
-    },
-    {
-      name: 'Игрушки',
-      subcategories: ['Мягкие игрушки', 'Конструкторы', 'Настольные игры'],
-    },
+    { name: 'Книги', subcategories: ['Классика', 'Фантастика', 'Детективы'] },
+    { name: 'Мебель', subcategories: ['Стулья', 'Столы', 'Шкафы'] },
+    { name: 'Игрушки', subcategories: ['Мягкие игрушки', 'Конструкторы', 'Настольные игры'] },
   ];
 
   for (const catData of categoriesData) {
@@ -86,11 +77,10 @@ async function main() {
   const buyer2 = createdUsers['buyer2@test.com'];
 
   // ============================================
-  // 3. ТОВАРЫ (все 12, с полным набором полей)
+  // 3. ТОВАРЫ (полный набор)
   // ============================================
   const allSubcategories = await prisma.subcategory.findMany();
 
-  // Полный список товаров из задания
   const productsData = [
     {
       title: '1984',
@@ -386,11 +376,10 @@ async function main() {
   console.log(`📦 Всего создано товаров: ${created}`);
 
   // ============================================
-  // 4. ЗАКАЗЫ (для теста оплаты)
+  // 4. ЗАКАЗЫ
   // ============================================
   const allProducts = await prisma.product.findMany();
   if (allProducts.length >= 2) {
-    // Заказ 1 (PENDING) для buyer
     await prisma.order.create({
       data: {
         userId: buyer.id,
@@ -411,7 +400,6 @@ async function main() {
     });
     console.log('✅ Создан тестовый заказ (PENDING) для buyer');
 
-    // Заказ 2 (APPROVED) для buyer2
     if (allProducts.length >= 3) {
       await prisma.order.create({
         data: {
@@ -433,7 +421,7 @@ async function main() {
   }
 
   // ============================================
-  // 5. ОТЗЫВЫ (на первый товар)
+  // 5. ОТЗЫВЫ
   // ============================================
   if (allProducts.length > 0) {
     await prisma.review.createMany({
@@ -458,15 +446,10 @@ async function main() {
   }
 
   // ============================================
-  // 6. КОРЗИНА (для buyer)
+  // 6. КОРЗИНА
   // ============================================
   if (allProducts.length >= 3) {
-    // Удаляем старые записи корзины для этого пользователя (чтобы избежать дублей)
-    await prisma.cartItem.deleteMany({
-      where: { userId: buyer.id },
-    });
-
-    // Добавляем новые товары в корзину
+    await prisma.cartItem.deleteMany({ where: { userId: buyer.id } });
     await prisma.cartItem.createMany({
       data: [
         { userId: buyer.id, productId: allProducts[0].id, quantity: 2 },
@@ -476,12 +459,15 @@ async function main() {
     console.log('✅ Добавлены товары в корзину для buyer');
   }
 
-  console.log('🎉 Заполнение базы данных завершено!');
+  // ============================================
+  // 7. ОБНОВЛЕНИЕ ОСТАТКА ДЛЯ ВСЕХ ТОВАРОВ
+  // ============================================
+  const updateResult = await prisma.product.updateMany({
+    data: { stock: 10000 },
+  });
+  console.log(`✅ Обновлён остаток у ${updateResult.count} товаров до 100`);
 }
-const updateStock = await prisma.product.updateMany({
-  data: { stock: 10000 },
-});
-console.log(`✅ Обновлён остаток у ${updateStock.count} товаров до 100`);
+
 main()
   .catch((e) => {
     console.error('❌ Ошибка:', e);
