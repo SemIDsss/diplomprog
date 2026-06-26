@@ -9,11 +9,10 @@ const USER_KEY = 'user';
 const SELLER_MODE_KEY = 'seller_mode_user_';
 
 // ---------- Пользователь ----------
-export const setUser = (user: any) => {
-  if (user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  } else {
-    removeUser();
+export const setUser = (user: any, token?: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('user', JSON.stringify(user));
+    if (token) localStorage.setItem('token', token);
   }
 };
 

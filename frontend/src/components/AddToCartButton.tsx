@@ -5,7 +5,7 @@ import { ShoppingCart, Check } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent } from '@/lib/amplitude';
 import { getUser } from '@/lib/auth';
-import { API_URL, API_BASE } from '@/lib/api';
+import { graphqlRequest } from '@/lib/api';
 
 interface AddToCartButtonProps {
   productId: string;
@@ -34,28 +34,22 @@ export function AddToCartButton({
       }
       const userId = user.id;
 
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          query: `
-            mutation AddToCart($userId: String!, $productId: String!, $quantity: Int!) {
-              addToCart(userId: $userId, productId: $productId, quantity: $quantity) {
-                id
-                quantity
-              }
-            }
-          `,
-          variables: { userId, productId, quantity: 1 }
-        })
-      });
+      // Используем graphqlRequest вместо fetch – он автоматически добавит токен в заголовок
+      const data = await graphqlRequest(`
+        mutation AddToCart($userId: String!, $productId: String!, $quantity: Int!) {
+          addToCart(userId: $userId, productId: $productId, quantity: $quantity) {
+            id
+            quantity
+          }
+        }
+      `, { userId, productId, quantity: 1 });
 
-      const result = await response.json();
-      if (result.errors) throw new Error(result.errors[0].message);
+      // Проверяем, что мутация выполнена
+      if (!data?.addToCart) {
+        throw new Error('Не удалось добавить товар в корзину');
+      }
 
+      // Аналитика
       sendMetricaEvent('add_to_cart', {
         productId,
         productName,
@@ -68,6 +62,7 @@ export function AddToCartButton({
         userId
       });
 
+      // Обновляем локальное хранилище корзины
       const savedCart = localStorage.getItem('cart');
       let cart = savedCart ? JSON.parse(savedCart) : [];
 
@@ -93,7 +88,7 @@ export function AddToCartButton({
       setTimeout(() => setIsAdded(false), 1500);
       window.dispatchEvent(new Event('cartUpdated'));
     } catch (error: any) {
-      console.error('❌ Ошибка в catch:', error);
+      console.error('❌ Ошибка добавления в корзину:', error);
       alert('Ошибка: ' + error.message);
     } finally {
       setLoading(false);

@@ -8,7 +8,7 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { sendMetricaEvent } from '@/components/YandexMetrica';
 import { trackEvent, identifyUser, setUserGroup } from '@/lib/amplitude';
 import { setUser } from '@/lib/auth';
-import { API_URL, API_BASE } from '@/lib/api'; 
+import { graphqlRequest } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,57 +38,56 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const query = isLogin ? `
-        mutation Login($email: String!, $password: String!) {
-          login(email: $email, password: $password) {
-            user { id email role }
-          }
-        }
-      ` : `
-        mutation Register($email: String!, $password: String!, $role: String!) {
-          register(email: $email, password: $password, role: $role) {
-            user { id email role }
-          }
-        }
-      `;
-
-      const variables = isLogin 
-        ? { email, password }
-        : { email, password, role };
-
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ query, variables })
-      });
-
-      const json = await res.json();
-      if (json.errors) throw new Error(json.errors[0].message);
-
-      const data = json.data[isLogin ? 'login' : 'register'];
-      if (!data?.user) throw new Error('Ошибка получения пользователя');
-
-      setUser(data.user);
-      localStorage.setItem('userId', data.user.id);
+      let query, variables, mutationName;
 
       if (isLogin) {
-        sendMetricaEvent('login', { email: data.user.email });
-        trackEvent('user_login', { email: data.user.email });
+        query = `
+          mutation Login($email: String!, $password: String!) {
+            login(email: $email, password: $password) {
+              user { id email role }
+              token
+            }
+          }
+        `;
+        variables = { email, password };
+        mutationName = 'login';
       } else {
-        sendMetricaEvent('register', { 
-          email: data.user.email, 
-          role: data.user.role 
-        });
-        trackEvent('user_register', { 
-          email: data.user.email, 
-          role: data.user.role 
-        });
+        query = `
+          mutation Register($email: String!, $password: String!, $role: String!) {
+            register(email: $email, password: $password, role: $role) {
+              user { id email role }
+              token
+            }
+          }
+        `;
+        variables = { email, password, role };
+        mutationName = 'register';
       }
-      identifyUser(data.user.id, { email: data.user.email, role: data.user.role });
-      setUserGroup('role', data.user.role);
 
-      const userRole = data.user.role;
+      const data = await graphqlRequest(query, variables);
+      const result = data[mutationName];
+
+      if (!result?.user || !result?.token) {
+        throw new Error('Ошибка авторизации: нет пользователя или токена');
+      }
+
+      // Сохраняем пользователя и токен
+      setUser(result.user, result.token);
+      localStorage.setItem('userId', result.user.id);
+
+      // Аналитика
+      if (isLogin) {
+        sendMetricaEvent('login', { email: result.user.email });
+        trackEvent('user_login', { email: result.user.email });
+      } else {
+        sendMetricaEvent('register', { email: result.user.email, role: result.user.role });
+        trackEvent('user_register', { email: result.user.email, role: result.user.role });
+      }
+      identifyUser(result.user.id, { email: result.user.email, role: result.user.role });
+      setUserGroup('role', result.user.role);
+
+      // Редирект по роли
+      const userRole = result.user.role;
       if (userRole === 'ADMIN') router.push('/admin');
       else if (userRole === 'SELLER') router.push('/seller');
       else router.push('/buyer');

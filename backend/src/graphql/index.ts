@@ -48,6 +48,7 @@ export const typeDefs = `#graphql
 
   type AuthResponse {
     user: User!
+    token: String! 
   }
 
   type PaymentResponse { paymentUrl: String!, orderId: String! }
@@ -377,7 +378,8 @@ context.res.cookie('token', token, {
 });
 
       return {
-        user: { id: user.id, email: user.email, role: String(user.role) }
+        user: { id: user.id, email: user.email, role: String(user.role) },
+        token,
       };
     },
 
@@ -433,7 +435,8 @@ context.res.cookie('token', token, cookieOptions);
       console.log('📤 Response headers after cookie:', context.res.getHeaders());
 
       return {
-        user: { id: user.id, email: user.email, role: String(user.role) }
+        user: { id: user.id, email: user.email, role: String(user.role) },
+        token,
       };
     },
 

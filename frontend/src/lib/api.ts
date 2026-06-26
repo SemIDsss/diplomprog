@@ -8,12 +8,14 @@ export const API_URL = `${API_BASE}/graphql`;
 
 // Основная функция для GraphQL-запросов
 export const graphqlRequest = async (query: string, variables?: any) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const response = await fetch(API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // отправляем куки (для аутентификации)
+    headers,
+    credentials: 'include', // оставляем для кук (если пригодятся)
     body: JSON.stringify({ query, variables }),
   });
 
