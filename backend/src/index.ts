@@ -10,7 +10,7 @@ import { authMiddleware, graphqlContext } from './middleware/auth';
 import { PaymentService } from './payment';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-
+import compression from 'compression';
 dotenv.config();
 
 (async function startServer() {
@@ -52,7 +52,7 @@ dotenv.config();
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     })
   );
-
+app.use(compression());
   // ---------- Cookie Parser (обязательно!) ----------
   app.use(cookieParser());
 

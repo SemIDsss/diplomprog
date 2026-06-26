@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { generateToken, verifyToken } from '../utils/jwt';
 import { z } from 'zod';
 import { PaymentService } from '../payment';
+import { cache } from '../cache'; // <-- добавлен импорт кэша
 
 // ==================== TYPEDEFS ====================
 export const typeDefs = `#graphql
@@ -48,7 +49,7 @@ export const typeDefs = `#graphql
 
   type AuthResponse {
     user: User!
-    token: String! 
+    token: String!
   }
 
   type PaymentResponse { paymentUrl: String!, orderId: String! }
@@ -174,14 +175,23 @@ export const typeDefs = `#graphql
 // ==================== RESOLVERS ====================
 export const resolvers = {
   Query: {
-    // ---------- Публичные запросы ----------
+    // ---------- Публичные запросы (ОПТИМИЗИРОВАНЫ) ----------
     categories: async () => {
+      const cacheKey = 'all_categories';
+      let data = cache.get(cacheKey);
+      if (data) return data;
       try {
-        return await prisma.category.findMany({ include: { subcategories: true } });
+        data = await prisma.category.findMany({ include: { subcategories: true } });
+        cache.set(cacheKey, data);
+        return data;
       } catch (e) { return []; }
     },
 
     products: async (_: any, { subcategoryId, search, skip = 0, take = 20 }: any) => {
+      const cacheKey = `products_${subcategoryId || 'all'}_${search || ''}_${skip}_${take}`;
+      let cached = cache.get(cacheKey);
+      if (cached) return cached;
+
       try {
         const whereClause: any = { status: 'APPROVED' };
         if (subcategoryId) whereClause.subcategoryId = subcategoryId;
@@ -191,16 +201,29 @@ export const resolvers = {
             { description: { contains: search, mode: 'insensitive' } }
           ];
         }
+
         const [items, totalCount] = await Promise.all([
           prisma.product.findMany({
             where: whereClause,
             skip,
             take,
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              price: true,
+              image: true,
+              stock: true,
+              subcategoryId: true,
+            }
           }),
           prisma.product.count({ where: whereClause })
         ]);
-        return { items, totalCount, hasMore: skip + take < totalCount };
+
+        const result = { items, totalCount, hasMore: skip + take < totalCount };
+        cache.set(cacheKey, result);
+        return result;
       } catch (e) {
         console.error('Ошибка поиска Prisma:', e);
         return { items: [], totalCount: 0, hasMore: false };
@@ -208,11 +231,41 @@ export const resolvers = {
     },
 
     product: async (_: any, { id }: { id: string }) => {
+      const cacheKey = `product_${id}`;
+      let data = cache.get(cacheKey);
+      if (data) return data;
       try {
-        return await prisma.product.findUnique({ where: { id } });
+        data = await prisma.product.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            price: true,
+            image: true,
+            images: true,
+            stock: true,
+            subcategoryId: true,
+            sku: true,
+            brand: true,
+            material: true,
+            color: true,
+            weight: true,
+            width: true,
+            height: true,
+            depth: true,
+            year: true,
+            country: true,
+            season: true,
+            collection: true,
+          }
+        });
+        if (data) cache.set(cacheKey, data);
+        return data;
       } catch (e) { return null; }
     },
 
+    // ---------- Остальные запросы (без изменений) ----------
     cart: async (_: any, { userId }: any, context: any) => {
       if (!context.user || context.user.userId !== userId) {
         throw new Error('Не авторизован для просмотра этой корзины');
@@ -334,68 +387,53 @@ export const resolvers = {
   Mutation: {
     // ==================== АУТЕНТИФИКАЦИЯ ====================
     register: async (_: any, { email, password, role }: any, context: any) => {
-  try {
-    console.log('🔐 Register attempt for:', email);
+      const emailSchema = z.string().email('Некорректный email');
+      const passwordSchema = z.string().min(6, 'Пароль должен быть не менее 6 символов');
+      emailSchema.parse(email);
+      passwordSchema.parse(password);
 
-    // Валидация
-    const emailSchema = z.string().email('Некорректный email');
-    const passwordSchema = z.string().min(6, 'Пароль должен быть не менее 6 символов');
-    emailSchema.parse(email);
-    passwordSchema.parse(password);
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) throw new Error('Пользователь с таким email уже зарегистрирован');
 
-    // Проверка существующего пользователя
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) throw new Error('Пользователь с таким email уже зарегистрирован');
-
-    // Определение роли
-    let finalRole: Role = Role.USER;
-    if (role === 'SELLER') finalRole = Role.SELLER;
-    if (role === 'ADMIN') {
-      throw new Error('Регистрация администратора запрещена.');
-    }
-
-    // Хеширование пароля
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Создание пользователя
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        role: finalRole,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      let finalRole: Role = Role.USER;
+      if (role === 'SELLER') finalRole = Role.SELLER;
+      if (role === 'ADMIN') {
+        throw new Error('Регистрация администратора запрещена.');
       }
-    });
 
-    // Генерация JWT
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: String(user.role)
-    });
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Установка куки
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-    context.res.cookie('token', token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          role: finalRole,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      });
 
-    console.log('✅ Register successful for:', email);
-    return {
-      user: { id: user.id, email: user.email, role: String(user.role) },
-      token,
-    };
-  } catch (error) {
-    console.error('❌ Register error:', error);
-    throw error;
-  }
-},
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: String(user.role)
+      });
+
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+      context.res.cookie('token', token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+
+      return {
+        user: { id: user.id, email: user.email, role: String(user.role) },
+        token,
+      };
+    },
 
     login: async (_: any, { email, password }: any, context: any) => {
       console.log('🔐 Login attempt for:', email);
@@ -425,18 +463,18 @@ export const resolvers = {
       });
       console.log('🔑 Token generated for', email, ':', token.substring(0, 20) + '...');
 
-   const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-const cookieOptions: any = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: '/',
-};
-if (isProduction) {
-  cookieOptions.domain = '.onrender.com'; // добавляем domain
-}
-context.res.cookie('token', token, cookieOptions);
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+      const cookieOptions: any = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      };
+      if (isProduction) {
+        cookieOptions.domain = '.onrender.com';
+      }
+      context.res.cookie('token', token, cookieOptions);
 
       console.log('✅ Cookie set with options:', {
         httpOnly: true,
@@ -459,7 +497,7 @@ context.res.cookie('token', token, cookieOptions);
       return true;
     },
 
-    // ==================== КОРЗИНА (исправлено – используем только context.user.userId) ====================
+    // ==================== КОРЗИНА ====================
     addToCart: async (_: any, { productId, quantity }: any, context: any) => {
       if (!context.user) throw new Error('Не авторизован');
       const userId = context.user.userId;
@@ -592,7 +630,6 @@ context.res.cookie('token', token, cookieOptions);
         paymentMethod: paymentMethod,
         returnUrl: returnUrl || `${process.env.FRONTEND_URL}/payment-success?orderId=${order.id}`,
       });
-      // Сохраняем paymentId в заказе
       await prisma.order.update({
         where: { id: orderId },
         data: { paymentId: payment.id },

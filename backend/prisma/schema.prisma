@@ -89,7 +89,10 @@ model Product {
   user           User?     @relation(fields: [userId], references: [id])
   cartItems      CartItem[]
   orderItems     OrderItem[]
-  
+  @@index([status])
+  @@index([subcategoryId])
+  @@index([createdAt])
+  @@index([userId])
   @@map("products")
 }
 
