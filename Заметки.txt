@@ -40,4 +40,5 @@ npx prisma studio                      Открыть графический и�
 
 
 
-
+psql "postgresql://admin:m8gPiPTLqE3lZjL0LtPyrIHms47oBGFa@dpg-d8ue9k7lk1mc73fner90-a.frankfurt-postgres.render.com/dev_db_invi" -f dump.sql
+postgresql://admin:m8gPiPTLqE3lZjL0LtPyrIHms47oBGFa@dpg-d8ue9k7lk1mc73fner90-a.frankfurt-postgres.render.com/dev_db_invi

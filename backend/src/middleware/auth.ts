@@ -1,28 +1,64 @@
-// backend/src/middleware/auth.ts
-import { verifyToken } from '../utils/jwt';
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 
-export const authenticate = (req: any, res: any, next: any) => {
-  // ✅ Только куки (без заголовка Authorization)
-  const token = req.cookies?.token;
-  if (!token) {
-    return res.status(401).json({ error: 'Не авторизован' });
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: string;
+        email: string;
+        role: string;
+      };
+    }
   }
-  const payload = verifyToken(token);
-  if (!payload) {
-    return res.status(401).json({ error: 'Недействительный токен' });
+}
+
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+    if (!token) return next();
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, email: true, role: true, isBlocked: true },
+    });
+
+    if (!user || user.isBlocked) {
+      res.clearCookie('token');
+      return next();
+    }
+
+    req.user = { userId: user.id, email: user.email, role: user.role };
+    next();
+  } catch (error) {
+    next();
   }
-  req.user = payload;
-  next();
 };
 
-export const requireRole = (roles: string[]) => {
-  return (req: any, res: any, next: any) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Не авторизован' });
-    }
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Недостаточно прав' });
-    }
-    next();
-  };
+// Важно: теперь принимает { req, res } и возвращает оба
+export const graphqlContext = async ({ req, res }: { req: Request; res: Response }) => {
+  if (!req) return { user: null, res };
+
+  const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+  let user = null;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
+      const dbUser = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { id: true, email: true, role: true, isBlocked: true },
+      });
+      if (dbUser && !dbUser.isBlocked) {
+        user = { userId: dbUser.id, email: dbUser.email, role: dbUser.role };
+      }
+    } catch (e) {}
+  }
+
+  return { user, res };
 };

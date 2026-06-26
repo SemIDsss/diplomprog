@@ -1,10 +1,9 @@
-// backend/src/graphql/index.ts
 import { prisma } from '../db';
 import { Role, OrderStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { generateToken, verifyToken } from '../utils/jwt';
 import { z } from 'zod';
-import { PaymentService } from '../payment'; // если нужен для initiatePayment
+import { PaymentService } from '../payment';
 
 // ==================== TYPEDEFS ====================
 export const typeDefs = `#graphql
@@ -103,11 +102,7 @@ export const typeDefs = `#graphql
     userProfile(userId: String!): User
     pendingProducts: [Product]
     reviews(productId: ID!): [Review!]!
-    
-    # ✅ НОВЫЙ ЗАПРОС: получить текущего пользователя
     me: User
-
-    # Админские запросы
     users: [User!]!
     productsAll: [Product!]!
     ordersAll: [Order!]!
@@ -254,7 +249,6 @@ export const resolvers = {
       } catch (e) { return null; }
     },
 
-    // ✅ НОВЫЙ РЕЗОЛВЕР: получение текущего пользователя
     me: async (_: any, __: any, context: any) => {
       if (!context.user) return null;
       const user = await prisma.user.findUnique({
@@ -437,16 +431,18 @@ export const resolvers = {
       return true;
     },
 
-    // ==================== КОРЗИНА ====================
-    addToCart: async (_: any, { userId, productId, quantity }: any, context: any) => {
-      if (!context.user || context.user.userId !== userId) {
-        throw new Error('Не авторизован для изменения этой корзины');
-      }
+    // ==================== КОРЗИНА (ИСПРАВЛЕНЫ) ====================
+    addToCart: async (_: any, { productId, quantity }: any, context: any) => {
+      // Безопасно: игнорируем переданный userId, используем только из контекста
+      if (!context.user) throw new Error('Не авторизован');
+      const userId = context.user.userId;
+
       const product = await prisma.product.findUnique({ where: { id: productId } });
       if (!product || product.status !== 'APPROVED') {
         throw new Error('Товар не найден или недоступен');
       }
       if (quantity <= 0) throw new Error('Количество должно быть положительным');
+
       const existingItem = await prisma.cartItem.findFirst({
         where: { userId, productId }
       });
@@ -465,12 +461,15 @@ export const resolvers = {
     },
 
     deleteFromCart: async (_: any, { id }: { id: string }, context: any) => {
+      if (!context.user) throw new Error('Не авторизован');
+      const userId = context.user.userId;
+
       const cartItem = await prisma.cartItem.findUnique({
         where: { id },
         select: { userId: true }
       });
       if (!cartItem) return false;
-      if (!context.user || context.user.userId !== cartItem.userId) {
+      if (cartItem.userId !== userId) {
         throw new Error('Не авторизован для удаления этого элемента');
       }
       try {
@@ -566,6 +565,10 @@ export const resolvers = {
         paymentMethod: paymentMethod,
         returnUrl: returnUrl || `${process.env.FRONTEND_URL}/payment-success?orderId=${order.id}`,
       });
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { paymentId: payment.id },
+      });
       return {
         paymentUrl: payment.confirmationUrl,
         orderId: order.id,
@@ -618,7 +621,7 @@ export const resolvers = {
           season: season || null,
           collection: collection || null,
           images: images || [],
-          stock: stock ?? 0,   
+          stock: stock ?? 0,
           createdAt: new Date(),
           updatedAt: new Date(),
           rejectReason: null

@@ -1,107 +1,134 @@
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
+import { createServer } from 'http';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
-import { prisma } from './db';
-import helmet from 'helmet';
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import { PrismaClient } from '@prisma/client';
 import { typeDefs, resolvers } from './graphql';
-import { verifyToken } from './utils/jwt';
+import { authMiddleware, graphqlContext } from './middleware/auth';
+import { PaymentService } from './payment';
+import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 
-import paymentRoutes from './routes/payment';
-import deliveryRoutes from './routes/delivery';
-import webhookRoutes from './routes/webhook';
+dotenv.config();
 
-console.log('🔄 Загрузка сервера...');
+(async function startServer() {
+  const app = express();
+  const httpServer = createServer(app);
 
-const app = express();
+  // ---------- CORS ----------
+  app.use(
+    cors({
+      origin: true,
+      credentials: true,
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    })
+  );
 
-const allowedOrigins = [
-  /^https?:\/\/localhost:\d+$/,
-  /^https:\/\/.*\.vercel\.app$/,
-  /^https:\/\/diplomprog-.*\.onrender\.com$/,
-];
+  // ---------- Cookie Parser (обязательно!) ----------
+  app.use(cookieParser());
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    const isAllowed = allowedOrigins.some(pattern => pattern.test(origin));
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed for this origin'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
-app.use(cookieParser());
-app.use(express.json({ limit: '1mb' }));
-
-// REST-роуты
-app.use('/api/payment', paymentRoutes);
-app.use('/api/delivery', deliveryRoutes);
-app.use('/api/webhook', webhookRoutes);
-
-// Контекст для Apollo
-const context = async ({ req, res }: any) => {
-  console.log('🍪 Cookies:', req.cookies);
-  let token = req.cookies.token;
-  console.log('🔑 Token from cookie:', token);
-
-  if (!token) {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-      console.log('🔑 Token from Authorization header:', token);
-    }
-  }
-
-  let user = null;
-  if (token) {
-    user = verifyToken(token);
-    console.log('👤 User from token:', user);
-  } else {
-    console.warn('⚠️ Токен отсутствует');
-  }
-
-  return { req, res, user, prisma };
-};
-
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  csrfPrevention: false,
-});
-
-async function startServer() {
-  try {
-    console.log('🔄 Инициализация Apollo Server...');
-    await server.start();
-
-    app.use(
-      '/graphql',
-      expressMiddleware(server, { context }),
-      (req, res, next) => {
-        res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        next();
+  // ---------- Webhook ЮKassa (ДО express.json()) ----------
+  app.post(
+    '/webhook/yookassa',
+    express.raw({ type: 'application/json' }),
+    async (req, res) => {
+      try {
+        const event = req.body;
+        console.log('📥 Webhook от ЮKassa:', event);
+        if (event.object?.status === 'succeeded') {
+          const paymentId = event.object.id;
+          const prisma = req.app.get('prisma') as PrismaClient;
+          const updated = await prisma.order.updateMany({
+            where: { paymentId },
+            data: { status: 'APPROVED' },
+          });
+          if (updated.count > 0) console.log(`✅ Заказ с paymentId ${paymentId} обновлён`);
+        }
+        res.sendStatus(200);
+      } catch (error) {
+        console.error('❌ Ошибка webhook:', error);
+        res.sendStatus(500);
       }
-    );
+    }
+  );
 
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`✅ Сервер GraphQL запущен на http://localhost:${PORT}/graphql`);
-    });
-  } catch (error) {
-    console.error('❌ Ошибка при запуске сервера:', error);
-    process.exit(1);
-  }
-}
+  app.use(express.json());
+  app.use(authMiddleware);
 
-startServer();
+  // ---------- REST: статус платежа ----------
+ app.get('/payment/order/:orderId/status', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const prisma = req.app.get('prisma') as PrismaClient;
+
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (!order) return res.status(404).json({ error: 'Заказ не найден' });
+
+      // Если уже APPROVED – возвращаем succeeded
+      if (order.status === 'APPROVED') {
+        return res.json({ status: 'succeeded', orderId });
+      }
+
+      // Если есть paymentId – проверяем в ЮKassa
+      if (order.paymentId) {
+        try {
+          const paymentStatus = await PaymentService.getPaymentStatus(order.paymentId);
+          if (paymentStatus.status === 'succeeded') {
+            await prisma.order.update({
+              where: { id: orderId },
+              data: { status: 'APPROVED' },
+            });
+            return res.json({ status: 'succeeded', orderId });
+          }
+          // Если ещё не оплачен – возвращаем pending
+          return res.json({ status: 'pending', orderId });
+        } catch (err) {
+          console.error('Ошибка запроса к ЮKassa:', err);
+          // Если ошибка – возвращаем текущий статус (но приводим к формату)
+          const mappedStatus = order.status === 'APPROVED' ? 'succeeded' : 'pending';
+          return res.json({ status: mappedStatus, orderId });
+        }
+      }
+
+      // Если paymentId нет – возвращаем статус в формате
+      const mappedStatus = order.status === 'APPROVED' ? 'succeeded' : 'pending';
+      res.json({ status: mappedStatus, orderId });
+    } catch (error) {
+      console.error('Ошибка проверки статуса:', error);
+      res.status(500).json({ error: 'Внутренняя ошибка' });
+    }
+  });
+
+  // ---------- GraphQL ----------
+  const prismaClient = new PrismaClient();
+  app.set('prisma', prismaClient);
+
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    introspection: true,
+  });
+
+  await server.start();
+
+  app.use(
+    '/graphql',
+    expressMiddleware(server, {
+      context: async ({ req, res }) => graphqlContext({ req, res }),
+    })
+  );
+
+  app.get('/health', (req, res) => res.send('OK'));
+
+  const PORT = process.env.PORT || 5000;
+  httpServer.listen(PORT, () => {
+    console.log(`🚀 Server ready at http://localhost:${PORT}`);
+    console.log(`🔗 GraphQL: http://localhost:${PORT}/graphql`);
+    console.log(`🔗 Статус платежа: http://localhost:${PORT}/payment/order/:id/status`);
+    console.log(`🔗 Webhook: http://localhost:${PORT}/webhook/yookassa`);
+  });
+})();

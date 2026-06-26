@@ -5,8 +5,7 @@
     "dev": "npx tsx src/index.ts",
     "start": "npx tsx src/index.ts",
     "build": "prisma generate --schema=./prisma/schema.prisma",
-    "seed:categories": "tsx seed-categories.ts",
-    "seed:products": "tsx seed.ts"
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.10.0",
