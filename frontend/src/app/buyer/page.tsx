@@ -233,40 +233,49 @@ export default function BuyerPage() {
         body: JSON.stringify({ query: createOrderQuery, variables: createOrderVariables })
       });
       const orderJson = await orderRes.json();
-
       if (orderJson.errors) {
         throw new Error(orderJson.errors[0].message);
       }
-
-      const order = orderJson.data?.createOrder;
+      const order = orderJson.data.createOrder;
       if (!order || !order.id) {
         throw new Error('Не удалось создать заказ или получить его ID');
       }
-
       console.log('🆔 ID заказа:', order.id);
 
-      // 2. Создаём платёж с абсолютным returnUrl
+      // 2. Инициируем платёж через GraphQL-мутацию initiatePayment
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin || 'http://localhost:3000';
-      const payRes = await fetch(`${API_BASE}/payment/create`, {
+      const paymentRes = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          amount: order.totalAmount,
-          description: `Оплата заказа ${order.id}`,
-          orderId: order.id,
-          paymentMethod: paymentMethod,
-          returnUrl: `${appUrl}/payment-success?orderId=${order.id}`,
+          query: `
+            mutation InitiatePayment($orderId: String!, $method: String!, $returnUrl: String!) {
+              initiatePayment(orderId: $orderId, method: $method, returnUrl: $returnUrl) {
+                paymentUrl
+                orderId
+              }
+            }
+          `,
+          variables: {
+            orderId: order.id,
+            method: paymentMethod === 'bank_card' ? 'YUKASSA' : 'SBP',
+            returnUrl: `${appUrl}/payment-success?orderId=${order.id}`,
+          }
         })
       });
-      const payment = await payRes.json();
-      console.log('🔗 confirmationUrl:', payment.confirmationUrl);
-      if (!payment.confirmationUrl) {
+      const paymentData = await paymentRes.json();
+      if (paymentData.errors) {
+        throw new Error(paymentData.errors[0].message);
+      }
+      const paymentUrl = paymentData.data.initiatePayment.paymentUrl;
+      console.log('🔗 paymentUrl:', paymentUrl);
+      if (!paymentUrl) {
         throw new Error('Не удалось получить ссылку на оплату');
       }
 
-      // 3. Редирект
-      window.location.href = payment.confirmationUrl;
+      // 3. Редирект на страницу оплаты
+      window.location.href = paymentUrl;
     } catch (e: any) {
       console.error('❌ Ошибка оплаты:', e);
       alert('❌ Ошибка оплаты: ' + e.message);

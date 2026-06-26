@@ -4,7 +4,7 @@ import { Role, OrderStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { generateToken, verifyToken } from '../utils/jwt';
 import { z } from 'zod';
-
+import { PaymentService } from '../payment';
 // ==================== TYPEDEFS ====================
 export const typeDefs = `#graphql
   type Subcategory { id: ID!, name: String!, categoryId: String! }
@@ -128,7 +128,7 @@ export const typeDefs = `#graphql
     deleteFromCart(id: ID!): Boolean!
 
     # ---------- Заказы и оплата ----------
-    initiatePayment(orderId: String!, method: String!): PaymentResponse!
+    initiatePayment(orderId: String!, method: String!, returnUrl: String!): PaymentResponse!
     approveOrder(orderId: String!): Order!
     createOrder(deliveryMethod: String!, items: [OrderItemInput!]): Order!
 
@@ -551,21 +551,32 @@ console.log('✅ Order created, ID:', order.id);
       return order;
     },
 
-    initiatePayment: async (_: any, { orderId, method }: any, context: any) => {
-      if (!context.user) {
-        throw new Error('Не авторизован');
-      }
-      const order = await prisma.order.findUnique({ where: { id: orderId } });
-      if (!order) throw new Error('Заказ не найден');
-      if (order.userId !== context.user.userId) throw new Error('Нет доступа к этому заказу');
-      if (order.status !== 'PENDING') throw new Error('Заказ уже оплачен или отменен');
+    initiatePayment: async (_: any, { orderId, method, returnUrl }: any, context: any) => {
+  if (!context.user) {
+    throw new Error('Не авторизован');
+  }
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new Error('Заказ не найден');
+  if (order.userId !== context.user.userId) throw new Error('Нет доступа к этому заказу');
+  if (order.status !== 'PENDING') throw new Error('Заказ уже оплачен или отменен');
 
-      const paymentUrl = `http://localhost:3000/payment?orderId=${orderId}&amount=${order.totalAmount}&method=${method}`;
-      return {
-        paymentUrl,
-        orderId: order.id
-      };
-    },
+  // Определяем метод оплаты для ЮKassa
+  const paymentMethod = method === 'SBP' ? 'sbp' : 'bank_card';
+
+  // Создаём платёж через PaymentService (эмуляция или реальный API)
+  const payment = await PaymentService.createPayment({
+    amount: order.totalAmount,
+    description: `Оплата заказа ${order.id}`,
+    orderId: order.id,
+    paymentMethod: paymentMethod,
+    returnUrl: returnUrl || `${process.env.FRONTEND_URL}/payment-success?orderId=${order.id}`,
+  });
+
+  return {
+    paymentUrl: payment.confirmationUrl,
+    orderId: order.id,
+  };
+},
 
     approveOrder: async (_: any, { orderId }: { orderId: string }, context: any) => {
       if (!context.user) throw new Error('Не авторизован');
