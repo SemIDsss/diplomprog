@@ -45,8 +45,8 @@ router.get('/status/:paymentId', authenticate, async (req, res) => {
   }
 });
 
-// ✅ НОВЫЙ РОУТ: проверка статуса по orderId (без авторизации – временно)
-router.get('/order/:orderId/status', async (req: any, res) => {
+// ✅ Роут проверки статуса по orderId (с авторизацией и проверкой владельца)
+router.get('/order/:orderId/status', authenticate, async (req: any, res) => {
   try {
     const { orderId } = req.params;
     const order = await prisma.order.findUnique({
@@ -56,10 +56,10 @@ router.get('/order/:orderId/status', async (req: any, res) => {
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
-    // Временно отключаем проверку userId
-    // if (order.userId !== req.user.userId) {
-    //   return res.status(403).json({ error: 'Access denied' });
-    // }
+    // Проверяем, что заказ принадлежит текущему пользователю
+    if (order.userId !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (!order.paymentId) {
       // Если paymentId нет (эмуляция) – возвращаем успех
       return res.json({ status: 'succeeded' });
