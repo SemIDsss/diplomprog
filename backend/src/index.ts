@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import { createServer } from 'http';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
@@ -10,29 +11,15 @@ import { authMiddleware, graphqlContext } from './middleware/auth';
 import { PaymentService } from './payment';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-import compression from 'compression';
+import { redis } from './redis';
+
 dotenv.config();
 
 (async function startServer() {
   const app = express();
   const httpServer = createServer(app);
 
-  // ---------- РУЧНАЯ ОБРАБОТКА OPTIONS (ПЕРЕД CORS) ----------
-  // Это предотвращает ошибки при preflight-запросах
-  app.options('*', (req, res) => {
-    const origin = req.headers.origin;
-    if (origin) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    } else {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.sendStatus(200);
-  });
-
-  // ---------- CORS (для остальных запросов) ----------
+  // ---------- CORS (с белым списком) ----------
   const allowedOrigins = process.env.CLIENT_URL
     ? [process.env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:3001']
     : ['http://localhost:3000', 'http://localhost:3001'];
@@ -52,9 +39,26 @@ dotenv.config();
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     })
   );
-app.use(compression());
-  // ---------- Cookie Parser (обязательно!) ----------
+
+  // ---------- Сжатие ответов ----------
+  app.use(compression());
+
+  // ---------- Cookie Parser ----------
   app.use(cookieParser());
+
+  // ---------- Ручной обработчик OPTIONS (preflight) ----------
+  app.options('*', (req, res) => {
+    const origin = req.headers.origin;
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.sendStatus(200);
+  });
 
   // ---------- Webhook ЮKassa (ДО express.json()) ----------
   app.post(
@@ -132,7 +136,7 @@ app.use(compression());
     resolvers,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
     introspection: true,
-    csrfPrevention: false,
+    csrfPrevention: false, // отключаем для локальной разработки
   });
 
   await server.start();
@@ -146,6 +150,20 @@ app.use(compression());
 
   app.get('/health', (req, res) => res.send('OK'));
 
+  // ---------- Проверка Redis при старте ----------
+  try {
+    await redis.set('test', 'ok', 'EX', 10);
+    const val = await redis.get('test');
+    if (val === 'ok') {
+      console.log('✅ Redis connected and working');
+    } else {
+      console.warn('⚠️ Redis returned unexpected value');
+    }
+  } catch (err) {
+    console.error('❌ Redis connection failed:', err);
+  }
+
+  // ---------- Запуск сервера ----------
   const PORT = process.env.PORT || 5000;
   httpServer.listen(PORT, () => {
     console.log(`🚀 Server ready at http://localhost:${PORT}`);
