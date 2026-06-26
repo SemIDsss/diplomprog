@@ -200,7 +200,6 @@ export default function BuyerPage() {
 
   const calculateTotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // ==================== ИСПРАВЛЕННЫЙ handlePayment ====================
   const handlePayment = async () => {
     if (cart.length === 0) {
       alert('Корзина пуста');
@@ -234,15 +233,20 @@ export default function BuyerPage() {
         body: JSON.stringify({ query: createOrderQuery, variables: createOrderVariables })
       });
       const orderJson = await orderRes.json();
-      if (orderJson.errors) throw new Error(orderJson.errors[0].message);
-      const order = orderJson.data.createOrder;
 
-      console.log('🆔 ID заказа:', order.id);
-      if (!order.id) {
-        throw new Error('Не удалось получить ID заказа');
+      if (orderJson.errors) {
+        throw new Error(orderJson.errors[0].message);
       }
 
-      // 2. Создаём платёж через REST (с относительным returnUrl)
+      const order = orderJson.data?.createOrder;
+      if (!order || !order.id) {
+        throw new Error('Не удалось создать заказ или получить его ID');
+      }
+
+      console.log('🆔 ID заказа:', order.id);
+
+      // 2. Создаём платёж с абсолютным returnUrl
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin || 'http://localhost:3000';
       const payRes = await fetch(`${API_BASE}/payment/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -252,12 +256,14 @@ export default function BuyerPage() {
           description: `Оплата заказа ${order.id}`,
           orderId: order.id,
           paymentMethod: paymentMethod,
-          returnUrl: `/payment-success?orderId=${order.id}`, // ✅ относительный путь
+          returnUrl: `${appUrl}/payment-success?orderId=${order.id}`,
         })
       });
       const payment = await payRes.json();
       console.log('🔗 confirmationUrl:', payment.confirmationUrl);
-      if (!payment.confirmationUrl) throw new Error('Не удалось получить ссылку на оплату');
+      if (!payment.confirmationUrl) {
+        throw new Error('Не удалось получить ссылку на оплату');
+      }
 
       // 3. Редирект
       window.location.href = payment.confirmationUrl;
