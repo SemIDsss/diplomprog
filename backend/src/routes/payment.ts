@@ -35,20 +35,10 @@ router.post('/create', authenticate, async (req: any, res) => {
 });
 
 // Проверка статуса по paymentId (старый метод)
-router.get('/status/:paymentId', authenticate, async (req, res) => {
-  try {
-    const { paymentId } = req.params;
-    const status = await PaymentService.getPaymentStatus(paymentId);
-    res.json(status);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get payment status' });
-  }
-});
-
-// ✅ Роут проверки статуса по orderId (с авторизацией и проверкой владельца)
 router.get('/order/:orderId/status', authenticate, async (req: any, res) => {
   try {
     const { orderId } = req.params;
+    console.log('🔍 req.user:', req.user);
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       select: { paymentId: true, userId: true },
@@ -56,12 +46,13 @@ router.get('/order/:orderId/status', authenticate, async (req: any, res) => {
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
-    // Временно отключаем проверку владельца (для отладки)
-    // if (order.userId !== req.user.userId) {
-    //   return res.status(403).json({ error: 'Access denied' });
-    // }
+    console.log('📦 order.userId:', order.userId);
+    // Проверяем, что заказ принадлежит текущему пользователю
+    // Используем req.user.id или req.user.userId – смотрите логи
+    if (order.userId !== req.user.id && order.userId !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (!order.paymentId) {
-      // Если paymentId нет (эмуляция) – возвращаем успех
       return res.json({ status: 'succeeded' });
     }
     const status = await PaymentService.getPaymentStatus(order.paymentId);
