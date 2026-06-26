@@ -216,6 +216,7 @@ export const resolvers = {
               image: true,
               stock: true,
               subcategoryId: true,
+              status: true,
             }
           }),
           prisma.product.count({ where: whereClause })
