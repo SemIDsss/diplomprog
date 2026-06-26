@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { generateToken, verifyToken } from '../utils/jwt';
 import { z } from 'zod';
 import { PaymentService } from '../payment';
-import { cache } from '../cache'; // <-- добавлен импорт кэша
+import { redis } from '../redis'; // <-- импорт Redis вместо cache
 
 // ==================== TYPEDEFS ====================
 export const typeDefs = `#graphql
@@ -175,22 +175,22 @@ export const typeDefs = `#graphql
 // ==================== RESOLVERS ====================
 export const resolvers = {
   Query: {
-    // ---------- Публичные запросы (ОПТИМИЗИРОВАНЫ) ----------
+    // ---------- Публичные запросы (с Redis-кэшированием) ----------
     categories: async () => {
       const cacheKey = 'all_categories';
-      let data = cache.get(cacheKey);
-      if (data) return data;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
       try {
-        data = await prisma.category.findMany({ include: { subcategories: true } });
-        cache.set(cacheKey, data);
+        const data = await prisma.category.findMany({ include: { subcategories: true } });
+        await redis.setex(cacheKey, 60, JSON.stringify(data));
         return data;
       } catch (e) { return []; }
     },
 
     products: async (_: any, { subcategoryId, search, skip = 0, take = 20 }: any) => {
       const cacheKey = `products_${subcategoryId || 'all'}_${search || ''}_${skip}_${take}`;
-      let cached = cache.get(cacheKey);
-      if (cached) return cached;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
 
       try {
         const whereClause: any = { status: 'APPROVED' };
@@ -223,7 +223,7 @@ export const resolvers = {
         ]);
 
         const result = { items, totalCount, hasMore: skip + take < totalCount };
-        cache.set(cacheKey, result);
+        await redis.setex(cacheKey, 60, JSON.stringify(result));
         return result;
       } catch (e) {
         console.error('Ошибка поиска Prisma:', e);
@@ -233,10 +233,10 @@ export const resolvers = {
 
     product: async (_: any, { id }: { id: string }) => {
       const cacheKey = `product_${id}`;
-      let data = cache.get(cacheKey);
-      if (data) return data;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
       try {
-        data = await prisma.product.findUnique({
+        const data = await prisma.product.findUnique({
           where: { id },
           select: {
             id: true,
@@ -259,9 +259,10 @@ export const resolvers = {
             country: true,
             season: true,
             collection: true,
+            status: true,
           }
         });
-        if (data) cache.set(cacheKey, data);
+        if (data) await redis.setex(cacheKey, 60, JSON.stringify(data));
         return data;
       } catch (e) { return null; }
     },

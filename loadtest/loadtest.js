@@ -1,7 +1,7 @@
+// loadtest-small.js
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-// ===== КОНФИГУРАЦИЯ =====
 const GRAPHQL_URL = 'https://diplomprog-1.onrender.com/graphql';
 const BACKEND_URL = 'https://diplomprog-1.onrender.com';
 const FRONTEND_URL = 'https://diplomprog.vercel.app/';
@@ -13,20 +13,18 @@ const TEST_USER = {
 
 const PRODUCT_ID = 'cmqxi0lrl001c1h81kwtaxdp0';
 
-// ===== НАСТРОЙКИ НАГРУЗКИ =====
 export const options = {
   insecureSkipTLSVerify: true,
-  stages: [
-    { duration: '10s', target: 1 },
-  ],
+  vus: 1,                    // 2 пользователя
+  duration: '30s',           // тест длится 30 секунд
   thresholds: {
-    http_req_duration: ['p(95)<5000'],
-    http_req_failed: ['rate<0.2'],
+    http_req_duration: ['p(95)<1000'], // 95% запросов < 1 секунды
+    http_req_failed: ['rate<0.01'],    // ошибок < 1%
   },
 };
 
 export default function () {
-  // 1. Логин – получаем токен и ID пользователя
+  // 1. Логин
   const loginPayload = JSON.stringify({
     query: `
       mutation Login($email: String!, $password: String!) {
@@ -56,25 +54,21 @@ export default function () {
     'Authorization': `Bearer ${token}`,
   };
 
-  // 2. Проверка, что товар существует и имеет остаток
-  const productCheck = http.post(
+  // 2. Просмотр каталога (публичный)
+  const catalogRes = http.get(FRONTEND_URL);
+  check(catalogRes, { 'catalog 200': (r) => r.status === 200 });
+  sleep(0.3);
+
+  // 3. Получение списка товаров (GraphQL)
+  const productsRes = http.post(
     GRAPHQL_URL,
-    JSON.stringify({
-      query: `query { product(id: "${PRODUCT_ID}") { id stock } }`,
-    }),
+    JSON.stringify({ query: `query { products(take: 3) { items { id title price } } }` }),
     { headers: authHeaders }
   );
-  const product = productCheck.json('data.product');
-  if (!product) {
-    console.error(`❌ Товар с ID ${PRODUCT_ID} не найден`);
-    return;
-  }
-  if (product.stock <= 0) {
-    console.error(`❌ Товар ${PRODUCT_ID} имеет нулевой остаток (stock=${product.stock})`);
-    return;
-  }
+  check(productsRes, { 'products 200': (r) => r.status === 200 });
+  sleep(0.3);
 
-  // 3. Добавление в корзину (с userId)
+  // 4. Добавление в корзину
   const addToCartPayload = JSON.stringify({
     query: `
       mutation AddToCart($userId: String!, $productId: String!, $quantity: Int!) {
@@ -87,13 +81,10 @@ export default function () {
     variables: { userId, productId: PRODUCT_ID, quantity: 1 },
   });
   const cartRes = http.post(GRAPHQL_URL, addToCartPayload, { headers: authHeaders });
-  const cartOk = check(cartRes, { 'addToCart 200': (r) => r.status === 200 });
-  if (!cartOk) {
-    console.error('❌ addToCart ответ:', cartRes.body);
-  }
-  sleep(0.5);
+  check(cartRes, { 'addToCart 200': (r) => r.status === 200 });
+  sleep(0.3);
 
-  // 4. Создание заказа
+  // 5. Создание заказа
   const createOrderPayload = JSON.stringify({
     query: `
       mutation CreateOrder($deliveryMethod: String!, $items: [OrderItemInput!]!) {
@@ -115,9 +106,9 @@ export default function () {
     console.error('❌ Не удалось создать заказ');
     return;
   }
-  sleep(0.5);
+  sleep(0.3);
 
-  // 5. Инициация платежа
+  // 6. Инициация платежа
   const paymentPayload = JSON.stringify({
     query: `
       mutation InitiatePayment($orderId: String!, $method: String!, $returnUrl: String!) {
@@ -134,14 +125,11 @@ export default function () {
   });
   const paymentRes = http.post(GRAPHQL_URL, paymentPayload, { headers: authHeaders });
   check(paymentRes, { 'payment 200': (r) => r.status === 200 });
-  sleep(0.5);
+  sleep(0.3);
 
-  // 6. Проверка статуса платежа (через бэкенд)
+  // 7. Проверка статуса (REST)
   const statusRes = http.get(`${BACKEND_URL}/payment/order/${orderId}/status`);
   check(statusRes, { 'status 200': (r) => r.status === 200 });
-  if (statusRes.status !== 200) {
-    console.error(`❌ Статус ответа: ${statusRes.status}, тело: ${statusRes.body}`);
-  }
 
   sleep(1);
 }
