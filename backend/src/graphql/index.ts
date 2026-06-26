@@ -334,54 +334,68 @@ export const resolvers = {
   Mutation: {
     // ==================== АУТЕНТИФИКАЦИЯ ====================
     register: async (_: any, { email, password, role }: any, context: any) => {
-      const emailSchema = z.string().email('Некорректный email');
-      const passwordSchema = z.string().min(6, 'Пароль должен быть не менее 6 символов');
-      emailSchema.parse(email);
-      passwordSchema.parse(password);
+  try {
+    console.log('🔐 Register attempt for:', email);
 
-      const existing = await prisma.user.findUnique({ where: { email } });
-      if (existing) throw new Error('Пользователь с таким email уже зарегистрирован');
+    // Валидация
+    const emailSchema = z.string().email('Некорректный email');
+    const passwordSchema = z.string().min(6, 'Пароль должен быть не менее 6 символов');
+    emailSchema.parse(email);
+    passwordSchema.parse(password);
 
-      let finalRole: Role = Role.USER;
-      if (role === 'SELLER') finalRole = Role.SELLER;
-      if (role === 'ADMIN') {
-        throw new Error('Регистрация администратора запрещена.');
+    // Проверка существующего пользователя
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) throw new Error('Пользователь с таким email уже зарегистрирован');
+
+    // Определение роли
+    let finalRole: Role = Role.USER;
+    if (role === 'SELLER') finalRole = Role.SELLER;
+    if (role === 'ADMIN') {
+      throw new Error('Регистрация администратора запрещена.');
+    }
+
+    // Хеширование пароля
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Создание пользователя
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        role: finalRole,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
+    });
 
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+    // Генерация JWT
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: String(user.role)
+    });
 
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          role: finalRole,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }
-      });
+    // Установка куки
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    context.res.cookie('token', token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
 
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        role: String(user.role)
-      });
-
-      // Установка куки с учётом окружения (для кросс-доменной работы на Render)
-   const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-context.res.cookie('token', token, {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: '/',
-});
-
-      return {
-        user: { id: user.id, email: user.email, role: String(user.role) },
-        token,
-      };
-    },
+    console.log('✅ Register successful for:', email);
+    return {
+      user: { id: user.id, email: user.email, role: String(user.role) },
+      token,
+    };
+  } catch (error) {
+    console.error('❌ Register error:', error);
+    throw error;
+  }
+},
 
     login: async (_: any, { email, password }: any, context: any) => {
       console.log('🔐 Login attempt for:', email);
