@@ -20,7 +20,11 @@ declare global {
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
-    if (!token) return next();
+    console.log('🔍 authMiddleware: token =', token ? 'present' : 'missing');
+
+    if (!token) {
+      return next();
+    }
 
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
     const user = await prisma.user.findUnique({
@@ -34,14 +38,16 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     }
 
     req.user = { userId: user.id, email: user.email, role: user.role };
+    console.log('✅ authMiddleware: user set', req.user.email);
     next();
   } catch (error) {
+    console.warn('Auth middleware error:', error);
     next();
   }
 };
 
-// Важно: теперь принимает { req, res } и возвращает оба
 export const graphqlContext = async ({ req, res }: { req: Request; res: Response }) => {
+  console.log('📦 graphqlContext: req.cookies =', req.cookies);
   if (!req) return { user: null, res };
 
   const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
@@ -56,8 +62,11 @@ export const graphqlContext = async ({ req, res }: { req: Request; res: Response
       });
       if (dbUser && !dbUser.isBlocked) {
         user = { userId: dbUser.id, email: dbUser.email, role: dbUser.role };
+        console.log('✅ graphqlContext: user found', user.email);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('graphqlContext: token verification failed', e);
+    }
   }
 
   return { user, res };

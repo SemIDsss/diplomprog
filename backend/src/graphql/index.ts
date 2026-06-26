@@ -366,12 +366,15 @@ export const resolvers = {
         role: String(user.role)
       });
 
+      // Установка куки с учётом окружения (для кросс-доменной работы на Render)
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
       context.res.cookie('token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/',
+        domain: isProduction ? '.onrender.com' : undefined, // для кросс-доменности на Render
       });
 
       return {
@@ -406,21 +409,27 @@ export const resolvers = {
         role: String(user.role),
       });
       console.log('🔑 Token generated for', email, ':', token.substring(0, 20) + '...');
+
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
       context.res.cookie('token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/',
+        domain: isProduction ? '.onrender.com' : undefined,
       });
+
       console.log('✅ Cookie set with options:', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/',
+        domain: isProduction ? '.onrender.com' : undefined,
       });
       console.log('📤 Response headers after cookie:', context.res.getHeaders());
+
       return {
         user: { id: user.id, email: user.email, role: String(user.role) }
       };
@@ -431,9 +440,8 @@ export const resolvers = {
       return true;
     },
 
-    // ==================== КОРЗИНА (ИСПРАВЛЕНЫ) ====================
+    // ==================== КОРЗИНА (исправлено – используем только context.user.userId) ====================
     addToCart: async (_: any, { productId, quantity }: any, context: any) => {
-      // Безопасно: игнорируем переданный userId, используем только из контекста
       if (!context.user) throw new Error('Не авторизован');
       const userId = context.user.userId;
 
@@ -565,6 +573,7 @@ export const resolvers = {
         paymentMethod: paymentMethod,
         returnUrl: returnUrl || `${process.env.FRONTEND_URL}/payment-success?orderId=${order.id}`,
       });
+      // Сохраняем paymentId в заказе
       await prisma.order.update({
         where: { id: orderId },
         data: { paymentId: payment.id },
